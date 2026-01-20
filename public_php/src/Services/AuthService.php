@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+
 final class AuthService {
   public function __construct(private UserRepository $repo) {}
 
@@ -30,6 +31,12 @@ final class AuthService {
     if (!password_verify($password, $hash)) {
       throw new AppError('Credenciais inválidas', 401);
     }
+
+    Session::set('auth_user', [
+      'id' => $user['id'],
+      'email' => $user['email'],
+      'role' => $user['role'],
+    ]);
 
     return [
       'message' => 'Login realizado com sucesso',

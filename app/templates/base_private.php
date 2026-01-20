@@ -1,0 +1,110 @@
+<?php
+// app/templates/base_private.php
+
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+/**
+ * IMPORTANTÍSSIMO:
+ * Seu AuthService grava a sessão em $_SESSION['auth_user'] (já validado por você).
+ * Então o dashboard precisa validar essa chave, não $_SESSION['user'].
+ */
+if (!isset($_SESSION['auth_user'])) {
+  header('Location: /sistema-visa/app/templates/login.php');
+  exit;
+}
+
+// Variáveis esperadas do "conteúdo"
+$page_title = $page_title ?? 'Dashboard';
+$page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
+?>
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><?= htmlspecialchars($page_title) ?> • Sistema Visa</title>
+
+  <link rel="icon" href="/sistema-visa/app/static/img/favicon.png">
+
+  <!-- Fonte -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
+  <link rel="stylesheet" href="/sistema-visa/app/static/css/dashboard.css">
+</head>
+<body>
+
+  <div class="private-layout" id="privateLayout">
+    <!-- Sidebar (Parte 2 vai refinar completo; aqui já deixamos a estrutura) -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__brand">
+        <img src="/sistema-visa/app/static/img/logo.png" alt="Sistema Visa" class="sidebar__logo">
+        <span class="sidebar__name">Sistema Visa</span>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a class="sidebar__item active" href="/sistema-visa/app/templates/dashboard.php">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <!-- placeholders para módulos futuros -->
+        <a class="sidebar__item" href="javascript:void(0)">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span>Lotes</span>
+        </a>
+
+        <a class="sidebar__item" href="javascript:void(0)">
+          <i class="fa-solid fa-coins"></i>
+          <span>Financeiro</span>
+        </a>
+      </nav>
+
+      <div class="sidebar__footer">
+        <button class="sidebar__logout" id="btnLogout" type="button">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Conteúdo -->
+    <div class="private-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <button class="topbar__menu" id="btnToggleSidebar" type="button" aria-label="Abrir menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div class="topbar__title">
+          <i class="<?= htmlspecialchars($page_icon) ?>"></i>
+          <span><?= htmlspecialchars($page_title) ?></span>
+        </div>
+
+        <div class="topbar__right"></div>
+      </header>
+
+      <!-- Main -->
+      <main class="main">
+        <?php
+          if (!isset($content)) {
+            echo '<p style="padding:16px;">Conteúdo não definido.</p>';
+          } else {
+            include $content;
+          }
+        ?>
+      </main>
+    </div>
+  </div>
+
+  <script src="/sistema-visa/app/static/js/dashboard.js"></script>
+</body>
+</html>
