@@ -21,7 +21,13 @@ final class AuthService {
       throw new AppError('Usuário inativo', 403);
     }
 
-    if (!password_verify($password, $user['passwordHash'])) {
+    $hash = $user['passwordHash'] ?? '';
+
+    if (!is_string($hash) || $hash === '') {
+      throw new AppError('Credenciais inválidas', 401);
+    }
+
+    if (!password_verify($password, $hash)) {
       throw new AppError('Credenciais inválidas', 401);
     }
 

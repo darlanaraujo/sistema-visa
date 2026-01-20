@@ -9,7 +9,7 @@ final class UserRepository {
       [
         'id' => 1,
         'email' => 'admin@visa.com',
-        '$2y$10$FpkufdYDN8MtWQ.5.LlXK.3KdQ/fRl/FY4BbkcQgHBjNitb8osME.',
+        'passwordHash' => '$2y$10$LHixaJFunG/65xJvCY9H/.QoNnit0dOCGv/46GIiwP5.doO86lNji',
         'role' => 'ADMIN',
         'active' => true,
       ]
