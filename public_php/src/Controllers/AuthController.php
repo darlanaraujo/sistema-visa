@@ -18,4 +18,15 @@ final class AuthController {
 
     Response::json(200, $result);
   }
+
+  public function logout(): void {
+    if (Request::method() !== 'POST') {
+      Response::json(405, ['message' => 'Método não permitido']);
+    }
+
+    Session::destroy();
+
+    Response::json(200, ['message' => 'Logout realizado com sucesso']);
+  }
+
 }
