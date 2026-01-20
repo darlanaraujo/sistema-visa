@@ -1,0 +1,29 @@
+{
+  "name": "sistema-visa",
+  "version": "1.0.0",
+  "description": "Sistema Visa — Documentação Base",
+  "main": "server.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darlanaraujo/sistema-visa.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/darlanaraujo/sistema-visa/issues"
+  },
+  "homepage": "https://github.com/darlanaraujo/sistema-visa#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "express": "^5.2.1"
+  }
+}
