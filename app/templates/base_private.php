@@ -43,12 +43,21 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
 <body>
 
   <div class="private-layout" id="privateLayout">
-    <!-- Sidebar (Parte 2 vai refinar completo; aqui já deixamos a estrutura) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__brand">
-        <img src="/sistema-visa/app/static/img/logo.png" alt="Sistema Visa" class="sidebar__logo">
-        <span class="sidebar__name">Sistema Visa</span>
-      </div>
+    <div class="sidebar__logo-wrap">
+      <img
+        id="sidebarLogo"
+        src="/sistema-visa/app/static/img/logo.png"
+        data-logo="/sistema-visa/app/static/img/logo.png"
+        data-favicon="/sistema-visa/app/static/img/favicon.png"
+        alt="Sistema Visa"
+        class="sidebar__logo"
+      >
+    </div>
+  </div>
+
 
       <nav class="sidebar__nav">
         <a class="sidebar__item active" href="/sistema-visa/app/templates/dashboard.php">
@@ -76,13 +85,17 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       </div>
     </aside>
 
+    <button class="sidebar-edge-toggle" id="btnEdgeToggle" type="button" aria-label="Recolher sidebar">
+      <i class="fa-solid fa-chevron-left" id="edgeToggleIcon"></i>
+    </button>
+
     <!-- Conteúdo -->
     <div class="private-content">
       <!-- Topbar -->
       <header class="topbar">
-        <button class="topbar__menu" id="btnToggleSidebar" type="button" aria-label="Abrir menu">
-          <i class="fa-solid fa-bars"></i>
-        </button>
+        <button class="topbar__menu" id="btnToggleSidebar" type="button" aria-label="Abrir menu"></button>
+
+        <div class="topbar__divider" aria-hidden="true"></div>
 
         <div class="topbar__title">
           <i class="<?= htmlspecialchars($page_icon) ?>"></i>
