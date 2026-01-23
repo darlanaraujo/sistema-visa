@@ -1,5 +1,9 @@
 /* app/static/css/dashboard.css */
 
+/* ===========================
+   BASE
+   =========================== */
+
 .private-layout{
   min-height: 100vh;
   display: flex;
@@ -7,7 +11,85 @@
   background: #f5f7fb;
 }
 
-/* Sidebar base (Parte 2 melhora/colapsa/mobile) */
+.private-content{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;          /* evita rolagem externa */
+  min-height: 0;
+}
+
+/* main rola internamente (todas telas privadas) */
+.main{
+  flex: 1;
+  min-height: 0;
+  overflow: auto;         /* rolagem interna */
+  padding: 22px;
+}
+
+/* Topbar */
+.topbar{
+  height: 58px;
+  background: #ffffff;
+  border-bottom: 1px solid #e7ebf3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 18px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.topbar__divider{
+  width: 1px;
+  height: 22px;
+  background: #e7ebf3;
+  margin: 0 6px;
+}
+
+.topbar__title{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: #0b1220;
+  min-width: 0;
+}
+
+.topbar__title span{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Rodapé (fica sempre visível, sem empurrar conteúdo) */
+.private-footer{
+  flex-shrink: 0;
+  border-top: 1px solid #e7ebf3;
+  background: #ffffff;
+}
+
+.private-footer__inner{
+  padding: 12px 22px;
+  color: #5b6476;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.private-footer__inner a{
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.private-footer__inner a:hover{
+  text-decoration: underline;
+}
+
+/* ===========================
+   SIDEBAR
+   =========================== */
+
 .sidebar{
   width: 260px;
   background: #0b1220;
@@ -15,26 +97,32 @@
   display: flex;
   flex-direction: column;
   padding: 18px 14px;
+  z-index: 50;
 }
 
 .sidebar__brand{
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 8px 10px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar__logo-wrap{
+  width: 100%;
+  background: #f5f7fb; /* temporário aprovado */
+  padding: 10px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar__logo{
-  width: 34px;
-  height: 34px;
+  width: 100%;
+  height: 54px;
   object-fit: contain;
-}
-
-.sidebar__name{
-  font-weight: 700;
-  letter-spacing: 0.2px;
 }
 
 .sidebar__nav{
@@ -68,9 +156,10 @@
   outline: 1px solid rgba(37,99,235,0.35);
 }
 
+/* Logout logo abaixo do menu (sem margin-top:auto) */
 .sidebar__footer{
-  margin-top: auto;
-  padding: 10px 4px 4px;
+  margin-top: 0;
+  padding: 6px 4px 4px;
 }
 
 .sidebar__logout{
@@ -90,122 +179,26 @@
   background: rgba(255,255,255,0.12);
 }
 
-/* Conteúdo */
-.private-content{
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.topbar{
-  height: 58px;
-  background: #ffffff;
-  border-bottom: 1px solid #e7ebf3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 18px;
-}
-
-.topbar__menu{
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 10px;
-  border-radius: 10px;
-}
-
-.topbar__menu:hover{
-  background: #f2f4f9;
-}
-
-.topbar__title{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  color: #0b1220;
-}
-
-.main{
-  padding: 22px;
-}
-
-/* Conteúdo dashboard */
-.dash__header h1{
-  margin: 0 0 6px 0;
-  font-size: 22px;
-  color: #0b1220;
-}
-
-.dash__header p{
-  margin: 0 0 18px 0;
-  color: #5b6476;
-}
-
-.dash__grid{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.dash-card{
-  background: #fff;
-  border: 1px solid #e7ebf3;
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
-}
-
-.dash-card__icon{
-  font-size: 18px;
-  color: #2563eb;
-  margin-bottom: 10px;
-}
-
-.dash-card__title{
-  font-weight: 700;
-  color: #0b1220;
-  margin-bottom: 6px;
-}
-
-.dash-card__desc{
-  color: #5b6476;
-  font-size: 14px;
-}
-
-/* Responsivo mínimo */
-@media (max-width: 980px){
-  .dash__grid{
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ===========================
-   SIDEBAR COLLAPSE + MOBILE
+   COLLAPSE (DESKTOP)
    =========================== */
 
-/* Estado colapsado no desktop */
 .sidebar.is-collapsed{
-  width: 84px;
+  width: 96px;
   padding: 18px 10px;
 }
 
-.sidebar.is-collapsed .sidebar__name{
-  display: none;
-}
-
-.sidebar.is-collapsed .sidebar__item span{
-  display: none;
-}
-
+.sidebar.is-collapsed .sidebar__item span,
 .sidebar.is-collapsed .sidebar__logout span{
   display: none;
 }
 
 .sidebar.is-collapsed .sidebar__brand{
   justify-content: center;
+}
+
+.sidebar.is-collapsed .sidebar__logo-wrap{
+  width: auto;
 }
 
 .sidebar.is-collapsed .sidebar__logo{
@@ -222,7 +215,10 @@
   justify-content: center;
 }
 
-/* Overlay (mobile) */
+/* ===========================
+   OVERLAY + MOBILE DRAWER
+   =========================== */
+
 .sidebar-overlay{
   position: fixed;
   inset: 0;
@@ -233,18 +229,8 @@
   z-index: 40;
 }
 
-/* Sidebar e conteúdo: z-index para funcionar no mobile */
-.sidebar{
-  z-index: 50;
-}
-
-/* Mobile drawer */
 @media (max-width: 980px){
-  .private-layout{
-    position: relative;
-  }
-
-  /* Sidebar vira drawer */
+  /* sidebar drawer */
   .sidebar{
     position: fixed;
     top: 0;
@@ -252,396 +238,106 @@
     height: 100vh;
     transform: translateX(-110%);
     transition: transform 200ms ease;
-    width: 260px; /* no mobile sempre cheia */
-  }
-
-  /* Se tiver is-collapsed no mobile, ignoramos e mostramos cheia */
-  .sidebar.is-collapsed{
     width: 260px;
-  }
-  .sidebar.is-collapsed .sidebar__name,
-  .sidebar.is-collapsed .sidebar__item span,
-  .sidebar.is-collapsed .sidebar__logout span{
-    display: inline;
+    z-index: 60;
   }
 
-  /* Quando aberto */
   .private-layout.is-sidebar-open .sidebar{
     transform: translateX(0);
   }
 
-  /* overlay aparece quando aberto */
   .private-layout.is-sidebar-open .sidebar-overlay{
     opacity: 1;
     pointer-events: auto;
   }
 
-  /* dá respiro no conteúdo (topbar já existe) */
-  .private-content{
-    width: 100%;
-  }
-}
-
-/* ===========================
-   AJUSTES TOPBAR (MOBILE)
-   =========================== */
-
-.topbar{
-  gap: 10px;
-}
-
-.topbar__title{
-  flex: 1;
-  justify-content: flex-start;
-}
-
-/* Botão do hambúrguer: compacto */
-.topbar__menu{
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-/* No desktop: não mostrar hambúrguer */
-@media (min-width: 981px){
-  .topbar__menu{
-    display: none;
-  }
-}
-
-/* No mobile: garantir margem pequena à esquerda */
-@media (max-width: 980px){
-  .topbar{
-    padding-left: 10px;
-    padding-right: 14px;
-  }
-}
-
-/* ===========================
-   LOGO (TEMPORÁRIO PARA APROVAÇÃO)
-   =========================== */
-
-.sidebar__brand{
-  padding: 8px 10px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar__logo-wrap{
-  background: #f5f7fb; /* mesmo do dashboard (temporário p/ aprovação) */
-  padding: 8px;        /* 5–10px conforme você pediu */
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar__logo{
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-}
-
-/* ===========================
-   BOTÃO SETA NA DIVISÓRIA (DESKTOP)
-   =========================== */
-
-.sidebar-edge-toggle{
-  display: none; /* aparece só no desktop */
-}
-
-@media (min-width: 981px){
-  .sidebar-edge-toggle{
-    display: inline-flex;
-    position: fixed;
-    top: 18px; /* alinhado à altura do topbar */
-    left: calc(260px - 18px); /* “saindo” um pouco do sidebar */
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1px solid #e7ebf3;
-    background: #ffffff;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 60;
+  /* topbar desloca para a direita quando sidebar abre (não sobrepor) */
+  .private-layout.is-sidebar-open .topbar{
+    margin-left: 260px;
+    width: calc(100% - 260px);
   }
 
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle{
-    left: calc(84px - 18px);
-  }
-}
-
-/* ===========================
-   REFINO UI/UX - HOVER + ESPAÇOS
-   =========================== */
-
-/* Divisor entre hambúrguer e título */
-.topbar__divider{
-  width: 1px;
-  height: 22px;
-  background: #e7ebf3;
-  margin: 0 10px;
-}
-
-/* Dá mais respiro pro título e evita ficar colado na seta */
-.topbar__title{
-  padding-left: 6px;
-}
-
-/* Botão hambúrguer: hover + feedback (mobile) */
-.topbar__menu{
-  border-radius: 10px;
-  transition: transform 120ms ease, background 120ms ease;
-}
-
-.topbar__menu:hover{
-  background: #eef2ff; /* leve tom azul claro */
-}
-
-.topbar__menu:active{
-  transform: scale(0.98);
-}
-
-/* Icone do hambúrguer vira X quando o menu mobile está aberto */
-.topbar__menu i{
-  transition: transform 180ms ease;
-}
-
-/* quando abre sidebar no mobile (classe no layout) */
-.private-layout.is-sidebar-open .topbar__menu i{
-  transform: rotate(90deg); /* base visual */
-}
-
-/* substitui o ícone (bars -> xmark) via classe no JS */
-.topbar__menu i.is-x{
-  transform: rotate(0deg);
-}
-
-/* ===========================
-   SETA NA DIVISÓRIA - HOVER/ESTILO
-   =========================== */
-
-@media (min-width: 981px){
-  /* reduzir o círculo um pouco para não colar na logo / título */
-  .sidebar-edge-toggle{
-    width: 32px;
-    height: 32px;
-    backdrop-filter: blur(6px);
-    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease;
-  }
-
-  /* Fundo com transparência: metade "sobre sidebar" mais azul */
-  .sidebar-edge-toggle{
-    background: linear-gradient(
-      90deg,
-      rgba(219, 234, 254, 0.75) 0%,   /* azul claro (lado sidebar) */
-      rgba(255, 255, 255, 0.55) 55%,  /* quase imperceptível (lado conteúdo) */
-      rgba(255, 255, 255, 0.35) 100%
-    );
-    border-color: rgba(231, 235, 243, 0.9);
-  }
-
-  /* Ícone da seta visível */
-  .sidebar-edge-toggle i{
-    color: #1f2a44;
-    transition: transform 160ms ease;
-  }
-
-  /* Hover: levemente mais evidente */
-  .sidebar-edge-toggle:hover{
-    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
-    border-color: rgba(37, 99, 235, 0.35);
-  }
-
-  .sidebar-edge-toggle:active{
-    transform: scale(0.98);
-  }
-
-  /* Efeito “andar” na horizontal (vai ser ativado por classe no JS) */
-  .sidebar-edge-toggle.is-nudge-left i{
-    transform: translateX(-3px);
-  }
-  .sidebar-edge-toggle.is-nudge-right i{
-    transform: translateX(3px);
-  }
-
-  /* Reposicionar a seta um pouco mais longe do conteúdo para não colar no título */
-  .sidebar-edge-toggle{
-    top: 22px;
-    left: calc(260px - 14px);
-  }
-
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle{
-    left: calc(96px - 14px); /* acompanha o novo colapsado (ver abaixo) */
-  }
-}
-
-/* ===========================
-   SIDEBAR COLAPSADO - MAIS LARGO (evitar colar logo no círculo)
-   =========================== */
-
-.sidebar.is-collapsed{
-  width: 96px; /* era 84px */
-}
-
-/* ===========================
-   LOGO - EXPANDIDO 100% LARGURA (TEMPORÁRIO APROVAÇÃO)
-   =========================== */
-
-.sidebar__logo-wrap{
-  width: 100%;
-  padding: 10px; /* 5–10px ok */
-}
-
-.sidebar__logo{
-  width: 100%;
-  height: 54px;       /* dá mais presença */
-  object-fit: contain;
-}
-
-/* Quando colapsado, mantém proporção boa (como você aprovou) */
-.sidebar.is-collapsed .sidebar__logo{
-  width: 38px;
-  height: 38px;
-}
-
-/* ===========================
-   MOBILE - MENU ALINHADO À ESQUERDA
-   =========================== */
-
-@media (max-width: 980px){
-  .sidebar__nav{
-    align-items: stretch;
-  }
-
+  /* menus alinhados à esquerda no mobile */
   .sidebar__item{
-    justify-content: flex-start; /* alinhar à esquerda */
+    justify-content: flex-start;
   }
-
   .sidebar__logout{
     justify-content: flex-start;
   }
 }
 
 /* ===========================
-   HOVER REAL (NÃO SÓ CLICK)
+   EDGE TOGGLE (SETA)
    =========================== */
 
-/* Hambúrguer: hover mais evidente */
-.topbar__menu:hover i{
-  transform: scale(1.06);
+.sidebar-edge-toggle{
+  display: none;
 }
-
-/* Quando estiver aberto no mobile, o X precisa ficar acima do sidebar */
-@media (max-width: 980px){
-  .topbar{
-    position: sticky;
-    top: 0;
-    z-index: 80; /* acima do sidebar (sidebar é 50) */
-  }
-}
-
-/* ===========================
-   SETA: NUDGE NO HOVER (DESKTOP)
-   =========================== */
-@media (min-width: 981px){
-  /* Nudge no hover baseado no estado atual */
-  .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{
-    transform: translateX(-3px);
-  }
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle:hover i{
-    transform: translateX(3px);
-  }
-}
-
-/* ===========================
-   NUDGE DA SETA NO HOVER (MANTÉM)
-   =========================== */
 
 @media (min-width: 981px){
-  .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{
-    transform: translateX(-3px);
-  }
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle:hover i{
-    transform: translateX(3px);
-  }
-}
-
-/* ===========================
-   MOBILE: TOPBAR VISÍVEL, NÃO SOBRE O SIDEBAR
-   =========================== */
-
-@media (max-width: 980px){
-  /* Mantém topbar visível sempre */
-  .topbar{
+  .sidebar-edge-toggle{
+    display: inline-flex;
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 70; /* abaixo do sidebar (50) não serve; então vamos ajustar sidebar abaixo */
+    top: 22px;
+    left: calc(260px - 14px);
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 0;
+    background: #0b1220;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 60;
+    transition: background 140ms ease, transform 120ms ease, box-shadow 140ms ease;
   }
 
-  /* Sidebar precisa ficar acima do conteúdo, mas topbar não pode ficar por cima dele.
-     Solução: sidebar acima do conteúdo, topbar acima do conteúdo também, mas topbar "foge" pro lado ao abrir. */
-  .sidebar{
-    z-index: 90;
-  }
-  .sidebar-overlay{
-    z-index: 80;
+  .sidebar-edge-toggle i{
+    color: #ffffff;
+    transition: transform 160ms ease;
   }
 
-  /* Empurra o conteúdo para não ficar atrás do topbar fixo */
-  .main{
-    padding-top: calc(22px + 58px);
+  .sidebar-edge-toggle:hover{
+    background: #111a2e;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.20);
   }
 
-  /* Quando sidebar abrir: desloca o topbar para a direita e reduz largura */
-  .private-layout.is-sidebar-open .topbar{
-    left: 260px;
-    width: calc(100% - 260px);
+  .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{
+    transform: translateX(-3px);
+  }
+  .sidebar.is-collapsed ~ .sidebar-edge-toggle:hover i{
+    transform: translateX(3px);
   }
 
-  /* E o overlay não cobre o topbar (já que ele fica deslocado) */
-  .private-layout.is-sidebar-open .sidebar-overlay{
-    /* mantém cobrindo o restante da tela */
+  .sidebar.is-collapsed ~ .sidebar-edge-toggle{
+    left: calc(96px - 14px);
   }
+
+  .sidebar-edge-toggle.is-nudge-left i{ transform: translateX(-3px); }
+  .sidebar-edge-toggle.is-nudge-right i{ transform: translateX(3px); }
 }
 
 /* ===========================
-   MOBILE: HAMBÚRGUER / X (CSS PURO) - CENTRALIZADO
+   HAMBÚRGUER / X (CSS PURO)
+   - só no mobile
    =========================== */
 
 .topbar__menu{
-  position: relative;
   width: 38px;
   height: 38px;
   border-radius: 10px;
   background: transparent;
   cursor: pointer;
   border: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
   transition: background 120ms ease, transform 120ms ease;
 }
 
-/* feedback hover do botão */
-.topbar__menu:hover{
-  background: #eef2ff;
-}
-.topbar__menu:active{
-  transform: scale(0.98);
-}
+.topbar__menu:hover{ background: #eef2ff; }
+.topbar__menu:active{ transform: scale(0.98); }
 
-/* Desenha as 3 linhas do hambúrguer (estado padrão) */
 .topbar__menu::before,
 .topbar__menu::after{
   content: "";
@@ -656,19 +352,16 @@
   transition: transform 140ms ease, opacity 140ms ease;
 }
 
-/* Linha do meio (usa box-shadow para criar 3 linhas com 1 elemento) */
+/* hambúrguer (3 linhas via box-shadow) */
 .topbar__menu::before{
   box-shadow: 0 -6px 0 #1f2a44, 0 6px 0 #1f2a44;
 }
-
-/* ::after fica “invisível” no estado hambúrguer (vai virar a 2ª perna do X) */
 .topbar__menu::after{
-  opacity: 0;
+  opacity: 0; /* vira a 2ª linha do X no hover */
 }
 
-/* HOVER: vira X (só visual) */
+/* hover vira X (visual apenas) */
 .topbar__menu:hover::before{
-  /* remove as linhas de cima/baixo (box-shadow some) e vira 1ª perna do X */
   box-shadow: none;
   transform: translate(-50%, -50%) rotate(45deg);
 }
@@ -677,33 +370,480 @@
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-
-/* ===========================
-   SETA (DESKTOP): SEM BORDA + HOVER SEM TRANSPARÊNCIA
-   =========================== */
-
-@media (min-width: 981px){
-  .sidebar-edge-toggle{
-    width: 32px;
-    height: 32px;
-    border-radius: 999px;
-    border: 0;                 /* remove a linha */
-    background: #0b1220;       /* igual ao sidebar */
-    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-    transition: background 140ms ease, transform 120ms ease, box-shadow 140ms ease;
-  }
-
-  .sidebar-edge-toggle i{
-    color: #ffffff;            /* cor oposta */
-    transition: transform 160ms ease;
-  }
-
-  .sidebar-edge-toggle:hover{
-    background: #111a2e;       /* variação discreta, sem transparência */
-    box-shadow: 0 8px 20px rgba(0,0,0,0.20);
-  }
-}
-
+/* esconder hambúrguer no desktop */
 @media (min-width: 981px){
   .topbar__menu{ display: none !important; }
+}
+
+/* ===========================
+   DASHBOARD (SEÇÕES)
+   =========================== */
+
+.dash2__header h1{
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  color: #0b1220;
+}
+
+.dash2__header p{
+  margin: 0 0 18px 0;
+  color: #5b6476;
+}
+
+.dash2__sections{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dash2__section{
+  background: #ffffff;
+  border: 1px solid #e7ebf3;
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+}
+
+.dash2__section::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.45);
+}
+
+.dash2__section-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dash2__section-title{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: #0b1220;
+}
+
+.dash2__section-title i{
+  color: #2563eb;
+}
+
+.dash2__link{
+  font-size: 13px;
+  font-weight: 800;
+  color: #2563eb;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.dash2__link:hover{
+  background: #eef2ff;
+}
+
+.dash2__box{
+  background: #f7f9fd;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.dash2__box-title{
+  font-size: 13px;
+  font-weight: 900;
+  color: #1f2a44;
+  margin-bottom: 10px;
+}
+
+.dash2__hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: #5b6476;
+}
+
+/* ===========================
+   LOTES: DESKTOP “TABELA” + MOBILE PARES KV
+   =========================== */
+
+.lotes-list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* card clicável */
+.lote-card{
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: #ffffff;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.lote-card:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.lote-card__labels,
+.lote-card__values{
+  display: grid;
+  grid-template-columns: 1.1fr 1.2fr 1.1fr 1.1fr 0.9fr 0.9fr;
+}
+
+.lote-card__labels{
+  background: #eef2ff;
+  border-bottom: 1px solid #e7ebf3;
+}
+
+.lote-card__labels > div{
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #1f2a44;
+  border-right: 1px solid #e7ebf3;
+}
+
+.lote-card__labels > div:last-child{
+  border-right: 0;
+}
+
+.lote-card__values > div{
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0b1220;
+}
+
+/* mobile: usa KV para manter ordem */
+.lote-card--mobile{ display: none; }
+.lote-card--desktop{ display: block; }
+
+@media (max-width: 980px){
+  .lote-card--desktop{ display: none; }
+  .lote-card--mobile{ display: block; }
+}
+
+.kv-stack{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+}
+
+.kv{
+  background: #ffffff;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  padding: 10px 10px;
+}
+
+.kv__k{
+  font-size: 11px;
+  font-weight: 900;
+  color: #1f2a44;
+  margin-bottom: 4px;
+}
+
+.kv__v{
+  font-size: 13px;
+  font-weight: 800;
+  color: #0b1220;
+}
+
+/* ===========================
+   FINANCEIRO: GRID 4→2→1 + MINI TABELAS
+   =========================== */
+
+.fin-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1200px){
+  .fin-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 980px){
+  .fin-grid{ grid-template-columns: 1fr; }
+}
+
+.fin-col{
+  background: #f7f9fd;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.fin-col__title{
+  font-size: 13px;
+  font-weight: 900;
+  color: #1f2a44;
+  margin-bottom: 10px;
+}
+
+.mini-list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mini-card{
+  background: #ffffff;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mini-table{
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.mini-row > div{
+  padding: 10px 12px;
+}
+
+.mini-row > div + div{
+  border-left: 1px solid #e7ebf3; /* separador vertical */
+}
+
+.mini-row--head{
+  background: #e8eefc; /* mais escuro que o fundo do card */
+  border-bottom: 1px solid #e7ebf3;
+}
+
+.mini-row--head > div{
+  font-size: 11px;
+  font-weight: 900;
+  color: #1f2a44;
+}
+
+.mini-row--val{
+  border-bottom: 1px solid #e7ebf3;
+}
+
+.mini-row--val:last-child{
+  border-bottom: 0;
+}
+
+.mini-row--val > div{
+  font-size: 13px;
+  font-weight: 800;
+  color: #0b1220;
+}
+
+.t-right{ text-align: right; }
+
+/* indicadores (sem height; max-height 90%) */
+.fin-metric{
+  background: #ffffff;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  padding: 12px;
+  max-height: 90%;
+  overflow: hidden;
+}
+
+.fin-metric__label{
+  font-weight: 900;
+  color: #0b1220;
+  margin-bottom: 10px;
+}
+
+.fin-bar{
+  height: 10px;
+  border-radius: 999px;
+  background: #eef2f8;
+  border: 1px solid #e7ebf3;
+  overflow: hidden;
+}
+
+.fin-bar__fill{
+  height: 100%;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.fin-metric__hint{
+  margin-top: 8px;
+  font-size: 12px;
+  color: #5b6476;
+}
+
+.fin-metric__sep{
+  height: 1px;
+  background: #e7ebf3;
+  margin: 12px 0;
+}
+
+/* pizza */
+.fin-pie-wrap{
+  background: #ffffff;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.fin-pie{
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 6px auto 12px;
+  background: conic-gradient(#2563eb 0 45%, #60a5fa 45% 75%, #93c5fd 75% 100%);
+  border: 1px solid #e7ebf3;
+}
+
+.fin-pie-legend{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: #5b6476;
+}
+
+.fin-pie-legend .dot{
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 999px;
+  margin-right: 8px;
+}
+
+.dot--a{ background: #2563eb; }
+.dot--b{ background: #60a5fa; }
+.dot--c{ background: #93c5fd; }
+
+/* ===========================
+   RELATÓRIOS: 4→2→1 (apenas 4 favoritos)
+   =========================== */
+
+.rep-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1200px){
+  .rep-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 980px){
+  .rep-grid{ grid-template-columns: 1fr; }
+}
+
+.rep-card{
+  background: #f7f9fd;
+  border: 1px solid #e7ebf3;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.rep-card:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.rep-card__icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2ff;
+  margin-bottom: 10px;
+}
+
+.rep-card__icon i{ color: #2563eb; }
+
+.rep-card__title{
+  font-weight: 900;
+  color: #0b1220;
+  margin-bottom: 4px;
+}
+
+.rep-card__desc{
+  font-size: 12px;
+  color: #5b6476;
+}
+
+.rep-card__cta{
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 12px;
+  color: #2563eb;
+}
+
+/* ===========================
+   PÁGINAS DE MÓDULO (PLACEHOLDER)
+   =========================== */
+
+.module-page{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.module-head h1{
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  color: #0b1220;
+}
+
+.module-head p{
+  margin: 0;
+  color: #5b6476;
+}
+
+.module-card{
+  background: #ffffff;
+  border: 1px solid #e7ebf3;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.module-card__title{
+  font-size: 12px;
+  font-weight: 900;
+  color: #1f2a44;
+  margin-bottom: 6px;
+}
+
+.module-card__value{
+  font-size: 14px;
+  font-weight: 900;
+  color: #0b1220;
+}
+
+.module-card__hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: #5b6476;
 }

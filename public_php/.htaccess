@@ -1,5 +1,3 @@
 RewriteEngine On
 
 RewriteRule ^login$ api/login.php [L]
-RewriteRule ^logout$ api/logout.php [L]
-RewriteRule ^me$ api/me.php [L]

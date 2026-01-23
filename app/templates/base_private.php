@@ -60,22 +60,26 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
 
 
       <nav class="sidebar__nav">
-        <a class="sidebar__item active" href="/sistema-visa/app/templates/dashboard.php">
+        <a class="sidebar__item" href="/sistema-visa/app/templates/dashboard.php" data-nav="dashboard">
           <i class="fa-solid fa-gauge-high"></i>
           <span>Dashboard</span>
         </a>
 
-        <!-- placeholders para módulos futuros -->
-        <a class="sidebar__item" href="javascript:void(0)">
+        <a class="sidebar__item" href="/sistema-visa/app/templates/lotes.php" data-nav="lotes">
           <i class="fa-solid fa-boxes-stacked"></i>
           <span>Lotes</span>
         </a>
 
-        <a class="sidebar__item" href="javascript:void(0)">
+        <a class="sidebar__item" href="/sistema-visa/app/templates/financeiro.php" data-nav="financeiro">
           <i class="fa-solid fa-coins"></i>
           <span>Financeiro</span>
         </a>
       </nav>
+
+        <a class="sidebar__item" href="/sistema-visa/app/templates/relatorios.php" data-nav="relatorios">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Relatórios</span>
+        </a>
 
       <div class="sidebar__footer">
         <button class="sidebar__logout" id="btnLogout" type="button">
@@ -105,7 +109,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
         <div class="topbar__right"></div>
       </header>
 
-      <!-- Main -->
+      <!-- Área rolável (interna) -->
       <main class="main">
         <?php
           if (!isset($content)) {
@@ -115,8 +119,16 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
           }
         ?>
       </main>
+
+      <!-- Rodapé fixo no fim da área visível (sem rolagem externa) -->
+      <footer class="private-footer">
+        <div class="private-footer__inner">
+          <span><strong>Sistema Visa Remoções</strong> • © <?= date('Y') ?> • Desenvolvido por
+            <a href="https://grupoi9.com.br" target="_blank" rel="noopener noreferrer">Darlan P. Araujo</a>
+          </span>
+        </div>
+      </footer>
     </div>
-  </div>
 
   <script src="/sistema-visa/app/static/js/dashboard.js"></script>
 </body>
