@@ -36,7 +36,7 @@ $mock = [
         <div class="fin-kpi fin-kpi--two-col">
           <!-- Ícone COLUNA (DESKTOP) -->
           <div class="fin-kpi__iconcol fin-kpi__iconcol--danger" aria-hidden="true">
-            <i class="fa-solid fa-sack-xmark"></i>
+            <i class="fa-solid fa-receipt"></i>
           </div>
 
           <!-- Texto (título + valor) -->
@@ -44,7 +44,7 @@ $mock = [
             <div class="fin-kpi__title">
               <!-- Ícone INLINE (MOBILE) -->
               <span class="fin-kpi__iconinline fin-kpi__iconinline--danger" aria-hidden="true">
-                <i class="fa-solid fa-sack-xmark"></i>
+                 <i class="fa-solid fa-receipt"></i>
               </span>
               Total Pendente
             </div>
@@ -59,7 +59,7 @@ $mock = [
         <div class="fin-kpi fin-kpi--two-col">
           <!-- Ícone COLUNA (DESKTOP) -->
           <div class="fin-kpi__iconcol fin-kpi__iconcol--success" aria-hidden="true">
-            <i class="fa-solid fa-sack-dollar"></i>
+            <i class="fa-solid fa-file-invoice-dollar"></i>
           </div>
 
           <!-- Texto (título + valor) -->
@@ -67,7 +67,7 @@ $mock = [
             <div class="fin-kpi__title">
               <!-- Ícone INLINE (MOBILE) -->
               <span class="fin-kpi__iconinline fin-kpi__iconinline--success" aria-hidden="true">
-                <i class="fa-solid fa-sack-dollar"></i>
+                <i class="fa-solid fa-file-invoice-dollar"></i>
               </span>
               Total Pago
             </div>
