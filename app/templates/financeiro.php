@@ -4,6 +4,7 @@
 $page_title = 'Financeiro';
 $page_icon  = 'fa-solid fa-coins';
 
-$content = __DIR__ . '/../modules/financeiro/home.php';
+$extra_css = ['/sistema-visa/app/static/css/financeiro.css'];
 
+$content = __DIR__ . '/../modules/financeiro/home.php';
 include __DIR__ . '/base_private.php';

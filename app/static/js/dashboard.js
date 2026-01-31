@@ -34,23 +34,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
 
-  // Mobile
   const btnToggle = document.getElementById('btnToggleSidebar');
-
-  // Desktop
   const btnEdgeToggle = document.getElementById('btnEdgeToggle');
   const edgeIcon = document.getElementById('edgeToggleIcon');
 
-  // Logo swap
   const sidebarLogo = document.getElementById('sidebarLogo');
-
   const btnLogout = document.getElementById('btnLogout');
 
   /* ---------------------------
      AUTO LOGOUT POR INATIVIDADE (CLIENT-SIDE)
-     - Complementa o server-side
      --------------------------- */
-  const IDLE_LIMIT_MS = 30 * 60 * 1000; // 30 min
+  const IDLE_LIMIT_MS = 30 * 60 * 1000;
   let idleTimer = null;
 
   function forceToLogin() {
@@ -60,22 +54,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function scheduleIdleLogout() {
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = setTimeout(async () => {
-      try {
-        await apiPost('/sistema-visa/public_php/api/logout.php', {});
-      } catch (_) {}
+      try { await apiPost('/sistema-visa/public_php/api/logout.php', {}); } catch (_) {}
       forceToLogin();
     }, IDLE_LIMIT_MS);
   }
 
-  // reseta timer em atividades comuns
   ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
     window.addEventListener(evt, scheduleIdleLogout, { passive: true });
   });
-
-  // inicia
   scheduleIdleLogout();
 
-  // Logout "best effort" ao fechar aba/janela (não é garantido)
   window.addEventListener('pagehide', () => {
     try {
       const url = '/sistema-visa/public_php/api/logout.php';
@@ -93,8 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (path.includes('/dashboard.php')) key = 'dashboard';
     else if (path.includes('/lotes.php')) key = 'lotes';
-    else if (path.includes('/financeiro.php')) key = 'financeiro';
     else if (path.includes('/relatorios.php')) key = 'relatorios';
+    else if (path.includes('/financeiro')) key = 'financeiro'; // <- cobre todas as telas do módulo
 
     if (!key) return;
 
@@ -103,9 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (target) target.classList.add('active');
   }
 
-  /* ---------------------------
-     ÍCONE/LOGO
-     --------------------------- */
   function setEdgeIconByState() {
     if (!edgeIcon || !sidebar) return;
     const collapsed = sidebar.classList.contains('is-collapsed');
@@ -121,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const fav = sidebarLogo.getAttribute('data-favicon');
     const collapsed = sidebar.classList.contains('is-collapsed');
 
-    // No mobile sempre logo normal
     if (isMobile()) {
       if (logo) sidebarLogo.src = logo;
       return;
@@ -131,11 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (logo) sidebarLogo.src = logo;
   }
 
-  /* ---------------------------
-     MOBILE OPEN/CLOSE
-     --------------------------- */
   function openMobileSidebar() {
-    // no mobile, sempre expandido
     if (sidebar) sidebar.classList.remove('is-collapsed');
     setEdgeIconByState();
     setLogoByState();
@@ -146,9 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
     layout?.classList.remove('is-sidebar-open');
   }
 
-  /* ---------------------------
-     DESKTOP COLLAPSE (persistência)
-     --------------------------- */
   const STORAGE_KEY = 'sv_sidebar_collapsed';
 
   function applyDesktopSidebarStateFromStorage() {
@@ -186,11 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
     nudgeEdgeByState();
   }
 
-  /* ---------------------------
-     EVENTOS
-     --------------------------- */
-
-  // mobile: hambúrguer
   if (btnToggle) {
     btnToggle.addEventListener('click', () => {
       if (!isMobile()) return;
@@ -199,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // desktop: seta
   if (btnEdgeToggle) {
     btnEdgeToggle.addEventListener('click', () => {
       if (isMobile()) return;
@@ -207,12 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // overlay fecha no mobile
   if (overlay) {
     overlay.addEventListener('click', () => closeMobileSidebar());
   }
 
-  // ao clicar em item no mobile, fecha sidebar
   if (sidebar) {
     sidebar.addEventListener('click', (e) => {
       const link = e.target.closest('a.sidebar__item');
@@ -220,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ao navegar (clicar em link dentro do app), no mobile sempre fecha
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a');
     if (!a) return;
@@ -231,19 +199,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isMobile() && layout?.classList.contains('is-sidebar-open')) closeMobileSidebar();
   });
 
-  // Logout
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
-      try {
-        await apiPost('/sistema-visa/public_php/api/logout.php', {});
-      } catch (e) {}
+      try { await apiPost('/sistema-visa/public_php/api/logout.php', {}); } catch (e) {}
       forceToLogin();
     });
   }
 
-  // resize:
-  // - se entrar em mobile, remove colapso (evita quebrar)
-  // - se sair do mobile, aplica estado do desktop salvo
   window.addEventListener('resize', () => {
     if (isMobile()) {
       if (sidebar) sidebar.classList.remove('is-collapsed');
@@ -256,9 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
     applyDesktopSidebarStateFromStorage();
   });
 
-  /* ---------------------------
-     INIT
-     --------------------------- */
   setActiveNav();
   applyDesktopSidebarStateFromStorage();
   setEdgeIconByState();

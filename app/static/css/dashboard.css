@@ -9,6 +9,11 @@
   display: flex;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   background: #f5f7fb;
+
+  /* ✅ anti-overflow do app */
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .private-content{
@@ -17,6 +22,14 @@
   flex-direction: column;
   height: 100vh;          /* evita rolagem externa */
   min-height: 0;
+
+  /* anti-overflow */
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+
+  /* Desktop: conteúdo desloca por causa do sidebar (sem estourar) */
+  padding-left: 0;
 }
 
 /* main rola internamente (todas telas privadas) */
@@ -221,8 +234,22 @@
 
 .sidebar-overlay{
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  /* blindagem anti-overflow (resolve o 796px no mobile) */
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+
   background: rgba(0,0,0,0.45);
+
   opacity: 0;
   pointer-events: none;
   transition: opacity 180ms ease;

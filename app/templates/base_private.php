@@ -39,6 +39,13 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- CSS -->
   <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/dashboard.css">
+
+  <?php if (!empty($extra_css) && is_array($extra_css)): ?>
+    <?php foreach ($extra_css as $css): ?>
+      <link rel="stylesheet" href="<?= htmlspecialchars($css) ?>">
+    <?php endforeach; ?>
+  <?php endif; ?>
+  
 </head>
 <body>
 
