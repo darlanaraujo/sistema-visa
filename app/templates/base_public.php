@@ -1,4 +1,6 @@
 <?php
+// app/templates/base_public.php
+
 $title = $title ?? 'Sistema Visa';
 ?>
 <!doctype html>
@@ -18,12 +20,26 @@ $title = $title ?? 'Sistema Visa';
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <!-- CSS -->
+  <!-- CSS base (ordem obrigatória) -->
+  <link rel="stylesheet" href="/sistema-visa/app/static/css/theme.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/login.css">
+
+  <!-- CSS específico da página pública (opcional) -->
+  <?php if (!empty($extra_css) && is_array($extra_css)): ?>
+    <?php foreach ($extra_css as $css): ?>
+      <link rel="stylesheet" href="<?= htmlspecialchars($css) ?>">
+    <?php endforeach; ?>
+  <?php endif; ?>
 </head>
 
 <body>
-  <?php require $contentFile; ?>
+  <?php
+    if (!isset($contentFile)) {
+      echo '<p style="padding:16px;">Conteúdo não definido.</p>';
+    } else {
+      require $contentFile;
+    }
+  ?>
 </body>
 </html>

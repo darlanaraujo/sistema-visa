@@ -6,10 +6,10 @@ $mock = [
     'id' => 101,
     'cliente' => 'Cliente X',
     'valor' => 12500.00,
-    'data' => '2026-02-05',          // vencimento / previsão de recebimento
+    'data' => '2026-02-05',
     'forma' => 'Boleto',
     'processo' => 'PRC-2026-001',
-    'status' => 'open',             // open|done
+    'status' => 'open',
     'obs' => 'Parcela 1/3',
   ],
   [
@@ -35,10 +35,6 @@ $mock = [
 ];
 ?>
 
-<style>
-  @import url("/sistema-visa/app/static/css/financeiro.css");
-</style>
-
 <div class="fin-page" id="crPage">
   <div class="fin-head">
     <h1>Contas a Receber</h1>
@@ -61,24 +57,19 @@ $mock = [
       <!-- Total a Receber -->
       <div class="fin-toolbar__block fin-toolbar__block--kpi">
         <div class="fin-kpi fin-kpi--two-col">
-          <!-- Ícone COLUNA (DESKTOP) -->
           <div class="fin-kpi__iconcol fin-kpi__iconcol--danger" aria-hidden="true">
             <i class="fa-solid fa-receipt"></i>
           </div>
 
-          <!-- Texto (título + valor) -->
           <div class="fin-kpi__text">
             <div class="fin-kpi__title">
-              <!-- Ícone INLINE (MOBILE) -->
               <span class="fin-kpi__iconinline fin-kpi__iconinline--danger" aria-hidden="true">
                 <i class="fa-solid fa-receipt"></i>
               </span>
               Total a Receber
             </div>
 
-            <div class="fin-kpi__value fin-kpi__value--danger" id="crTotalOpen">
-              R$ 0,00
-            </div>
+            <div class="fin-kpi__value fin-kpi__value--danger" id="crTotalOpen">R$ 0,00</div>
           </div>
         </div>
       </div>
@@ -86,24 +77,19 @@ $mock = [
       <!-- Total Recebido -->
       <div class="fin-toolbar__block fin-toolbar__block--kpi">
         <div class="fin-kpi fin-kpi--two-col">
-          <!-- Ícone COLUNA (DESKTOP) -->
           <div class="fin-kpi__iconcol fin-kpi__iconcol--success" aria-hidden="true">
             <i class="fa-solid fa-file-invoice-dollar"></i>
           </div>
 
-          <!-- Texto (título + valor) -->
           <div class="fin-kpi__text">
             <div class="fin-kpi__title">
-              <!-- Ícone INLINE (MOBILE) -->
               <span class="fin-kpi__iconinline fin-kpi__iconinline--success" aria-hidden="true">
                 <i class="fa-solid fa-file-invoice-dollar"></i>
               </span>
               Total Recebido
             </div>
 
-            <div class="fin-kpi__value fin-kpi__value--success" id="crTotalDone">
-              R$ 0,00
-            </div>
+            <div class="fin-kpi__value fin-kpi__value--success" id="crTotalDone">R$ 0,00</div>
           </div>
         </div>
       </div>
@@ -180,7 +166,10 @@ $mock = [
   <!-- Listagem -->
   <div class="fin-panel">
     <div class="fin-panel__head" style="margin-bottom:10px;">
-      <div class="fin-panel__title">Listagem</div>
+      <div class="fin-panel__title">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Listagem</span>
+      </div>
 
       <div class="fin-monthline" aria-label="Filtro de mês">
         <button class="fin-icon-btn fin-icon-btn--sm" id="crPrev" type="button" title="Mês anterior">

@@ -29,7 +29,67 @@ function storageSet(key, value) {
   } catch (_) {}
 }
 
+/* ---------------------------
+   TOAST GLOBAL (PRIVATE)
+   - Carrega toast.css / toast.js somente em páginas privadas
+   - Idempotente (não duplica)
+   - Disponibiliza helpers: window.Notify.*
+--------------------------- */
+function ensureToastAssets() {
+  try {
+    // CSS
+    const cssHref = '/sistema-visa/app/static/css/toast.css';
+    const hasCss = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .some(l => (l.getAttribute('href') || '').includes(cssHref));
+
+    if (!hasCss) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = cssHref;
+      link.setAttribute('data-sys', 'toast');
+      document.head.appendChild(link);
+    }
+
+    // JS
+    const jsSrc = '/sistema-visa/app/static/js/toast.js';
+    const hasJs = Array.from(document.scripts)
+      .some(s => (s.getAttribute('src') || '').includes(jsSrc));
+
+    if (!hasJs) {
+      const s = document.createElement('script');
+      s.src = jsSrc;
+      s.defer = true;
+      s.setAttribute('data-sys', 'toast');
+      document.head.appendChild(s);
+    }
+
+    // Helpers (não sobrescreve se já existir)
+    if (!window.Notify) {
+      window.Notify = {
+        show(msg) {
+          if (window.Toast?.show) window.Toast.show(msg);
+        },
+        success(msg) {
+          if (window.Toast?.success) window.Toast.success(msg);
+          else if (window.Toast?.show) window.Toast.show(msg);
+        },
+        danger(msg) {
+          if (window.Toast?.danger) window.Toast.danger(msg);
+          else if (window.Toast?.show) window.Toast.show(msg);
+        },
+        warning(msg) {
+          if (window.Toast?.warning) window.Toast.warning(msg);
+          else if (window.Toast?.show) window.Toast.show(msg);
+        },
+      };
+    }
+  } catch (_) {}
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Garante toast global no layout privado
+  ensureToastAssets();
+
   const layout = document.getElementById('privateLayout');
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebarOverlay');
@@ -54,7 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function scheduleIdleLogout() {
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = setTimeout(async () => {
-      try { await apiPost('/sistema-visa/public_php/api/logout.php', {}); } catch (_) {}
+      try {
+        await apiPost('/sistema-visa/public_php/api/logout.php', {});
+      } catch (_) {}
       forceToLogin();
     }, IDLE_LIMIT_MS);
   }
@@ -201,7 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
-      try { await apiPost('/sistema-visa/public_php/api/logout.php', {}); } catch (e) {}
+      try {
+        await apiPost('/sistema-visa/public_php/api/logout.php', {});
+      } catch (_) {}
       forceToLogin();
     });
   }

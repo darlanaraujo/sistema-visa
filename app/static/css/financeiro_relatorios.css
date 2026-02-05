@@ -1,0 +1,212 @@
+/* app/static/css/financeiro_relatorios.css */
+
+/* =========================================================
+   RELATÓRIOS — apenas o que é específico desta página
+   (sem duplicar componentes que já existem em financeiro.css)
+   ========================================================= */
+
+/* Filtros: botões ficam alinhados e com largura coerente */
+.fin-rep-filters-wrap .fin-rep-filter-btn{
+  min-width: 180px;
+}
+
+/* Grid de cards */
+.fin-rep-grid{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:14px;
+}
+
+@media (max-width:1200px){
+  .fin-rep-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width:980px){
+  .fin-rep-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width:560px){
+  .fin-rep-grid{ grid-template-columns: 1fr; }
+}
+
+.fin-rep-card{
+  border:1px solid var(--fin-border);
+  border-radius:14px;
+  background: var(--fin-panel-bg);
+  padding:12px;
+  cursor:pointer;
+  user-select:none;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.fin-rep-card:hover{
+  border-color: var(--fin-hover-bd);
+  background: var(--fin-hover-bg);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.fin-rep-card__top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.fin-rep-card__icon{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  border:1px solid var(--fin-border);
+  background: var(--fin-panel-inner-bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+}
+
+.fin-rep-card__icon i{
+  color: var(--fin-blue);
+  font-size:18px;
+}
+
+.fin-rep-card__fav{
+  width:40px;
+  height:40px;
+  border-radius:14px;
+  border:1px solid var(--fin-border);
+  background: var(--fin-panel-bg);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.fin-rep-card__fav i{
+  color: color-mix(in srgb, var(--fin-text) 70%, #000);
+}
+
+.fin-rep-card__fav:hover{
+  background: var(--fin-hover-bg);
+  border-color: var(--fin-hover-bd);
+  transform: translateY(-1px);
+}
+
+.fin-rep-card__fav.is-on{
+  background: color-mix(in srgb, var(--fin-blue) 10%, var(--fin-panel-bg));
+  border-color: color-mix(in srgb, var(--fin-blue) 30%, var(--fin-border));
+}
+
+.fin-rep-card__fav.is-on i{
+  color: var(--fin-blue);
+}
+
+.fin-rep-card__title{
+  font-weight:900;
+  color: var(--fin-text);
+  font-size:14px;
+  line-height:1.2;
+}
+
+.fin-rep-card__desc{
+  color: var(--fin-muted);
+  font-weight:700;
+  font-size:12px;
+  line-height:1.35;
+}
+
+.fin-rep-card__meta{
+  margin-top:auto;
+  font-size:11px;
+  font-weight:900;
+  color: var(--fin-muted);
+}
+
+.fin-rep-card__cta{
+  margin-top:6px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  font-size:12px;
+  color: var(--fin-blue);
+}
+
+/* Favoritos vazio */
+.fin-rep-empty{
+  margin-top:10px;
+  padding:12px;
+  border:1px dashed var(--fin-border);
+  border-radius:12px;
+  background: var(--fin-panel-inner-bg);
+  color: var(--fin-muted);
+  font-weight:800;
+  font-size:12px;
+}
+
+/* Modal de relatório */
+.fin-rep-modal{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.fin-rep-modal__row{
+  display:grid;
+  grid-template-columns: 120px 1fr;
+  gap:10px;
+  align-items:center;
+  border:1px solid var(--fin-border);
+  border-radius:12px;
+  background: var(--fin-panel-bg);
+  padding:10px 12px;
+}
+
+.fin-rep-modal__k{
+  font-weight:900;
+  color: var(--fin-muted);
+  font-size:12px;
+}
+
+.fin-rep-modal__v{
+  font-weight:900;
+  color: var(--fin-text);
+  font-size:12px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.fin-rep-modal__hint{
+  margin-top:8px;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid var(--fin-border);
+  background: var(--fin-panel-inner-bg);
+  color: var(--fin-muted);
+  font-weight:800;
+  font-size:12px;
+}
+
+/* Toast */
+.fin-rep-toast{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  max-width: 420px;
+  z-index: 10000;
+  display:none;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid var(--fin-border);
+  background: color-mix(in srgb, var(--fin-text) 92%, #000);
+  color:#fff;
+  font-weight:900;
+  font-size:12px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
+}
+
+.fin-rep-toast.is-on{ display:block; }

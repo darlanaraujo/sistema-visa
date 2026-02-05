@@ -159,7 +159,7 @@ $relatorios_favoritos = [
 
         <div class="fin-grid">
           <!-- A pagar -->
-          <div class="fin-col">
+          <div class="fin-col" data-dash-fin="pagar">
             <div class="fin-col__title">Contas a pagar</div>
 
             <div class="mini-list">
@@ -245,7 +245,7 @@ $relatorios_favoritos = [
             <div class="fin-col__title">Despesas por imóveis</div>
 
             <div class="fin-pie-wrap">
-              <div class="fin-pie" aria-hidden="true"></div>
+              <div class="fin-pie fin-pie--imoveis" aria-hidden="true"></div>
 
               <div class="fin-pie-legend">
                 <div><span class="dot dot--a"></span> Galpão A</div>

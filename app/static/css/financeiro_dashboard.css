@@ -1,0 +1,609 @@
+/* app/static/css/financeiro_dashboard.css */
+
+/* =========================================================
+   FINANCEIRO DASHBOARD
+   - Consome tokens do financeiro.css (camadas / hovers / cores)
+   - Evita padrões paralelos e hex solto
+   ========================================================= */
+
+/* --------------------------------
+   BADGE clicável
+---------------------------------- */
+.fin-badge--link{ text-decoration:none; }
+.fin-badge--link:hover{ filter: brightness(0.98); }
+
+/* --------------------------------
+   KPIs: 4 cards + separador
+---------------------------------- */
+.fin-dash-kpis{
+  grid-template-columns: 1fr 1fr 10px 1fr 1fr;
+  max-width:1100px;
+  margin:0 auto;
+  gap:10px;
+}
+
+/* Hover consistente (sem inventar paleta nova) */
+.fin-dash-kpi{
+  text-decoration:none;
+  color:inherit;
+  position:relative;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+/* ✅ usa tokens: hover e borda do módulo */
+.fin-dash-kpi:hover{
+  border-color: var(--fin-hover-bd);
+  background: var(--fin-hover-bg);
+  box-shadow: var(--fin-shadow-soft, 0 10px 26px rgba(15, 23, 42, 0.06));
+  transform: translateY(-1px);
+}
+
+.fin-dash-kpi-sep{
+  align-self:stretch;
+  border-radius:999px;
+  background: var(--fin-panel-inner-bg);
+  border: 1px solid var(--fin-border);
+}
+
+/* mobile: separador vira linha horizontal */
+@media (max-width:900px){
+  .fin-dash-kpis{
+    grid-template-columns: 1fr 1fr;
+    max-width:100%;
+    margin:0;
+  }
+  .fin-dash-kpi-sep{
+    grid-column: 1 / -1;
+    height:10px;
+  }
+}
+@media (max-width:700px){
+  .fin-dash-kpis{ grid-template-columns: 1fr; }
+}
+
+/* --------------------------------
+   GRÁFICOS: grids
+---------------------------------- */
+.fin-dash-grid{
+  display:grid;
+  gap:14px;
+}
+
+.fin-dash-grid--charts{
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width:1200px){
+  .fin-dash-grid--charts{
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+  .fin-dash-grid--charts .fin-dash-chart:first-child{
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width:980px){
+  .fin-dash-grid--charts{ grid-template-columns: 1fr; }
+}
+
+/* Mock barras fluxo */
+.fin-dash-mockbars{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding: 6px 2px 0;
+}
+
+.fin-dash-mockbar{
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--fin-border);
+  background: color-mix(in srgb, var(--fin-border) 45%, #ffffff);
+}
+
+.fin-dash-mockbar.is-in{
+  background: color-mix(in srgb, var(--fin-success) 16%, #ffffff);
+  border-color: color-mix(in srgb, var(--fin-success) 28%, transparent);
+}
+
+.fin-dash-mockbar.is-out{
+  background: color-mix(in srgb, var(--fin-danger) 14%, #ffffff);
+  border-color: color-mix(in srgb, var(--fin-danger) 28%, transparent);
+}
+
+.fin-dash-mockhint{
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--fin-muted);
+  font-weight: 700;
+}
+
+/* 2ª pizza (se ainda estiver em uso) */
+.fin-dash-pie2{
+  background: var(--fin-panel-bg);
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.fin-dash-pie2__circle{
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 6px auto 12px;
+  background: conic-gradient(
+    color-mix(in srgb, var(--fin-success) 92%, #000) 0 45%,
+    color-mix(in srgb, var(--fin-success) 70%, #ffffff) 45% 80%,
+    color-mix(in srgb, var(--fin-success) 45%, #ffffff) 80% 100%
+  );
+  border: 1px solid var(--fin-border);
+}
+
+.fin-dash-pie2__legend{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  font-size:12px;
+  color: var(--fin-muted);
+  font-weight:800;
+}
+.fin-dash-pie2__legend strong{ color: var(--fin-text); }
+
+/* --------------------------------
+   AGENDA + ATALHOS
+---------------------------------- */
+.fin-dash-grid--agenda{
+  grid-template-columns: 2fr 1fr;
+}
+@media (max-width:980px){
+  .fin-dash-grid--agenda{ grid-template-columns: 1fr; }
+}
+
+/* Acordeon */
+.fin-dash-acc{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.fin-dash-acc__item{
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--fin-panel-bg);
+}
+
+.fin-dash-acc__sum{
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 12px;
+  cursor:pointer;
+  user-select:none;
+  font-weight:900;
+  color: var(--fin-text);
+  background: var(--fin-panel-head-bg);
+  border-bottom: 1px solid var(--fin-border);
+}
+
+.fin-dash-acc__sum i{
+  color: var(--fin-blue);
+  transition: transform 140ms ease;
+}
+details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
+
+.fin-dash-acc__body{
+  padding: 10px 12px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background: var(--fin-panel-inner-bg);
+}
+
+.fin-dash-acc__body.is-scroll{
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* ✅ Rodapé opcional (topo/miolo/rodapé) */
+.fin-dash__foot{
+  background: var(--fin-panel-foot-bg);
+  border-top: 1px solid var(--fin-border);
+  padding: 10px 12px;
+}
+
+/* agenda rows */
+.fin-dash-agenda-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  padding: 10px 10px;
+  background: var(--fin-panel-bg);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.fin-dash-agenda-row__left{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  min-width:0;
+}
+
+.fin-dash-agenda-row__left i{
+  margin-top: 2px;
+  width: 18px;
+  text-align:center;
+}
+
+.fin-dash-agenda-row.is-pay i{ color: var(--fin-danger); }
+.fin-dash-agenda-row.is-rec i{ color: var(--fin-success); }
+
+.fin-dash-agenda-row__title{
+  font-weight: 900;
+  color: var(--fin-text);
+  font-size:13px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width: 100%;
+}
+
+.fin-dash-agenda-row__meta{
+  font-size:12px;
+  color: var(--fin-muted);
+  font-weight: 700;
+}
+
+.fin-dash-agenda-row__amt{
+  font-weight: 900;
+  font-size: 13px;
+  white-space:nowrap;
+}
+
+.fin-dash-agenda-row:hover{
+  background: var(--fin-hover-bg);
+  border-color: var(--fin-hover-bd);
+}
+
+/* --------------------------------
+   ATALHOS
+---------------------------------- */
+.fin-dash-shortcuts-panel details.fin-dash-shortcuts{
+  border:0;
+  background:transparent;
+}
+
+.fin-dash-shortcuts > .fin-dash-acc__sum{
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+}
+
+.fin-dash-shortcuts__body{
+  margin-top: 10px;
+  display:flex;
+  flex-direction:column;
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  overflow:hidden;
+  background: var(--fin-panel-bg);
+}
+
+/* ✅ zebra opcional: use .is-zebra no container */
+.fin-dash-shortcuts__body.is-zebra .fin-dash-shortcut:nth-child(odd){
+  background: var(--fin-row-a);
+}
+.fin-dash-shortcuts__body.is-zebra .fin-dash-shortcut:nth-child(even){
+  background: var(--fin-row-b);
+}
+
+.fin-dash-shortcut{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:14px 12px;
+  text-decoration:none;
+  color: var(--fin-text);
+  font-weight:900;
+  border-top: 1px solid var(--fin-border);
+  background: var(--fin-panel-bg);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.fin-dash-shortcut:first-child{ border-top:0; }
+
+.fin-dash-shortcut i{
+  width:20px;
+  text-align:center;
+  color: var(--fin-blue);
+}
+
+.fin-dash-shortcut.is-pay i{ color: var(--fin-danger); }
+/* .fin-dash-shortcut.is-rec i{ color: var(--fin-success); } */
+
+.fin-dash-shortcut:hover{
+  background: var(--fin-hover-bg);
+}
+
+/* Desktop: lista sempre visível */
+@media (min-width: 981px){
+  .fin-dash-shortcuts > summary{ display:none; }
+  .fin-dash-shortcuts__body{
+    display:flex;
+    margin-top:0;
+  }
+}
+
+/* Mobile: sanfona real */
+@media (max-width:980px){
+  .fin-dash-shortcuts__body{ display:none; }
+  details.fin-dash-shortcuts[open] .fin-dash-shortcuts__body{ display:flex; }
+}
+
+/* --------------------------------
+   LISTAS (2 colunas)
+---------------------------------- */
+.fin-dash-lists{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:14px;
+}
+@media (max-width:980px){
+  .fin-dash-lists{ grid-template-columns: 1fr; }
+}
+
+.fin-dash-listbox{
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  overflow:hidden;
+  background: var(--fin-panel-bg);
+}
+
+.fin-dash-listbox__head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:space-between;
+  padding:12px 12px;
+  background: var(--fin-panel-head-bg);
+  border-bottom: 1px solid var(--fin-border);
+  font-weight:900;
+  color: var(--fin-text);
+}
+
+.fin-dash-listbox__head i{
+  color: var(--fin-blue);
+  width:18px;
+  text-align:center;
+}
+
+.fin-dash-listbox__head span{ flex:1; }
+
+.fin-dash-listbox__link{
+  font-size:12px;
+  font-weight:900;
+  color: var(--fin-blue);
+  text-decoration:none;
+}
+.fin-dash-listbox__link:hover{ text-decoration:underline; }
+
+.fin-dash-mini{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:12px;
+  background: var(--fin-panel-inner-bg);
+}
+
+/* ✅ zebra opcional: use .is-zebra no container */
+.fin-dash-mini.is-zebra .fin-dash-mini__row:nth-child(odd){
+  background: var(--fin-row-a);
+}
+.fin-dash-mini.is-zebra .fin-dash-mini__row:nth-child(even){
+  background: var(--fin-row-b);
+}
+
+.fin-dash-mini__row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border: 1px solid var(--fin-border);
+  border-radius:12px;
+  padding:10px 12px;
+  background: var(--fin-panel-bg);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+/* destaque lateral */
+.fin-dash-mini__row.is-pay{
+  border-left: 4px solid color-mix(in srgb, var(--fin-danger) 55%, transparent);
+}
+.fin-dash-mini__row.is-rec{
+  border-left: 4px solid color-mix(in srgb, var(--fin-success) 55%, transparent);
+}
+
+/* overdue */
+.fin-dash-mini__row.is-pay.is-overdue{
+  background: color-mix(in srgb, var(--fin-danger) 7%, #ffffff);
+  border-color: color-mix(in srgb, var(--fin-danger) 25%, transparent);
+  border-left-color: color-mix(in srgb, var(--fin-danger) 92%, transparent);
+}
+
+.fin-dash-mini__row.is-rec.is-overdue{
+  background: color-mix(in srgb, var(--fin-success) 9%, #ffffff);
+  border-color: color-mix(in srgb, var(--fin-success) 25%, transparent);
+  border-left-color: color-mix(in srgb, var(--fin-success) 92%, transparent);
+}
+
+/* hover */
+.fin-dash-mini__row:hover{
+  background: var(--fin-hover-bg);
+  border-color: var(--fin-hover-bd);
+}
+
+.fin-dash-mini__main{ min-width:0; }
+
+.fin-dash-mini__title{
+  font-weight:900;
+  color: var(--fin-text);
+  font-size:13px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.fin-dash-mini__meta{
+  font-size:12px;
+  color: var(--fin-muted);
+  font-weight:700;
+}
+
+.fin-dash-mini__right{
+  text-align:right;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  flex:0 0 auto;
+}
+
+.fin-dash-mini__amt{
+  font-weight:900;
+  font-size:13px;
+  white-space:nowrap;
+}
+
+.fin-badge--pt{ white-space: nowrap; }
+
+/* =========================================================
+   FINANCEIRO DASHBOARD — peças que NÃO podem depender do dashboard.css
+   (pizza + cards de relatórios)
+   ========================================================= */
+
+/* pizza */
+.fin-pie-wrap{
+  background: var(--fin-panel-bg);
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.fin-pie{
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  margin: 6px auto 12px;
+  border: 1px solid var(--fin-border);
+}
+
+/* variações */
+.fin-pie--imoveis{
+  background: conic-gradient(
+    var(--chart-pay-a) 0 38%,
+    var(--chart-pay-b) 38% 70%,
+    var(--chart-pay-c) 70% 100%
+  );
+}
+
+.fin-pie--categorias{
+  background: conic-gradient(
+    var(--chart-rec-a) 0 45%,
+    var(--chart-rec-b) 45% 80%,
+    var(--chart-rec-c) 80% 100%
+  );
+}
+
+.fin-pie-legend{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fin-muted);
+  font-weight: 800;
+}
+
+.fin-pie-legend .dot{
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 999px;
+  margin-right: 8px;
+}
+
+.dot--a{ background: var(--chart-pay-a); }
+.dot--b{ background: var(--chart-pay-b); }
+.dot--c{ background: var(--chart-pay-c); }
+
+.dot--d{ background: var(--chart-rec-a); }
+.dot--e{ background: var(--chart-rec-b); }
+.dot--f{ background: var(--chart-rec-c); }
+
+/* relatórios (cards) */
+.rep-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1200px){
+  .rep-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 980px){
+  .rep-grid{ grid-template-columns: 1fr; }
+}
+
+.rep-card{
+  background: var(--fin-panel-inner-bg);
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.rep-card:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  border-color: var(--fin-hover-bd);
+}
+
+.rep-card__icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fin-panel-head-bg);
+  margin-bottom: 10px;
+  border: 1px solid var(--fin-border);
+}
+
+.rep-card__icon i{ color: var(--fin-blue); }
+
+.rep-card__title{
+  font-weight: 900;
+  color: var(--fin-text);
+  margin-bottom: 4px;
+}
+
+.rep-card__desc{
+  font-size: 12px;
+  color: var(--fin-muted);
+}
+
+.rep-card__cta{
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 12px;
+  color: var(--fin-blue);
+}

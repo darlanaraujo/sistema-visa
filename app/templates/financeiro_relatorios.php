@@ -3,7 +3,10 @@
 $page_title = 'Financeiro • Relatórios';
 $page_icon  = 'fa-solid fa-chart-pie';
 
-$extra_css = ['/sistema-visa/app/static/css/financeiro.css'];
+$extra_css = [
+  '/sistema-visa/app/static/css/financeiro.css',
+  '/sistema-visa/app/static/css/financeiro_relatorios.css',
+];
 
 $content = __DIR__ . '/../modules/financeiro/relatorios.php';
 include __DIR__ . '/base_private.php';

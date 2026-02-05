@@ -1,5 +1,54 @@
 /* app/static/css/dashboard.css */
 
+/* =========================================================
+   DASHBOARD / LAYOUT PRIVADO
+   - Consumir tokens do theme.css
+   - Padronizar camadas (panel/head/inner/foot), zebra e hover
+   ========================================================= */
+
+:root{
+  /* superfícies */
+  --dash-bg: var(--c-bg);
+  --dash-surface: var(--c-surface);
+  --dash-surface-2: var(--c-surface-2);
+
+  /* padrão de camadas (fallback se tokens globais não existirem ainda) */
+  --dash-panel-bg:       var(--panel-bg, var(--dash-surface));
+  --dash-panel-head-bg:  var(--panel-head-bg, color-mix(in srgb, var(--n-150) 70%, #ffffff));
+  --dash-panel-foot-bg:  var(--panel-foot-bg, color-mix(in srgb, var(--n-150) 62%, #ffffff));
+  --dash-panel-inner-bg: var(--panel-inner-bg, color-mix(in srgb, var(--n-150) 40%, #ffffff));
+
+  /* zebra */
+  --dash-table-head-bg: var(--table-head-bg, color-mix(in srgb, var(--n-150) 78%, #ffffff));
+  --dash-row-a:         var(--table-row-a, color-mix(in srgb, var(--n-150) 28%, #ffffff));
+  --dash-row-b:         var(--table-row-b, color-mix(in srgb, var(--n-150) 14%, #ffffff));
+
+  /* texto */
+  --dash-text:  var(--c-text);
+  --dash-muted: var(--c-muted);
+
+  /* bordas */
+  --dash-border:   var(--c-border);
+  --dash-border-2: var(--c-border-2);
+
+  /* acento */
+  --dash-accent: var(--c-accent);
+
+  /* hover neutro */
+  --dash-hover-soft: var(--hover-soft, color-mix(in srgb, var(--dash-border) 55%, #ffffff));
+
+  /* sidebar */
+  --dash-sidebar-bg:            var(--sidebar-bg);
+  --dash-sidebar-text:          var(--sidebar-text);
+  --dash-sidebar-hover:         var(--sidebar-item-hover);
+  --dash-sidebar-active-bg:     var(--sidebar-active-bg);
+  --dash-sidebar-active-outline:var(--sidebar-active-outline);
+
+  /* shadows */
+  --dash-shadow-soft:   0 10px 26px rgba(15, 23, 42, 0.06);
+  --dash-shadow-soft-2: 0 10px 26px rgba(15, 23, 42, 0.08);
+}
+
 /* ===========================
    BASE
    =========================== */
@@ -8,9 +57,7 @@
   min-height: 100vh;
   display: flex;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: #f5f7fb;
-
-  /* ✅ anti-overflow do app */
+  background: var(--dash-bg);
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
@@ -20,31 +67,29 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh;          /* evita rolagem externa */
+  height: 100vh;
   min-height: 0;
-
-  /* anti-overflow */
   width: 100%;
   max-width: 100vw;
   min-width: 0;
-
-  /* Desktop: conteúdo desloca por causa do sidebar (sem estourar) */
   padding-left: 0;
 }
 
-/* main rola internamente (todas telas privadas) */
 .main{
   flex: 1;
   min-height: 0;
-  overflow: auto;         /* rolagem interna */
+  overflow: auto;
   padding: 22px;
 }
 
-/* Topbar */
+/* ===========================
+   TOPBAR
+   =========================== */
+
 .topbar{
   height: 58px;
-  background: #ffffff;
-  border-bottom: 1px solid #e7ebf3;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -56,7 +101,7 @@
 .topbar__divider{
   width: 1px;
   height: 22px;
-  background: #e7ebf3;
+  background: var(--dash-border);
   margin: 0 6px;
 }
 
@@ -65,9 +110,12 @@
   align-items: center;
   gap: 10px;
   font-weight: 800;
-  color: #0b1220;
+  color: var(--dash-text);
   min-width: 0;
 }
+
+/* ✅ ícone do título com cor do tema */
+.topbar__title i{ color: var(--dash-accent); }
 
 .topbar__title span{
   white-space: nowrap;
@@ -75,29 +123,27 @@
   text-overflow: ellipsis;
 }
 
-/* Rodapé (fica sempre visível, sem empurrar conteúdo) */
+/* Rodapé */
 .private-footer{
   flex-shrink: 0;
-  border-top: 1px solid #e7ebf3;
-  background: #ffffff;
+  border-top: 1px solid var(--dash-border);
+  background: var(--dash-surface);
 }
 
 .private-footer__inner{
   padding: 12px 22px;
-  color: #5b6476;
+  color: var(--dash-muted);
   font-size: 12.5px;
   text-align: center;
 }
 
 .private-footer__inner a{
-  color: #2563eb;
+  color: var(--dash-accent);
   text-decoration: none;
   font-weight: 800;
 }
 
-.private-footer__inner a:hover{
-  text-decoration: underline;
-}
+.private-footer__inner a:hover{ text-decoration: underline; }
 
 /* ===========================
    SIDEBAR
@@ -105,12 +151,14 @@
 
 .sidebar{
   width: 260px;
-  background: #0b1220;
   color: #fff;
   display: flex;
   flex-direction: column;
   padding: 18px 14px;
   z-index: 50;
+
+  /* ✅ degradê aprovado */
+  background: linear-gradient(180deg, #000000 0%, #2e2e2e 100%);
 }
 
 .sidebar__brand{
@@ -124,7 +172,7 @@
 
 .sidebar__logo-wrap{
   width: 100%;
-  background: #f5f7fb; /* temporário aprovado */
+  background: var(--dash-bg);
   padding: 10px;
   border-radius: 14px;
   display: inline-flex;
@@ -151,7 +199,7 @@
   gap: 10px;
   padding: 12px 12px;
   border-radius: 10px;
-  color: rgba(255,255,255,0.92);
+  color: var(--dash-sidebar-text);
   text-decoration: none;
 }
 
@@ -160,16 +208,13 @@
   text-align: center;
 }
 
-.sidebar__item:hover{
-  background: rgba(255,255,255,0.08);
-}
+.sidebar__item:hover{ background: var(--dash-sidebar-hover); }
 
 .sidebar__item.active{
-  background: rgba(37,99,235,0.25);
-  outline: 1px solid rgba(37,99,235,0.35);
+  background: var(--dash-sidebar-active-bg);
+  outline: 1px solid var(--dash-sidebar-active-outline);
 }
 
-/* Logout logo abaixo do menu (sem margin-top:auto) */
 .sidebar__footer{
   margin-top: 0;
   padding: 6px 4px 4px;
@@ -188,9 +233,7 @@
   gap: 10px;
 }
 
-.sidebar__logout:hover{
-  background: rgba(255,255,255,0.12);
-}
+.sidebar__logout:hover{ background: rgba(255,255,255,0.12); }
 
 /* ===========================
    COLLAPSE (DESKTOP)
@@ -206,13 +249,9 @@
   display: none;
 }
 
-.sidebar.is-collapsed .sidebar__brand{
-  justify-content: center;
-}
+.sidebar.is-collapsed .sidebar__brand{ justify-content: center; }
 
-.sidebar.is-collapsed .sidebar__logo-wrap{
-  width: auto;
-}
+.sidebar.is-collapsed .sidebar__logo-wrap{ width: auto; }
 
 .sidebar.is-collapsed .sidebar__logo{
   width: 38px;
@@ -224,9 +263,7 @@
   padding: 12px 10px;
 }
 
-.sidebar.is-collapsed .sidebar__logout{
-  justify-content: center;
-}
+.sidebar.is-collapsed .sidebar__logout{ justify-content: center; }
 
 /* ===========================
    OVERLAY + MOBILE DRAWER
@@ -234,12 +271,7 @@
 
 .sidebar-overlay{
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-
-  /* blindagem anti-overflow (resolve o 796px no mobile) */
+  inset: 0;
   width: 100vw;
   max-width: 100vw;
   height: 100vh;
@@ -247,9 +279,7 @@
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden;
-
   background: rgba(0,0,0,0.45);
-
   opacity: 0;
   pointer-events: none;
   transition: opacity 180ms ease;
@@ -257,7 +287,6 @@
 }
 
 @media (max-width: 980px){
-  /* sidebar drawer */
   .sidebar{
     position: fixed;
     top: 0;
@@ -278,16 +307,12 @@
     pointer-events: auto;
   }
 
-  /* topbar desloca para a direita quando sidebar abre (não sobrepor) */
   .private-layout.is-sidebar-open .topbar{
     margin-left: 260px;
     width: calc(100% - 260px);
   }
 
-  /* menus alinhados à esquerda no mobile */
-  .sidebar__item{
-    justify-content: flex-start;
-  }
+  .sidebar__item,
   .sidebar__logout{
     justify-content: flex-start;
   }
@@ -297,9 +322,7 @@
    EDGE TOGGLE (SETA)
    =========================== */
 
-.sidebar-edge-toggle{
-  display: none;
-}
+.sidebar-edge-toggle{ display: none; }
 
 @media (min-width: 981px){
   .sidebar-edge-toggle{
@@ -311,7 +334,7 @@
     height: 32px;
     border-radius: 999px;
     border: 0;
-    background: #0b1220;
+    background: #0d0d0d;
     box-shadow: 0 6px 18px rgba(0,0,0,0.18);
     align-items: center;
     justify-content: center;
@@ -326,7 +349,7 @@
   }
 
   .sidebar-edge-toggle:hover{
-    background: #111a2e;
+    background: #1a1a1a;
     box-shadow: 0 8px 20px rgba(0,0,0,0.20);
   }
 
@@ -347,7 +370,6 @@
 
 /* ===========================
    HAMBÚRGUER / X (CSS PURO)
-   - só no mobile
    =========================== */
 
 .topbar__menu{
@@ -362,7 +384,7 @@
   transition: background 120ms ease, transform 120ms ease;
 }
 
-.topbar__menu:hover{ background: #eef2ff; }
+.topbar__menu:hover{ background: var(--dash-hover-soft); }
 .topbar__menu:active{ transform: scale(0.98); }
 
 .topbar__menu::before,
@@ -371,7 +393,7 @@
   position: absolute;
   width: 18px;
   height: 2px;
-  background: #1f2a44;
+  background: var(--n-800);
   border-radius: 999px;
   left: 50%;
   top: 50%;
@@ -379,15 +401,11 @@
   transition: transform 140ms ease, opacity 140ms ease;
 }
 
-/* hambúrguer (3 linhas via box-shadow) */
 .topbar__menu::before{
-  box-shadow: 0 -6px 0 #1f2a44, 0 6px 0 #1f2a44;
+  box-shadow: 0 -6px 0 var(--n-800), 0 6px 0 var(--n-800);
 }
-.topbar__menu::after{
-  opacity: 0; /* vira a 2ª linha do X no hover */
-}
+.topbar__menu::after{ opacity: 0; }
 
-/* hover vira X (visual apenas) */
 .topbar__menu:hover::before{
   box-shadow: none;
   transform: translate(-50%, -50%) rotate(45deg);
@@ -397,24 +415,25 @@
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-/* esconder hambúrguer no desktop */
 @media (min-width: 981px){
   .topbar__menu{ display: none !important; }
 }
 
-/* ===========================
-   DASHBOARD (SEÇÕES)
-   =========================== */
+/* =========================================================
+   PADRÃO DE SEÇÃO (camadas)
+   - usado no dashboard principal
+   - usado em lotes / relatórios placeholders
+   ========================================================= */
 
 .dash2__header h1{
   margin: 0 0 6px 0;
   font-size: 22px;
-  color: #0b1220;
+  color: var(--dash-text);
 }
 
 .dash2__header p{
   margin: 0 0 18px 0;
-  color: #5b6476;
+  color: var(--dash-muted);
 }
 
 .dash2__sections{
@@ -424,13 +443,14 @@
 }
 
 .dash2__section{
-  background: #ffffff;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 14px;
   padding: 16px;
   position: relative;
 }
 
+/* marca lateral */
 .dash2__section::before{
   content: "";
   position: absolute;
@@ -439,14 +459,19 @@
   bottom: 12px;
   width: 4px;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.45);
+  background: color-mix(in srgb, var(--dash-accent) 42%, transparent);
 }
 
+/* topo da seção */
 .dash2__section-head{
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  background: var(--dash-panel-head-bg);
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  padding: 10px 12px;
   margin-bottom: 12px;
 }
 
@@ -455,29 +480,24 @@
   align-items: center;
   gap: 10px;
   font-weight: 900;
-  color: #0b1220;
+  color: var(--dash-text);
 }
-
-.dash2__section-title i{
-  color: #2563eb;
-}
+.dash2__section-title i{ color: var(--dash-accent); }
 
 .dash2__link{
   font-size: 13px;
   font-weight: 800;
-  color: #2563eb;
+  color: var(--dash-accent);
   text-decoration: none;
   padding: 8px 10px;
   border-radius: 10px;
 }
+.dash2__link:hover{ background: var(--dash-hover-soft); }
 
-.dash2__link:hover{
-  background: #eef2ff;
-}
-
+/* miolo */
 .dash2__box{
-  background: #f7f9fd;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-inner-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 12px;
 }
@@ -485,18 +505,18 @@
 .dash2__box-title{
   font-size: 13px;
   font-weight: 900;
-  color: #1f2a44;
+  color: var(--n-800);
   margin-bottom: 10px;
 }
 
 .dash2__hint{
   margin-top: 10px;
   font-size: 12px;
-  color: #5b6476;
+  color: var(--dash-muted);
 }
 
 /* ===========================
-   LOTES: DESKTOP “TABELA” + MOBILE PARES KV
+   LOTES: DESKTOP “TABELA” + MOBILE KV
    =========================== */
 
 .lotes-list{
@@ -505,13 +525,12 @@
   gap: 10px;
 }
 
-/* card clicável */
 .lote-card{
   display: block;
   text-decoration: none;
   color: inherit;
-  background: #ffffff;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   overflow: hidden;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
@@ -519,8 +538,8 @@
 
 .lote-card:hover{
   transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: var(--dash-shadow-soft);
+  border-color: color-mix(in srgb, var(--dash-accent) 35%, var(--dash-border));
 }
 
 .lote-card__labels,
@@ -530,30 +549,26 @@
 }
 
 .lote-card__labels{
-  background: #eef2ff;
-  border-bottom: 1px solid #e7ebf3;
+  background: var(--dash-table-head-bg);
+  border-bottom: 1px solid var(--dash-border);
 }
 
 .lote-card__labels > div{
   padding: 10px 12px;
   font-size: 11px;
   font-weight: 900;
-  color: #1f2a44;
-  border-right: 1px solid #e7ebf3;
+  color: var(--n-800);
+  border-right: 1px solid var(--dash-border);
 }
-
-.lote-card__labels > div:last-child{
-  border-right: 0;
-}
+.lote-card__labels > div:last-child{ border-right: 0; }
 
 .lote-card__values > div{
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 800;
-  color: #0b1220;
+  color: var(--dash-text);
 }
 
-/* mobile: usa KV para manter ordem */
 .lote-card--mobile{ display: none; }
 .lote-card--desktop{ display: block; }
 
@@ -567,11 +582,13 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   padding: 12px;
+  background: var(--dash-panel-inner-bg);
+  border-top: 1px solid var(--dash-border);
 }
 
 .kv{
-  background: #ffffff;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 10px 10px;
 }
@@ -579,18 +596,19 @@
 .kv__k{
   font-size: 11px;
   font-weight: 900;
-  color: #1f2a44;
+  color: var(--n-800);
   margin-bottom: 4px;
 }
 
 .kv__v{
   font-size: 13px;
   font-weight: 800;
-  color: #0b1220;
+  color: var(--dash-text);
 }
 
 /* ===========================
-   FINANCEIRO: GRID 4→2→1 + MINI TABELAS
+   FINANCEIRO (PLACEHOLDER DO DASH PRINCIPAL)
+   - Mantém padrão de camadas + zebra
    =========================== */
 
 .fin-grid{
@@ -607,8 +625,8 @@
 }
 
 .fin-col{
-  background: #f7f9fd;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-inner-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 12px;
   min-width: 0;
@@ -617,7 +635,7 @@
 .fin-col__title{
   font-size: 13px;
   font-weight: 900;
-  color: #1f2a44;
+  color: var(--n-800);
   margin-bottom: 10px;
 }
 
@@ -628,8 +646,8 @@
 }
 
 .mini-card{
-  background: #ffffff;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -649,40 +667,41 @@
 }
 
 .mini-row > div + div{
-  border-left: 1px solid #e7ebf3; /* separador vertical */
+  border-left: 1px solid var(--dash-border);
 }
 
+/* head */
 .mini-row--head{
-  background: #e8eefc; /* mais escuro que o fundo do card */
-  border-bottom: 1px solid #e7ebf3;
+  background: var(--dash-table-head-bg);
+  border-bottom: 1px solid var(--dash-border);
 }
 
 .mini-row--head > div{
   font-size: 11px;
   font-weight: 900;
-  color: #1f2a44;
+  color: var(--n-800);
 }
 
+/* zebra */
 .mini-row--val{
-  border-bottom: 1px solid #e7ebf3;
+  border-bottom: 1px solid var(--dash-border);
 }
-
-.mini-row--val:last-child{
-  border-bottom: 0;
-}
+.mini-row--val:nth-of-type(odd){ background: var(--dash-row-a); }
+.mini-row--val:nth-of-type(even){ background: var(--dash-row-b); }
+.mini-row--val:last-child{ border-bottom: 0; }
 
 .mini-row--val > div{
   font-size: 13px;
   font-weight: 800;
-  color: #0b1220;
+  color: var(--dash-text);
 }
 
 .t-right{ text-align: right; }
 
-/* indicadores (sem height; max-height 90%) */
+/* indicadores */
 .fin-metric{
-  background: #ffffff;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 12px;
   max-height: 90%;
@@ -691,40 +710,40 @@
 
 .fin-metric__label{
   font-weight: 900;
-  color: #0b1220;
+  color: var(--dash-text);
   margin-bottom: 10px;
 }
 
 .fin-bar{
   height: 10px;
   border-radius: 999px;
-  background: #eef2f8;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-inner-bg);
+  border: 1px solid var(--dash-border);
   overflow: hidden;
 }
 
 .fin-bar__fill{
   height: 100%;
   border-radius: 999px;
-  background: #2563eb;
+  background: var(--dash-accent);
 }
 
 .fin-metric__hint{
   margin-top: 8px;
   font-size: 12px;
-  color: #5b6476;
+  color: var(--dash-muted);
 }
 
 .fin-metric__sep{
   height: 1px;
-  background: #e7ebf3;
+  background: var(--dash-border);
   margin: 12px 0;
 }
 
-/* pizza */
+/* pizza (mantém estrutura, sem cores próprias aqui) */
 .fin-pie-wrap{
-  background: #ffffff;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 12px;
 }
@@ -734,16 +753,16 @@
   height: 140px;
   border-radius: 50%;
   margin: 6px auto 12px;
-  background: conic-gradient(#2563eb 0 45%, #60a5fa 45% 75%, #93c5fd 75% 100%);
-  border: 1px solid #e7ebf3;
+  border: 1px solid var(--dash-border);
 }
 
+/* legend */
 .fin-pie-legend{
   display: flex;
   flex-direction: column;
   gap: 8px;
   font-size: 12px;
-  color: #5b6476;
+  color: var(--dash-muted);
 }
 
 .fin-pie-legend .dot{
@@ -754,12 +773,8 @@
   margin-right: 8px;
 }
 
-.dot--a{ background: #2563eb; }
-.dot--b{ background: #60a5fa; }
-.dot--c{ background: #93c5fd; }
-
 /* ===========================
-   RELATÓRIOS: 4→2→1 (apenas 4 favoritos)
+   RELATÓRIOS (PLACEHOLDER)
    =========================== */
 
 .rep-grid{
@@ -771,14 +786,13 @@
 @media (max-width: 1200px){
   .rep-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-
 @media (max-width: 980px){
   .rep-grid{ grid-template-columns: 1fr; }
 }
 
 .rep-card{
-  background: #f7f9fd;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-inner-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 12px;
   cursor: pointer;
@@ -790,8 +804,8 @@
 
 .rep-card:hover{
   transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
-  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: var(--dash-shadow-soft-2);
+  border-color: color-mix(in srgb, var(--dash-accent) 35%, var(--dash-border));
 }
 
 .rep-card__icon{
@@ -801,21 +815,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #eef2ff;
+  background: var(--dash-panel-head-bg);
   margin-bottom: 10px;
 }
 
-.rep-card__icon i{ color: #2563eb; }
+.rep-card__icon i{ color: var(--dash-accent); }
 
 .rep-card__title{
   font-weight: 900;
-  color: #0b1220;
+  color: var(--dash-text);
   margin-bottom: 4px;
 }
 
 .rep-card__desc{
   font-size: 12px;
-  color: #5b6476;
+  color: var(--dash-muted);
 }
 
 .rep-card__cta{
@@ -825,7 +839,7 @@
   gap: 8px;
   font-weight: 900;
   font-size: 12px;
-  color: #2563eb;
+  color: var(--dash-accent);
 }
 
 /* ===========================
@@ -841,17 +855,17 @@
 .module-head h1{
   margin: 0 0 6px 0;
   font-size: 22px;
-  color: #0b1220;
+  color: var(--dash-text);
 }
 
 .module-head p{
   margin: 0;
-  color: #5b6476;
+  color: var(--dash-muted);
 }
 
 .module-card{
-  background: #ffffff;
-  border: 1px solid #e7ebf3;
+  background: var(--dash-panel-bg);
+  border: 1px solid var(--dash-border);
   border-radius: 14px;
   padding: 14px;
 }
@@ -859,18 +873,18 @@
 .module-card__title{
   font-size: 12px;
   font-weight: 900;
-  color: #1f2a44;
+  color: var(--n-800);
   margin-bottom: 6px;
 }
 
 .module-card__value{
   font-size: 14px;
   font-weight: 900;
-  color: #0b1220;
+  color: var(--dash-text);
 }
 
 .module-card__hint{
   margin-top: 10px;
   font-size: 12px;
-  color: #5b6476;
+  color: var(--dash-muted);
 }

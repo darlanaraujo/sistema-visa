@@ -1,0 +1,72 @@
+/* app/static/css/financeiro_contas_pagar.css
+   Página: Contas a Pagar
+   Regra do projeto: cada página tem seu CSS próprio.
+   Este arquivo complementa o financeiro.css (base do módulo).
+*/
+
+/* ---------------------------------------------------------
+   TÍTULO DA SEÇÃO (Listagem) — trocar “bola” por ícone
+   - remove o ::before antigo
+   - mantém padrão do Dashboard (ícone azul + gap)
+--------------------------------------------------------- */
+#cpPage .fin-panel__title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+#cpPage .fin-panel__title::before{
+  content:none;
+}
+
+/* ícone padrão do título (se existir <i> dentro do título) */
+#cpPage .fin-panel__title i{
+  color: var(--fin-blue);
+  width:18px;
+  text-align:center;
+}
+
+/* caso o título “Listagem” não tenha <i>, adiciona automaticamente */
+#cpPage .fin-panel__title:not(:has(i))::before{
+  content:"\f03a"; /* fa-list (solid) */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  color: var(--fin-blue);
+  width:18px;
+  display:inline-block;
+  text-align:center;
+}
+
+/* ---------------------------------------------------------
+   VENCIDAS — destaque igual ao dashboard (vermelho pagar)
+   - depende do JS marcar <tr class="is-overdue">
+   - não altera itens pagos (done)
+--------------------------------------------------------- */
+#cpPage .fin-table tbody tr.is-overdue td{
+  background: color-mix(in srgb, var(--fin-danger) 7%, #ffffff) !important;
+  border-bottom-color: color-mix(in srgb, var(--fin-danger) 18%, var(--fin-border-2)) !important;
+}
+
+#cpPage .fin-table tbody tr.is-overdue td + td{
+  border-left-color: color-mix(in srgb, var(--fin-danger) 16%, var(--fin-border-2)) !important;
+}
+
+/* prioridade visual no valor e na data quando vencida */
+#cpPage .fin-table tbody tr.is-overdue td:nth-child(2),
+#cpPage .fin-table tbody tr.is-overdue td:nth-child(4){
+  color: color-mix(in srgb, var(--fin-danger) 88%, #000) !important;
+  font-weight: 900;
+}
+
+/* se estiver paga, não pinta */
+#cpPage .fin-table tbody tr.is-overdue.is-done td{
+  background: inherit !important;
+  color: var(--fin-text) !important;
+}
+
+/* ---------------------------------------------------------
+   MODAL DE EXCLUSÃO — mantém leitura
+--------------------------------------------------------- */
+#cpDelModal .fin-modal__body p{
+  color: var(--fin-text) !important;
+}

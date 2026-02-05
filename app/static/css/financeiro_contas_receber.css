@@ -1,0 +1,70 @@
+/* app/static/css/financeiro_contas_receber.css
+   Página: Contas a Receber
+   Regra do projeto: cada página tem seu CSS próprio.
+   Complementa o financeiro.css (base do módulo).
+*/
+
+/* ---------------------------------------------------------
+   TÍTULO DA SEÇÃO (Listagem) — padrão do Dashboard
+   - ícone + gap consistente
+   - remove qualquer marcador visual antigo
+--------------------------------------------------------- */
+#crPage .fin-panel__title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+#crPage .fin-panel__title::before{
+  content:none;
+}
+
+/* ícone explícito no título */
+#crPage .fin-panel__title i{
+  color: var(--fin-blue);
+  width:18px;
+  text-align:center;
+}
+
+/* fallback: se não houver <i> no título */
+#crPage .fin-panel__title:not(:has(i))::before{
+  content:"\f09d"; /* fa-hand-holding-dollar */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  color: var(--fin-blue);
+  width:18px;
+  display:inline-block;
+  text-align:center;
+}
+
+/* ---------------------------------------------------------
+   VENCIDAS — destaque igual ao dashboard (verde receber)
+   - depende do JS marcar <tr class="is-overdue">
+--------------------------------------------------------- */
+#crPage .fin-table tbody tr.is-overdue td{
+  background: color-mix(in srgb, var(--fin-success) 9%, #ffffff) !important;
+  border-bottom-color: color-mix(in srgb, var(--fin-success) 22%, var(--fin-border-2)) !important;
+}
+
+/* divisor lateral sutil */
+#crPage .fin-table tbody tr.is-overdue td:first-child{
+  border-left: 4px solid color-mix(in srgb, var(--fin-success) 80%, transparent);
+}
+
+/* prioridade visual no valor e na data */
+#crPage .fin-table tbody tr.is-overdue td:nth-child(2),
+#crPage .fin-table tbody tr.is-overdue td:nth-child(3){
+  color: color-mix(in srgb, var(--fin-success) 88%, #000) !important;
+  font-weight: 900;
+}
+
+/* hover coerente */
+#crPage .fin-table tbody tr.is-overdue:hover td{
+  background: color-mix(in srgb, var(--fin-success) 12%, #ffffff) !important;
+}
+
+/* se estiver recebido, não pinta */
+#crPage .fin-table tbody tr.is-overdue.is-done td{
+  background: inherit !important;
+  color: var(--fin-text) !important;
+}

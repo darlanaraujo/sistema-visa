@@ -1,0 +1,66 @@
+/* app/static/css/toast.css
+   Toast global do sistema (mesmo padrão usado em Relatórios)
+*/
+
+.sys-toast{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+
+  width: max-content;
+  max-width: min(420px, calc(100vw - 36px));
+
+  z-index: 10000;
+
+  padding: 12px 14px;
+  border-radius: 14px;
+
+  border: 1px solid var(--c-border, #e7ebf3);
+
+  /* base neutra (escura elegante) */
+  background: color-mix(in srgb, var(--c-text, #0b1220) 92%, #000);
+  color: #fff;
+
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1.25;
+
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
+
+  /* animação (sem mexer em display) */
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 160ms ease, transform 160ms ease;
+
+  /* não bloquear cliques */
+  pointer-events: none;
+
+  /* quebra de texto segura */
+  overflow-wrap: anywhere;
+}
+
+.sys-toast.is-on{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* estados */
+.sys-toast.is-success{
+  background: color-mix(in srgb, var(--c-success, #2f6b4f) 88%, #000);
+  border-color: color-mix(in srgb, var(--c-success, #2f6b4f) 22%, var(--c-border, #e7ebf3));
+}
+
+.sys-toast.is-danger{
+  background: color-mix(in srgb, var(--c-danger, #a42d2d) 88%, #000);
+  border-color: color-mix(in srgb, var(--c-danger, #a42d2d) 22%, var(--c-border, #e7ebf3));
+}
+
+.sys-toast.is-warning{
+  background: color-mix(in srgb, var(--c-warning, #b07a1a) 90%, #000);
+  border-color: color-mix(in srgb, var(--c-warning, #b07a1a) 22%, var(--c-border, #e7ebf3));
+}
+
+/* acessibilidade */
+@media (prefers-reduced-motion: reduce){
+  .sys-toast{ transition: none; }
+}

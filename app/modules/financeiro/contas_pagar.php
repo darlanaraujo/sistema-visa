@@ -8,10 +8,6 @@ $mock = [
 ];
 ?>
 
-<style>
-  @import url("/sistema-visa/app/static/css/financeiro.css");
-</style>
-
 <div class="fin-page" id="cpPage">
   <div class="fin-head">
     <h1>Contas a Pagar</h1>
@@ -34,15 +30,12 @@ $mock = [
       <!-- Total Pendente -->
       <div class="fin-toolbar__block fin-toolbar__block--kpi">
         <div class="fin-kpi fin-kpi--two-col">
-          <!-- Ícone COLUNA (DESKTOP) -->
           <div class="fin-kpi__iconcol fin-kpi__iconcol--danger" aria-hidden="true">
             <i class="fa-solid fa-receipt"></i>
           </div>
 
-          <!-- Texto (título + valor) -->
           <div class="fin-kpi__text">
             <div class="fin-kpi__title">
-              <!-- Ícone INLINE (MOBILE) -->
               <span class="fin-kpi__iconinline fin-kpi__iconinline--danger" aria-hidden="true">
                  <i class="fa-solid fa-receipt"></i>
               </span>
@@ -57,15 +50,12 @@ $mock = [
       <!-- Total Pago -->
       <div class="fin-toolbar__block fin-toolbar__block--kpi">
         <div class="fin-kpi fin-kpi--two-col">
-          <!-- Ícone COLUNA (DESKTOP) -->
           <div class="fin-kpi__iconcol fin-kpi__iconcol--success" aria-hidden="true">
             <i class="fa-solid fa-file-invoice-dollar"></i>
           </div>
 
-          <!-- Texto (título + valor) -->
           <div class="fin-kpi__text">
             <div class="fin-kpi__title">
-              <!-- Ícone INLINE (MOBILE) -->
               <span class="fin-kpi__iconinline fin-kpi__iconinline--success" aria-hidden="true">
                 <i class="fa-solid fa-file-invoice-dollar"></i>
               </span>
@@ -150,7 +140,10 @@ $mock = [
   <!-- Listagem -->
   <div class="fin-panel">
     <div class="fin-panel__head" style="margin-bottom:10px;">
-      <div class="fin-panel__title">Listagem</div>
+      <div class="fin-panel__title">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Listagem</span>
+      </div>
 
       <div class="fin-monthline" aria-label="Filtro de mês">
         <button class="fin-icon-btn fin-icon-btn--sm" id="cpPrev" type="button" title="Mês anterior">

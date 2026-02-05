@@ -36,35 +36,39 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <!-- CSS -->
+  <!-- CSS base (ordem obrigatória) -->
+  <link rel="stylesheet" href="/sistema-visa/app/static/css/theme.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/dashboard.css">
 
+  <!-- Toast (global no ambiente privado) -->
+  <link rel="stylesheet" href="/sistema-visa/app/static/css/toast.css">
+
+  <!-- CSS específico da página/módulo -->
   <?php if (!empty($extra_css) && is_array($extra_css)): ?>
     <?php foreach ($extra_css as $css): ?>
       <link rel="stylesheet" href="<?= htmlspecialchars($css) ?>">
     <?php endforeach; ?>
   <?php endif; ?>
-  
 </head>
 <body>
 
   <div class="private-layout" id="privateLayout">
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__brand">
-    <div class="sidebar__logo-wrap">
-      <img
-        id="sidebarLogo"
-        src="/sistema-visa/app/static/img/logo.png"
-        data-logo="/sistema-visa/app/static/img/logo.png"
-        data-favicon="/sistema-visa/app/static/img/favicon.png"
-        alt="Sistema Visa"
-        class="sidebar__logo"
-      >
-    </div>
-  </div>
-
+        <div class="sidebar__logo-wrap">
+          <img
+            id="sidebarLogo"
+            src="/sistema-visa/app/static/img/logo.png"
+            data-logo="/sistema-visa/app/static/img/logo.png"
+            data-favicon="/sistema-visa/app/static/img/favicon.png"
+            alt="Sistema Visa"
+            class="sidebar__logo"
+          >
+        </div>
+      </div>
 
       <nav class="sidebar__nav">
         <a class="sidebar__item" href="/sistema-visa/app/templates/dashboard.php" data-nav="dashboard">
@@ -81,12 +85,12 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
           <i class="fa-solid fa-coins"></i>
           <span>Financeiro</span>
         </a>
-      </nav>
 
         <a class="sidebar__item" href="/sistema-visa/app/templates/relatorios.php" data-nav="relatorios">
           <i class="fa-solid fa-chart-line"></i>
           <span>Relatórios</span>
         </a>
+      </nav>
 
       <div class="sidebar__footer">
         <button class="sidebar__logout" id="btnLogout" type="button">
@@ -127,7 +131,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
         ?>
       </main>
 
-      <!-- Rodapé fixo no fim da área visível (sem rolagem externa) -->
+      <!-- Rodapé -->
       <footer class="private-footer">
         <div class="private-footer__inner">
           <span><strong>Sistema Visa Remoções</strong> • © <?= date('Y') ?> • Desenvolvido por
@@ -136,7 +140,14 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
         </div>
       </footer>
     </div>
+  </div>
 
+  <!-- JS base do layout privado -->
   <script src="/sistema-visa/app/static/js/dashboard.js"></script>
+
+  <!-- Toast (global no ambiente privado) -->
+  <script src="/sistema-visa/app/static/js/toast.js"></script>
+  
+  <script src="/sistema-visa/app/static/js/dashboard_financeiro.js"></script>
 </body>
 </html>

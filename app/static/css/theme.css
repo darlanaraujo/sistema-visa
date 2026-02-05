@@ -1,0 +1,158 @@
+/* app/static/css/theme.css
+   Objetivo:
+   - Centralizar cores e permitir tema customizável
+   - Evitar hex espalhado em múltiplos CSS
+   - Manter estética consistente (mesma “intensidade” de cores)
+*/
+
+:root{
+  /* =========================================================
+     1) BRAND — PALETA INSTITUCIONAL (LOGO)
+     ========================================================= */
+  --brand-charcoal: #343434; /* base escura elegante (sidebar / texto forte) */
+  --brand-red:      #a42d2d; /* acento institucional */
+  --brand-gray-100: #e9e9e9; /* superfícies claras derivadas */
+  --brand-gray-200: #d5d3d3;
+  --brand-gray-300: #a99494;
+  --brand-gray-500: #7d7c7c;
+
+  /* =========================================================
+     2) NEUTRALS — (superfícies e textos)
+     ========================================================= */
+  --n-0:   #ffffff;
+  --n-50:  #fbfcff;
+  --n-100: #f5f7fb; /* fundo do app */
+  --n-150: #eef1f6;
+  --n-200: #e7ebf3; /* bordas padrão */
+  --n-300: #cbd5e1;
+  --n-600: #5b6476; /* texto secundário */
+  --n-800: #1f2a44;
+  --n-900: #0b1220; /* texto principal forte */
+
+  /* =========================================================
+     3) SEMANTIC — (papéis do sistema)
+     ========================================================= */
+  --c-bg:        var(--n-100);
+  --c-surface:   var(--n-0);
+  --c-surface-2: var(--n-50);
+
+  --c-text:      var(--n-900);
+  --c-muted:     var(--n-600);
+
+  --c-border:    var(--n-200);
+  --c-border-2:  #edf0f7;
+
+  /* Acento principal do sistema (CTA / links / foco) */
+  --c-accent:    var(--brand-red);
+  --c-accent-2:  color-mix(in srgb, var(--c-accent) 75%, #ffffff);
+
+  /* Estados — tons mais “fechados” (sofisticados) */
+  --c-danger:  var(--brand-red); /* pagar / alerta institucional */
+  --c-success: #2f6b4f;          /* verde fechado */
+  --c-warning: #b07a1a;          /* âmbar fechado */
+
+  /* =========================================================
+     4) COMPONENT TOKENS — (para não “poluir” CSS das páginas)
+     ========================================================= */
+
+  /* Sidebar */
+  --sidebar-bg: var(--brand-charcoal);
+  --sidebar-bg-2: #2e2e2e; /* para gradiente */
+  --sidebar-text: rgba(255,255,255,0.92);
+  --sidebar-item-hover: rgba(255,255,255,0.08);
+  --sidebar-active-bg: color-mix(in srgb, var(--c-accent) 25%, transparent);
+  --sidebar-active-outline: color-mix(in srgb, var(--c-accent) 35%, transparent);
+
+  /* Topbar */
+  --topbar-bg: var(--c-surface);
+  --topbar-border: var(--c-border);
+
+  /* Cards/painéis (genérico) */
+  --card-bg: var(--c-surface);
+  --card-border: var(--c-border);
+
+  /* =========================================================
+     5) PANELS / TABLES — PADRÃO GLOBAL DE CAMADAS
+     (isso é o que vai “harmonizar” todas as páginas)
+     ========================================================= */
+
+  /* painéis / seções (camadas) */
+  --panel-bg:        var(--c-surface);
+  --panel-head-bg:   color-mix(in srgb, var(--n-150) 70%, #ffffff);
+  --panel-inner-bg:  color-mix(in srgb, var(--n-150) 40%, #ffffff);
+  --panel-foot-bg:   color-mix(in srgb, var(--n-150) 62%, #ffffff);
+
+  /* hover neutro (sem pintar com vermelho/verde) */
+  --hover-soft: color-mix(in srgb, var(--c-border) 55%, #ffffff);
+
+  /* tabelas/listas: head + zebra */
+  --table-head-bg: color-mix(in srgb, var(--n-150) 78%, #ffffff);
+  --table-row-a:  color-mix(in srgb, var(--n-150) 28%, #ffffff);
+  --table-row-b:  color-mix(in srgb, var(--n-150) 14%, #ffffff);
+
+  /* =========================================================
+     6) BUTTON SYSTEM — PADRÃO GLOBAL (primário/secundário/ghost)
+     ========================================================= */
+
+  /* primário */
+  --btn-bg:     var(--c-accent);
+  --btn-text:   #ffffff;
+  --btn-border: var(--c-accent);
+
+  /* secundário (menos “forte”, ainda institucional) */
+  --btn-secondary-bg: color-mix(in srgb, var(--c-accent) 12%, #ffffff);
+  --btn-secondary-text: color-mix(in srgb, var(--c-text) 92%, #000);
+  --btn-secondary-border: color-mix(in srgb, var(--c-accent) 22%, var(--c-border));
+
+  /* ghost (neutro elegante) */
+  --btn-ghost-bg: color-mix(in srgb, var(--n-150) 30%, #ffffff);
+  --btn-ghost-text: color-mix(in srgb, var(--c-text) 88%, #000);
+  --btn-ghost-border: color-mix(in srgb, var(--c-border) 70%, #ffffff);
+
+  /* =========================================================
+     7) GRADIENTES CONTEXTUAIS (LOGIN, HERO, DESTAQUES)
+     ========================================================= */
+
+  --grad-login-accent: #a70000;
+  --grad-login-deep:   #492222;
+  --grad-login-hot:    #ff0000;
+
+  --grad-login-accent-rgb: 167 0 0;
+  --grad-login-deep-rgb:    73 34 34;
+  --grad-login-hot-rgb:    255 0 0;
+
+  --grad-login-opacity-strong: 0.65;
+  --grad-login-opacity-soft:   0.55;
+
+  /* =========================================================
+     8) CHART TOKENS (p/ não depender de hex em cada CSS)
+     ========================================================= */
+
+  /* pagar (vermelho institucional em 3 intensidades) */
+  --chart-pay-a: color-mix(in srgb, var(--c-danger) 92%, #000);
+  --chart-pay-b: color-mix(in srgb, var(--c-danger) 70%, #fff);
+  --chart-pay-c: color-mix(in srgb, var(--c-danger) 45%, #fff);
+
+  /* receber (verde fechado em 3 intensidades) */
+  --chart-rec-a: color-mix(in srgb, var(--c-success) 92%, #000);
+  --chart-rec-b: color-mix(in srgb, var(--c-success) 70%, #fff);
+  --chart-rec-c: color-mix(in srgb, var(--c-success) 45%, #fff);
+
+  /* neutro elegante */
+  --chart-neu-a: color-mix(in srgb, var(--brand-charcoal) 70%, #fff);
+  --chart-neu-b: color-mix(in srgb, var(--brand-charcoal) 50%, #fff);
+  --chart-neu-c: color-mix(in srgb, var(--brand-charcoal) 30%, #fff);
+}
+
+/* =========================================================
+   THEMES / ACCENTS (futuro)
+========================================================= */
+:root[data-theme="visa"]{
+  --c-accent: var(--brand-red);
+  --sidebar-bg: var(--brand-charcoal);
+}
+
+/* Exemplo opcional */
+:root[data-accent="blue"]{
+  --c-accent: #2563eb;
+}

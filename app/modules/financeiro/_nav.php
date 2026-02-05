@@ -6,13 +6,19 @@ function fin_is_active(string $needle): bool {
   return strpos($path, $needle) !== false;
 }
 
+/**
+ * MENU DO MÓDULO FINANCEIRO (apenas o que pertence ao módulo)
+ * - Dashboard
+ * - Contas a Pagar
+ * - Contas a Receber
+ * - Relatórios
+ *
+ * Categorias / Imóveis / Clientes saíram do módulo (não devem aparecer aqui).
+ */
 $items = [
   ['href' => '/sistema-visa/app/templates/financeiro.php', 'label' => 'Dashboard', 'icon' => 'fa-solid fa-gauge', 'key' => 'financeiro.php'],
   ['href' => '/sistema-visa/app/templates/financeiro_contas_pagar.php', 'label' => 'Contas a Pagar', 'icon' => 'fa-solid fa-file-invoice-dollar', 'key' => 'financeiro_contas_pagar.php'],
   ['href' => '/sistema-visa/app/templates/financeiro_contas_receber.php', 'label' => 'Contas a Receber', 'icon' => 'fa-solid fa-hand-holding-dollar', 'key' => 'financeiro_contas_receber.php'],
-  ['href' => '/sistema-visa/app/templates/financeiro_categorias.php', 'label' => 'Categorias', 'icon' => 'fa-solid fa-tags', 'key' => 'financeiro_categorias.php'],
-  ['href' => '/sistema-visa/app/templates/financeiro_imoveis.php', 'label' => 'Imóveis', 'icon' => 'fa-solid fa-warehouse', 'key' => 'financeiro_imoveis.php'],
-  ['href' => '/sistema-visa/app/templates/financeiro_parceiros.php', 'label' => 'Clientes / Forn.', 'icon' => 'fa-solid fa-users', 'key' => 'financeiro_parceiros.php'],
   ['href' => '/sistema-visa/app/templates/financeiro_relatorios.php', 'label' => 'Relatórios', 'icon' => 'fa-solid fa-chart-pie', 'key' => 'financeiro_relatorios.php'],
 ];
 

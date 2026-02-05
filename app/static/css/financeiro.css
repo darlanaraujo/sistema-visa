@@ -1,15 +1,58 @@
 /* app/static/css/financeiro.css */
 
+/* =========================================================
+   FINANCEIRO — TOKENS (compatibilidade + theme-driven)
+   - Mantém o padrão antigo (--fin-*)
+   - Deriva do theme.css (mais fácil manutenção)
+   ========================================================= */
+
 :root{
-  --fin-head-bg:#eef2ff;
-  --fin-head-text:#1f2a44;
-  --fin-border:#e7ebf3;
-  --fin-muted:#5b6476;
-  --fin-blue:#2563eb;
-  --fin-soft:#fbfcff;
-  --fin-danger:#ef4444;
-  --fin-success:#16a34a;
+  /* Neutros / superfícies */
+  --fin-soft:      var(--c-bg);
+  --fin-border:    var(--c-border);
+  --fin-border-2:  var(--c-border-2);
+  --fin-muted:     var(--c-muted);
+  --fin-text:      var(--c-text);
+  --fin-surface:   var(--c-surface);
+  --fin-surface-2: var(--c-surface-2);
+
+  /* Acento do sistema */
+  --fin-blue:      var(--c-accent);
+
+  /* Estados (tons sofisticados vindos do theme.css) */
+  --fin-danger:    var(--c-danger);
+  --fin-success:   var(--c-success);
+  --fin-warning:   var(--c-warning);
+
+  /* =========================================================
+     CAMADAS (padrão visual do módulo)
+     - topo diferente do miolo
+     - miolo levemente “neutro”
+     ========================================================= */
+  --fin-panel-bg:       var(--panel-bg, var(--fin-surface));
+  --fin-panel-head-bg:  var(--panel-head-bg, color-mix(in srgb, var(--n-150) 70%, #ffffff));
+  --fin-panel-inner-bg: var(--panel-inner-bg, color-mix(in srgb, var(--n-150) 40%, #ffffff));
+  --fin-panel-foot-bg:  var(--panel-foot-bg, color-mix(in srgb, var(--n-150) 62%, #ffffff));
+
+  /* Header de tabela (discreto, sem “pintar” de vermelho) */
+  --fin-head-bg:   var(--table-head-bg, color-mix(in srgb, var(--n-150) 78%, #ffffff));
+  --fin-head-text: var(--n-800);
+
+  /* zebra */
+  --fin-row-a: var(--table-row-a, color-mix(in srgb, var(--n-150) 28%, #ffffff));
+  --fin-row-b: var(--table-row-b, color-mix(in srgb, var(--n-150) 14%, #ffffff));
+
+  /* Hovers / pills (neutros + leve toque do acento) */
+  --fin-hover-bg: color-mix(in srgb, var(--fin-blue) 6%, var(--fin-surface));
+  --fin-hover-bd: color-mix(in srgb, var(--fin-blue) 14%, var(--fin-border));
+
+  --fin-pill-bg:  color-mix(in srgb, var(--fin-blue) 10%, var(--fin-surface));
+  --fin-pill-bd:  color-mix(in srgb, var(--fin-blue) 18%, var(--fin-border));
 }
+
+/* =========================================================
+   BASE
+   ========================================================= */
 
 *, *::before, *::after{ box-sizing:border-box; }
 
@@ -19,9 +62,9 @@ html, body{
   overflow-x:visible;
 }
 
-/* ===========================
+/* =========================================================
    ESTRUTURA BASE
-   =========================== */
+   ========================================================= */
 
 .fin-page{
   display:flex;
@@ -36,7 +79,7 @@ html, body{
 .fin-head h1{
   margin:0 0 6px 0;
   font-size:22px;
-  color:#0b1220;
+  color:var(--fin-text);
 }
 
 .fin-head p{
@@ -50,12 +93,12 @@ html, body{
   .fin-head h1{ font-size:20px; }
 }
 
-/* ===========================
+/* =========================================================
    NAV INTERNA
-   =========================== */
+   ========================================================= */
 
 .fin-nav-wrap{
-  background:#fff;
+  background:var(--fin-panel-bg);
   border:1px solid var(--fin-border);
   border-radius:14px;
   overflow:hidden;
@@ -65,13 +108,15 @@ html, body{
   display:none;
   padding:12px;
   font-weight:900;
-  color:#0b1220;
+  color:var(--fin-text);
   align-items:center;
   justify-content:space-between;
   gap:10px;
   cursor:pointer;
   user-select:none;
   font-size:13px;
+  background: var(--fin-panel-head-bg);
+  border-bottom: 1px solid var(--fin-border);
 }
 
 .fin-nav-summary i{ color:var(--fin-blue); }
@@ -81,7 +126,7 @@ html, body{
   flex-wrap:wrap;
   gap:8px;
   padding:10px;
-  background:#fff;
+  background:var(--fin-panel-bg);
   justify-content:center;
 }
 
@@ -89,11 +134,11 @@ html, body{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:10px;
   padding:10px 12px;
   border-radius:12px;
   text-decoration:none;
-  color:#23314f;
+  color:color-mix(in srgb, var(--fin-text) 85%, #000);
   font-weight:900;
   font-size:13px;
   border:1px solid transparent;
@@ -106,8 +151,8 @@ html, body{
 }
 
 .fin-nav__item:hover{
-  background:#f4f7ff;
-  border-color:#d9e4ff;
+  background:var(--fin-hover-bg);
+  border-color:var(--fin-hover-bd);
 }
 
 .fin-nav__item.is-active{
@@ -121,8 +166,6 @@ html, body{
 @media (max-width:700px){
   .fin-nav-summary{
     display:flex;
-    background:#fff;
-    border-bottom:1px solid var(--fin-border);
   }
 
   .fin-nav{
@@ -147,32 +190,54 @@ html, body{
 
 .fin-nav-wrap.is-collapsed .fin-nav{ display:none; }
 
-/* ===========================
-   PAINÉIS / CARDS
-   =========================== */
+/* =========================================================
+   PAINÉIS / CARDS (camadas padrão)
+   ========================================================= */
 
 .fin-card,
 .fin-panel{
-  background:#fff;
+  background:var(--fin-panel-bg);
   border:1px solid var(--fin-border);
   border-radius:14px;
   padding:14px;
-  overflow:hidden; /* impede vazamento horizontal interno */
+  overflow:hidden;
 }
 
+/* ✅ topo com fundo diferente do miolo */
 .fin-panel__head{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  margin-bottom:12px;
   min-width:0;
+
+  background: var(--fin-panel-head-bg);
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
 }
 
+/* ✅ PADRÃO ÚNICO: título com ícone + gap + cor */
 .fin-panel__title{
+  display:flex;
+  align-items:center;
+  gap:10px;
   font-weight:900;
   font-size:13px;
-  color:#0b1220;
+  color:var(--fin-text);
+}
+
+/* ✅ remove “bolinha” antiga (se existir regra legada em algum lugar) */
+.fin-panel__title::before{
+  content:none !important;
+}
+
+.fin-panel__title i{
+  color: var(--fin-blue);
+  width:18px;
+  text-align:center;
+  flex:0 0 auto;
 }
 
 .fin-badge{
@@ -183,8 +248,8 @@ html, body{
   font-size:11px;
   font-weight:900;
   color:var(--fin-blue);
-  background:#eef4ff;
-  border:1px solid #d9e4ff;
+  background:var(--fin-pill-bg);
+  border:1px solid var(--fin-pill-bd);
   white-space:nowrap;
 }
 
@@ -203,9 +268,9 @@ html, body{
 .t-center{ text-align:center !important; }
 .t-right{ text-align:right !important; }
 
-/* ===========================
-   BOTÕES (texto SEMPRE visível)
-   =========================== */
+/* =========================================================
+   BOTÕES (padrão: principal + ghost)
+   ========================================================= */
 
 .fin-btn{
   height:44px;
@@ -218,47 +283,43 @@ html, body{
   cursor:pointer;
   display:inline-flex;
   align-items:center;
-  justify-content:center; /* centraliza ícone + texto */
-  gap:8px;
+  justify-content:center;
+  gap:10px;
   font-size:13px;
   white-space:nowrap;
   line-height:1;
 }
 
 .fin-btn i{ line-height:1; }
-
 .fin-btn:hover{ filter:brightness(0.97); }
 
 .fin-btn--ghost{
-  background:transparent;
-  color:var(--fin-blue);
-  border-color:#d9e4ff;
+  background: var(--btn-ghost-bg, color-mix(in srgb, var(--n-150) 30%, #ffffff));
+  color: var(--fin-blue);
+  border-color: var(--btn-ghost-border, color-mix(in srgb, var(--fin-border) 70%, #ffffff));
 }
 
-.fin-btn--ghost:hover{ background:#eef4ff; }
+.fin-btn--ghost:hover{
+  background: var(--fin-hover-bg);
+}
 
 /* remover comportamento antigo de esconder texto */
-.fin-btn.is-icon{
-  padding:0 14px;
-}
-.fin-btn.is-icon span{
-  display:inline;
-}
+.fin-btn.is-icon{ padding:0 14px; }
+.fin-btn.is-icon span{ display:inline; }
 
-/* pequenos botões icônicos (somente quando fizer sentido) */
+/* botões icônicos */
 .fin-icon-btn{
   width:38px;
   height:38px;
   border-radius:12px;
-  border:1px solid #d9e4ff;
-  background:#f4f7ff;
-  color:#1f2a44;
+  border:1px solid var(--fin-pill-bd);
+  background:var(--fin-hover-bg);
+  color:color-mix(in srgb, var(--fin-text) 80%, #000);
   cursor:pointer;
   display:inline-flex;
   align-items:center;
   justify-content:center;
 }
-
 .fin-icon-btn:hover{ filter:brightness(0.97); }
 
 .fin-icon-btn--sm{
@@ -267,7 +328,7 @@ html, body{
   border-radius:10px;
 }
 
-/* mês (centro do header) */
+/* mês */
 .fin-monthline{
   display:flex;
   align-items:center;
@@ -276,34 +337,31 @@ html, body{
   min-width:0;
   flex:0 1 auto;
 }
-
 .fin-monthline__label{
   font-weight:900;
-  color:#0b1220;
+  color:var(--fin-text);
   font-size:13px;
   white-space:nowrap;
 }
-
 @media (max-width:700px){
   .fin-monthline__label{ font-size:12px; }
   .fin-icon-btn--sm{ width:30px; height:30px; }
 }
 
-/* ===========================
+/* =========================================================
    KPI / TOOLBAR
-   =========================== */
+   ========================================================= */
 
 .fin-toolbar-panel{
-  background:#fff;
+  background:var(--fin-panel-bg);
   border:1px solid var(--fin-border);
   border-radius:14px;
   padding:12px;
 }
 
-/* ✅ Logo na 1ª coluna (esquerda) */
 .fin-toolbar{
   display:grid;
-  grid-template-columns: 0.7fr 0.7fr 0.7fr 1fr; /* logo | pendente | pago | CTA */
+  grid-template-columns: 0.7fr 0.7fr 0.7fr 1fr;
   gap:10px;
   align-items:stretch;
   justify-content:center;
@@ -311,7 +369,6 @@ html, body{
   margin:0 auto;
 }
 
-/* blocos dentro da barra */
 .fin-toolbar__block{
   display:flex;
   align-items:center;
@@ -320,11 +377,10 @@ html, body{
   padding:12px 14px;
   border:1px solid var(--fin-border);
   border-radius:14px;
-  background:#fff;
+  background:var(--fin-panel-bg);
   min-width:0;
 }
 
-/* bloco da logo (sem borda, sem “cara de card”) */
 .fin-toolbar__block--logo{
   border:none;
   background:transparent;
@@ -347,21 +403,16 @@ html, body{
   opacity:0.92;
 }
 
-/* ===========================
-   KPI (DESKTOP 2 COLUNAS / MOBILE INLINE)
-   =========================== */
-
-/* wrapper do KPI vira grid 2 colunas no desktop */
+/* KPI 2 col */
 .fin-kpi--two-col{
   display:grid;
-  grid-template-columns: 52px 1fr; /* coluna do ícone + texto */
+  grid-template-columns: 52px 1fr;
   gap:12px;
   align-items:center;
   width:100%;
   min-width:0;
 }
 
-/* coluna do ícone (desktop) */
 .fin-kpi__iconcol{
   display:flex;
   align-items:center;
@@ -370,18 +421,16 @@ html, body{
 }
 
 .fin-kpi__iconcol i{
-  font-size:38px; /* 35–40px */
+  font-size:38px;
   line-height:1;
 }
 
-/* cores (somente cor, sem fundo/borda) */
 .fin-kpi__iconcol--danger,
 .fin-kpi__iconinline--danger{ color:var(--fin-danger); }
 
 .fin-kpi__iconcol--success,
 .fin-kpi__iconinline--success{ color:var(--fin-success); }
 
-/* coluna do texto */
 .fin-kpi__text{
   min-width:0;
   display:flex;
@@ -389,11 +438,10 @@ html, body{
   gap:6px;
 }
 
-/* título + ícone inline (mobile) */
 .fin-kpi__title{
   font-size:12px;
   font-weight:900;
-  color:#1f2a44;
+  color:color-mix(in srgb, var(--fin-text) 80%, #000);
   display:flex;
   align-items:center;
   gap:10px;
@@ -402,7 +450,6 @@ html, body{
   text-overflow:ellipsis;
 }
 
-/* ícone inline (mobile) - por padrão escondido no desktop */
 .fin-kpi__iconinline{
   display:none;
   align-items:center;
@@ -414,18 +461,16 @@ html, body{
   line-height:1;
 }
 
-/* valor */
 .fin-kpi__value{
   font-size:18px;
   font-weight:900;
-  color:#0b1220;
+  color:var(--fin-text);
   line-height:1.15;
 }
 
 .fin-kpi__value--danger{ color:var(--fin-danger); }
 .fin-kpi__value--success{ color:var(--fin-success); }
 
-/* responsivo */
 @media (max-width:900px){
   .fin-toolbar{
     grid-template-columns: 1fr 1fr;
@@ -433,16 +478,9 @@ html, body{
     margin:0;
   }
 
-  /* esconde logo no mobile */
-  .fin-toolbar__block--logo{
-    display:none;
-  }
+  .fin-toolbar__block--logo{ display:none; }
+  .fin-toolbar__block--cta{ grid-column: 1 / -1; }
 
-  .fin-toolbar__block--cta{
-    grid-column: 1 / -1;
-  }
-
-  /* KPI: some a coluna do ícone e usa ícone inline no título */
   .fin-kpi--two-col{
     grid-template-columns: 1fr;
     gap:6px;
@@ -453,12 +491,12 @@ html, body{
   .fin-kpi__value{ font-size:16px; }
 }
 
-/* ===========================
-   FILTROS
-   =========================== */
+/* =========================================================
+   FILTROS (camadas)
+   ========================================================= */
 
 .fin-filters-wrap{
-  background:#fff;
+  background:var(--fin-panel-bg);
   border:1px solid var(--fin-border);
   border-radius:14px;
   overflow:hidden;
@@ -469,7 +507,7 @@ html, body{
   display:none;
   padding:12px;
   font-weight:900;
-  color:#0b1220;
+  color:var(--fin-text);
   align-items:center;
   justify-content:space-between;
   gap:10px;
@@ -477,6 +515,7 @@ html, body{
   user-select:none;
   font-size:13px;
   border-bottom:1px solid var(--fin-border);
+  background: var(--fin-panel-head-bg);
 }
 
 .fin-filters-summary i{ color:var(--fin-blue); }
@@ -487,6 +526,7 @@ html, body{
   gap:10px;
   padding:12px;
   max-width:100%;
+  background: var(--fin-panel-inner-bg);
 }
 
 .fin-filter{
@@ -499,20 +539,27 @@ html, body{
 .fin-filter label{
   font-size:12px;
   font-weight:900;
-  color:#1f2a44;
+  color:color-mix(in srgb, var(--fin-text) 80%, #000);
 }
 
 .fin-filter select,
 .fin-filter input{
   height:44px;
   border-radius:12px;
-  border:1px solid #dbe2f1;
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #cbd5e1);
   padding:0 12px;
   outline:none;
-  background:#fff;
+  background:var(--fin-surface);
   font-size:13px;
   font-weight:800;
   max-width:100%;
+  color:var(--fin-text);
+}
+
+.fin-filter select:focus,
+.fin-filter input:focus{
+  border-color:color-mix(in srgb, var(--fin-blue) 55%, var(--fin-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fin-blue) 18%, transparent);
 }
 
 @media (max-width:700px){
@@ -521,36 +568,32 @@ html, body{
   .fin-filters-wrap.is-open .fin-filters{ display:grid; }
 
   .fin-filter select,
-  .fin-filter input{
-    font-size:12px;
-  }
+  .fin-filter input{ font-size:12px; }
 }
 
-/* ===========================
-   TABELAS (scroll horizontal no wrap)
-   =========================== */
+/* =========================================================
+   TABELAS (zebra + head distinto)
+   ========================================================= */
 
 .fin-table-wrap{
   width:100%;
   max-width:100%;
-  overflow-x:auto !important; /* garante scroll horizontal */
+  overflow-x:auto !important;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   border:1px solid var(--fin-border);
   border-radius:12px;
-  background:#fff;
+  background:var(--fin-panel-bg);
   display:block;
   position:relative;
   min-width:0;
   contain: layout paint;
 }
 
-.fin-table-wrap.is-scroll-y{
-  max-height:360px;
-}
+.fin-table-wrap.is-scroll-y{ max-height:360px; }
 
 .fin-table{
-  width:max-content;
+  width:100% !important;
   min-width:980px;
   border-collapse:separate;
   border-spacing:0;
@@ -568,26 +611,27 @@ html, body{
 }
 
 .fin-table tbody td{
-  background:#fff;
-  color:#0b1220;
+  color:var(--fin-text);
   font-weight:800;
   font-size:13px;
   padding:10px 12px;
   vertical-align:middle;
   white-space:nowrap;
-  border-bottom:1px solid #edf0f7;
+  border-bottom:1px solid var(--fin-border-2);
 }
+
+/* ✅ zebra no TR */
+.fin-table tbody tr:nth-child(odd) td{ background: var(--fin-row-a); }
+.fin-table tbody tr:nth-child(even) td{ background: var(--fin-row-b); }
 
 .fin-table tbody tr:last-child td{ border-bottom:none; }
 
 .fin-table th + th,
-.fin-table td + td{
-  border-left:1px solid #edf0f7;
-}
+.fin-table td + td{ border-left:1px solid var(--fin-border-2); }
 
-/* ===========================
+/* =========================================================
    AÇÕES (ícones)
-   =========================== */
+   ========================================================= */
 
 .fin-actions-row{
   display:flex;
@@ -600,8 +644,8 @@ html, body{
   width:34px;
   height:34px;
   border-radius:10px;
-  border:1px solid #e5eaf6;
-  background:#fff;
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
+  background:var(--fin-surface);
   cursor:pointer;
   display:inline-flex;
   align-items:center;
@@ -609,9 +653,12 @@ html, body{
   position:relative;
 }
 
-.fin-action-ico i{ color:#1f2a44; }
+.fin-action-ico i{ color:color-mix(in srgb, var(--fin-text) 80%, #000); }
 
-.fin-action-ico:hover{ background:#f4f7ff; border-color:#d9e4ff; }
+.fin-action-ico:hover{
+  background:var(--fin-hover-bg);
+  border-color:var(--fin-hover-bd);
+}
 
 .fin-action-ico[data-tip]:hover::after{
   content:attr(data-tip);
@@ -619,7 +666,7 @@ html, body{
   bottom:42px;
   left:50%;
   transform:translateX(-50%);
-  background:#0b1220;
+  background:color-mix(in srgb, var(--fin-text) 92%, #000);
   color:#fff;
   padding:6px 8px;
   border-radius:10px;
@@ -636,16 +683,16 @@ html, body{
   width:32px;
   height:32px;
   border-radius:999px;
-  border:1px solid #e5eaf6;
-  background:#fff;
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
+  background:var(--fin-surface);
 }
 
 .fin-status.is-open i{ color:var(--fin-danger); }
 .fin-status.is-done i{ color:var(--fin-success); }
 
-/* ===========================
-   MODAL
-   =========================== */
+/* =========================================================
+   MODAL (camadas)
+   ========================================================= */
 
 .fin-modal{
   position:fixed;
@@ -668,7 +715,7 @@ html, body{
 .fin-modal__card{
   width:100%;
   max-width:720px;
-  background:#fff;
+  background:var(--fin-panel-bg);
   border-radius:16px;
   border:1px solid var(--fin-border);
   overflow:hidden;
@@ -688,13 +735,13 @@ html, body{
   justify-content:space-between;
   gap:10px;
   padding:12px 14px;
-  background:#f7f9ff;
+  background:var(--fin-panel-head-bg);
   border-bottom:1px solid var(--fin-border);
 }
 
 .fin-modal__title{
   font-weight:900;
-  color:#0b1220;
+  color:var(--fin-text);
   font-size:13px;
 }
 
@@ -702,12 +749,15 @@ html, body{
   width:38px;
   height:38px;
   border-radius:12px;
-  border:1px solid #dbe2f1;
-  background:#fff;
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
+  background:var(--fin-surface);
   cursor:pointer;
 }
 
-.fin-modal__body{ padding:14px; }
+.fin-modal__body{
+  padding:14px;
+  background: var(--fin-panel-inner-bg);
+}
 
 .fin-form{
   display:flex;
@@ -729,7 +779,7 @@ html, body{
   display:block;
   font-size:12px;
   font-weight:900;
-  color:#1f2a44;
+  color:color-mix(in srgb, var(--fin-text) 80%, #000);
   margin:0 0 6px 0;
 }
 
@@ -737,13 +787,20 @@ html, body{
 .fin-field select{
   height:44px;
   border-radius:12px;
-  border:1px solid #dbe2f1;
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
   padding:0 12px;
   outline:none;
-  background:#fff;
+  background:var(--fin-surface);
   font-size:13px;
   font-weight:800;
   max-width:100%;
+  color:var(--fin-text);
+}
+
+.fin-field input:focus,
+.fin-field select:focus{
+  border-color:color-mix(in srgb, var(--fin-blue) 55%, var(--fin-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fin-blue) 18%, transparent);
 }
 
 .fin-modal__actions{
