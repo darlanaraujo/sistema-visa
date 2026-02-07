@@ -114,11 +114,11 @@ $mock = [
     <div class="fin-filters" id="crFiltersGrid">
       <div class="fin-filter">
         <label>Cliente</label>
-        <select id="crFilterCliente">
+        <select id="crFilterCliente" data-fin-catalog="clientes">
           <option value="">Todos</option>
-          <option>Cliente X</option>
-          <option>Cliente Y</option>
-          <option>Parceiro Z</option>
+          <option value="Cliente X">Cliente X</option>
+          <option value="Cliente Y">Cliente Y</option>
+          <option value="Parceiro Z">Parceiro Z</option>
         </select>
       </div>
 
@@ -133,14 +133,14 @@ $mock = [
 
       <div class="fin-filter">
         <label>Forma</label>
-        <select id="crFilterForma">
+        <select id="crFilterForma" data-fin-catalog="formas_recebimento">
           <option value="">Todas</option>
-          <option>Boleto</option>
-          <option>Cheque</option>
-          <option>PIX Futuro</option>
-          <option>Depósito</option>
-          <option>Transferência</option>
-          <option>Outro</option>
+          <option value="Boleto">Boleto</option>
+          <option value="Cheque">Cheque</option>
+          <option value="PIX Futuro">PIX Futuro</option>
+          <option value="Depósito">Depósito</option>
+          <option value="Transferência">Transferência</option>
+          <option value="Outro">Outro</option>
         </select>
       </div>
 
@@ -223,11 +223,11 @@ $mock = [
           <div class="fin-form__row">
             <div class="fin-field">
               <label>Cliente</label>
-              <select id="crCliente" required>
+              <select id="crCliente" data-fin-catalog="clientes" required>
                 <option value="">Selecione</option>
-                <option>Cliente X</option>
-                <option>Cliente Y</option>
-                <option>Parceiro Z</option>
+                <option value="Cliente X">Cliente X</option>
+                <option value="Cliente Y">Cliente Y</option>
+                <option value="Parceiro Z">Parceiro Z</option>
               </select>
             </div>
             <div class="fin-field">
@@ -243,14 +243,14 @@ $mock = [
             </div>
             <div class="fin-field">
               <label>Forma</label>
-              <select id="crForma" required>
+              <select id="crForma" data-fin-catalog="formas_recebimento" required>
                 <option value="">Selecione</option>
-                <option>Boleto</option>
-                <option>Cheque</option>
-                <option>PIX Futuro</option>
-                <option>Depósito</option>
-                <option>Transferência</option>
-                <option>Outro</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Cheque">Cheque</option>
+                <option value="PIX Futuro">PIX Futuro</option>
+                <option value="Depósito">Depósito</option>
+                <option value="Transferência">Transferência</option>
+                <option value="Outro">Outro</option>
               </select>
             </div>
           </div>

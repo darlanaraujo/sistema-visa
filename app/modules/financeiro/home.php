@@ -121,7 +121,7 @@ function br_md($iso){
               </span>
               Total a pagar
             </div>
-            <div class="fin-kpi__value fin-kpi__value--danger"><?= h($kpis['pagar_open']) ?></div>
+            <div class="fin-kpi__value fin-kpi__value--danger" id="dashKpiPagarOpen"><?= h($kpis['pagar_open']) ?></div>
           </div>
         </div>
       </a>
@@ -140,7 +140,7 @@ function br_md($iso){
               </span>
               Total pago
             </div>
-            <div class="fin-kpi__value fin-kpi__value--success"><?= h($kpis['pagar_done']) ?></div>
+            <div class="fin-kpi__value fin-kpi__value--success" id="dashKpiPagarDone"><?= h($kpis['pagar_done']) ?></div>
           </div>
         </div>
       </a>
@@ -162,7 +162,7 @@ function br_md($iso){
               </span>
               Total a receber
             </div>
-            <div class="fin-kpi__value fin-kpi__value--danger"><?= h($kpis['receber_open']) ?></div>
+            <div class="fin-kpi__value fin-kpi__value--danger" id="dashKpiReceberOpen"><?= h($kpis['receber_open']) ?></div>
           </div>
         </div>
       </a>
@@ -181,7 +181,7 @@ function br_md($iso){
               </span>
               Total recebido
             </div>
-            <div class="fin-kpi__value fin-kpi__value--success"><?= h($kpis['receber_done']) ?></div>
+            <div class="fin-kpi__value fin-kpi__value--success" id="dashKpiReceberDone"><?= h($kpis['receber_done']) ?></div>
           </div>
         </div>
       </a>
@@ -249,7 +249,7 @@ function br_md($iso){
         <span class="fin-badge fin-badge--pt">prévia</span>
       </div>
 
-      <div class="fin-dash-acc fin-dash-acc--agenda">
+      <div class="fin-dash-acc fin-dash-acc--agenda" id="dashAgenda">
         <?php foreach ($agenda as $g): ?>
           <details class="fin-dash-acc__item" <?= $g['open'] ? 'open' : '' ?>>
             <summary class="fin-dash-acc__sum">
@@ -297,13 +297,13 @@ function br_md($iso){
           <a class="fin-dash-shortcut is-rec" href="/sistema-visa/app/templates/financeiro_contas_receber.php">
             <i class="fa-solid fa-hand-holding-dollar"></i><span>Contas a receber</span>
           </a>
-          <a class="fin-dash-shortcut" href="/sistema-visa/app/templates/financeiro_imoveis.php">
+          <a class="fin-dash-shortcut" href="#">
             <i class="fa-solid fa-warehouse"></i><span>Imóveis</span>
           </a>
-          <a class="fin-dash-shortcut" href="/sistema-visa/app/templates/financeiro_categorias.php">
+          <a class="fin-dash-shortcut" href="#">
             <i class="fa-solid fa-tags"></i><span>Categorias</span>
           </a>
-          <a class="fin-dash-shortcut" href="/sistema-visa/app/templates/financeiro_parceiros.php">
+          <a class="fin-dash-shortcut" href="#">
             <i class="fa-solid fa-users"></i><span>Clientes / Fornecedores</span>
           </a>
           <a class="fin-dash-shortcut" href="/sistema-visa/app/templates/financeiro_relatorios.php">
@@ -329,7 +329,7 @@ function br_md($iso){
           <a class="fin-dash-listbox__link" href="/sistema-visa/app/templates/financeiro_contas_pagar.php">abrir</a>
         </div>
 
-        <div class="fin-dash-mini">
+        <div class="fin-dash-mini" id="dashPagarList">
           <?php foreach ($pagar_list as $c): ?>
             <div class="fin-dash-mini__row is-pay <?= $c['overdue'] ? 'is-overdue' : '' ?>">
               <div class="fin-dash-mini__main">
@@ -351,7 +351,7 @@ function br_md($iso){
           <a class="fin-dash-listbox__link" href="/sistema-visa/app/templates/financeiro_contas_receber.php">abrir</a>
         </div>
 
-        <div class="fin-dash-mini">
+        <div class="fin-dash-mini" id="dashReceberList">
           <?php foreach ($receber_list as $r): ?>
             <div class="fin-dash-mini__row is-rec <?= $r['overdue'] ? 'is-overdue' : '' ?>">
               <div class="fin-dash-mini__main">
@@ -375,7 +375,7 @@ function br_md($iso){
       <a class="fin-badge fin-badge--pt fin-badge--link" href="/sistema-visa/app/templates/financeiro_relatorios.php">ver</a>
     </div>
 
-    <div class="rep-grid">
+    <div class="rep-grid" id="dashReportsGrid">
       <?php foreach ($relatorios as $r): ?>
         <a class="rep-card" href="<?= h($r['href']) ?>">
           <div class="rep-card__icon"><i class="<?= h($r['icon']) ?>"></i></div>
@@ -387,4 +387,13 @@ function br_md($iso){
     </div>
   </section>
 
+<script>
+  window.__FIN_DASH_MOCK__ = {
+    kpis: <?= json_encode($kpis, JSON_UNESCAPED_UNICODE) ?>,
+    pagar_list: <?= json_encode($pagar_list, JSON_UNESCAPED_UNICODE) ?>,
+    receber_list: <?= json_encode($receber_list, JSON_UNESCAPED_UNICODE) ?>,
+    agenda: <?= json_encode($agenda, JSON_UNESCAPED_UNICODE) ?>,
+    relatorios: <?= json_encode($relatorios, JSON_UNESCAPED_UNICODE) ?>,
+  };
+</script>
 </div>

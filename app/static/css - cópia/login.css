@@ -1,0 +1,127 @@
+/* =========================================================
+   LOGIN — usa tokens do theme.css
+   Mantém estética atual, mas preparada para rebrand
+   ========================================================= */
+
+.login-page{
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+
+  background:
+    radial-gradient(
+      1200px 600px at 20% 10%,
+      rgb(var(--grad-login-accent-rgb) / var(--grad-login-opacity-strong)) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 80% 20%,
+      rgb(var(--grad-login-hot-rgb) / var(--grad-login-opacity-soft)) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      var(--grad-login-deep) 0%,
+      #0a1020 100%
+    );
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--c-surface);
+  border-radius: 18px;
+  padding: 26px 22px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+}
+
+.logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+/* Ajuste obrigatório */
+.login-container .logo {
+  max-width: 220px;
+}
+
+.logo {
+  max-width: 220px;
+  height: auto;
+}
+
+.login-separator {
+  width: 100%;
+  height: 1px;
+  background: var(--c-border);
+  margin: 14px 0 16px 0;
+}
+
+.title {
+  text-align: center;
+  margin: 0 0 18px 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--c-muted);
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.input-icon {
+  position: relative;
+}
+
+.input-icon i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-muted);
+}
+
+.input-icon input {
+  padding-left: 44px;
+}
+
+.btn-primary {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--btn-border);
+}
+
+.btn-primary:hover {
+  filter: brightness(0.95);
+}
+
+.alert-error {
+  background: color-mix(in srgb, var(--c-danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-danger) 35%, transparent);
+  color: color-mix(in srgb, var(--c-danger) 85%, #000);
+  padding: 12px 12px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.login-footer {
+  margin-top: 16px;
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  text-align: center;
+}
+
+.login-footer a {
+  color: color-mix(in srgb, var(--c-accent) 65%, #93c5fd);
+  font-weight: 700;
+}

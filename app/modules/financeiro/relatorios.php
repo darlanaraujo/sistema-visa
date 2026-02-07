@@ -96,9 +96,29 @@ function group_key_from_title($title){
   return 'outros';
 }
 
+// Identidade corporativa (padrão ouro para impressão)
+$corp = [
+  'company' => 'Visa Remoções',
+  'cnpj'    => '17.686.570/0001-80',
+  'tagline' => 'Sistema Financeiro • Relatórios',
+  'logo'    => '/sistema-visa/app/static/img/logo.png',
+  'site'    => '',
+];
+
+// Payload para o JS (sem <script> inline: via data-attribute)
+$fr_mock_payload = [
+  'favorites' => $favorites,
+  'groups'    => $report_groups,
+  'periods'   => $period_options,
+  'types'     => $type_options,
+  'fav_limit' => 4,
+  'corp'      => $corp,
+];
+$fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
+
 ?>
 
-<div class="fin-page" id="frPage">
+<div class="fin-page" id="frPage" data-fr-mock="<?= $fr_mock_json ?>">
   <div class="fin-head">
     <h1>Relatórios</h1>
     <p>Relatórios do financeiro para visão rápida e conferência. (Mock nesta etapa — sem banco de dados)</p>
@@ -225,9 +245,9 @@ function group_key_from_title($title){
     </section>
   <?php endforeach; ?>
 
-  <!-- Modal (mock de execução do relatório) -->
+  <!-- Modal (execução do relatório: padrão ouro para impressão) -->
   <div class="fin-modal" id="frModal" aria-hidden="true">
-    <div class="fin-modal__card" style="max-width:760px">
+    <div class="fin-modal__card" style="max-width:980px">
       <div class="fin-modal__head">
         <div class="fin-modal__title" id="frModalTitle">Relatório</div>
         <button class="fin-modal__close" id="frModalClose" type="button" aria-label="Fechar">
@@ -236,32 +256,77 @@ function group_key_from_title($title){
       </div>
 
       <div class="fin-modal__body">
-        <div class="fin-rep-modal">
-          <div class="fin-rep-modal__row">
-            <div class="fin-rep-modal__k">Período</div>
-            <div class="fin-rep-modal__v" id="frModalPeriod">—</div>
-          </div>
-          <div class="fin-rep-modal__row">
-            <div class="fin-rep-modal__k">Tipo</div>
-            <div class="fin-rep-modal__v" id="frModalType">—</div>
-          </div>
-          <div class="fin-rep-modal__row">
-            <div class="fin-rep-modal__k">Relatório</div>
-            <div class="fin-rep-modal__v" id="frModalReport">—</div>
+        <!--
+          Este bloco serve a 2 propósitos:
+          1) Visualização dentro do modal.
+          2) Impressão/PDF no padrão corporativo (via @media print).
+
+          O JS vai preencher: cabeçalho, meta, gráfico (se Chart.js existir), e tabela.
+        -->
+        <div class="fr-print" id="frPrintArea">
+          <header class="fr-print__head">
+            <div class="fr-print__brand">
+              <img class="fr-print__logo" src="<?= h($corp['logo']) ?>" alt="<?= h($corp['company']) ?>">
+              <div class="fr-print__brandtxt">
+                <div class="fr-print__company"><?= h($corp['company']) ?></div>
+                <div class="fr-print__sub">CNPJ: <?= h($corp['cnpj']) ?> • <?= h($corp['tagline']) ?></div>
+              </div>
+            </div>
+            <div class="fr-print__meta">
+              <div><span>Gerado em:</span> <strong id="frPrintGeneratedAt">—</strong></div>
+              <div><span>Período:</span> <strong id="frPrintPeriod">—</strong></div>
+              <div><span>Tipo:</span> <strong id="frPrintType">—</strong></div>
+            </div>
+          </header>
+
+          <div class="fr-print__title">
+            <div class="fr-print__h" id="frPrintTitle">Relatório</div>
+            <div class="fr-print__desc" id="frPrintDesc">—</div>
           </div>
 
-          <div class="fin-rep-modal__hint">
-            Mock nesta etapa: aqui entrará a renderização real (tabela/gráfico/exportação) quando conectar ao banco.
-          </div>
+          <section class="fr-print__kpis" id="frPrintKpis" aria-label="Resumo">
+            <!-- JS injeta cards KPI quando aplicável -->
+          </section>
 
-          <div class="fin-modal__actions">
-            <button class="fin-btn fin-btn--ghost" id="frModalGhost" type="button">
-              <i class="fa-solid fa-file-export"></i><span>Exportar (mock)</span>
-            </button>
-            <button class="fin-btn" id="frModalRun" type="button">
-              <i class="fa-solid fa-play"></i><span>Executar (mock)</span>
-            </button>
-          </div>
+          <section class="fr-print__chart" id="frPrintChartSection" aria-label="Gráfico" hidden>
+            <div class="fr-print__sectiontitle"><i class="fa-solid fa-chart-pie"></i> Gráfico</div>
+            <div class="fr-print__chartwrap">
+              <canvas id="frPrintChart" height="180" aria-label="Gráfico do relatório"></canvas>
+              <!-- fallback para impressão: JS pode injetar uma imagem do canvas aqui -->
+              <img id="frPrintChartImg" alt="Gráfico" style="display:none; width:100%; height:auto;" />
+            </div>
+            <div class="fr-print__hint" id="frPrintChartHint" hidden>
+              * Chart.js não disponível nesta etapa. O relatório será impresso sem gráfico.
+            </div>
+          </section>
+
+          <section class="fr-print__table" aria-label="Tabela">
+            <div class="fr-print__sectiontitle"><i class="fa-solid fa-table"></i> Dados</div>
+            <div class="fr-print__tablewrap">
+              <table class="fr-print__t" id="frPrintTable">
+                <thead id="frPrintThead"></thead>
+                <tbody id="frPrintTbody"></tbody>
+              </table>
+            </div>
+            <div class="fr-print__footnote" id="frPrintFootnote"></div>
+          </section>
+
+          <footer class="fr-print__footer">
+            <div>Documento gerado automaticamente pelo Sistema Visa.</div>
+            <div class="fr-print__pagenum">Página <span class="fr-page"></span></div>
+          </footer>
+        </div>
+
+        <div class="fin-modal__actions">
+          <button class="fin-btn fin-btn--ghost" id="frModalGhost" type="button">
+            <i class="fa-solid fa-file-export"></i><span>Exportar (CSV)</span>
+          </button>
+          <button class="fin-btn fin-btn--ghost" id="frModalPrint" type="button">
+            <i class="fa-solid fa-print"></i><span>Imprimir / PDF</span>
+          </button>
+          <button class="fin-btn" id="frModalRun" type="button">
+            <i class="fa-solid fa-play"></i><span>Executar</span>
+          </button>
         </div>
       </div>
     </div>
@@ -270,15 +335,4 @@ function group_key_from_title($title){
   <!-- Toast local (mantido como fallback) -->
   <div class="fin-rep-toast" id="frToast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-  <script>
-    window.__FR_MOCK__ = <?= json_encode([
-      'favorites' => $favorites,
-      'groups'    => $report_groups,
-      'periods'   => $period_options,
-      'types'     => $type_options,
-      'fav_limit' => 4,
-    ], JSON_UNESCAPED_UNICODE) ?>;
-  </script>
-
-  <script src="/sistema-visa/app/static/js/financeiro_relatorios.js"></script>
 </div>

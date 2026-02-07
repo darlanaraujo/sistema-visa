@@ -76,83 +76,134 @@
     const tShow = (m) => toast("show", m);
 
     // ---------------------------
-    // Helpers (format / parse)
+    // Normalização (texto + valor) — igual padrão do pagar
+    // ---------------------------
+    const LOWER_WORDS = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "por", "com", "a", "o"]);
+
+    function normalizeSpaces(s) {
+      return String(s || "").replace(/\s+/g, " ").trim();
+    }
+
+    // Title Case PT-BR (não “grita” tokens com número)
+    function titleCasePT(s) {
+      const raw = normalizeSpaces(s);
+      if (!raw) return "";
+      const parts = raw.toLowerCase().split(" ");
+      return parts
+        .map((w, i) => {
+          if (!w) return "";
+          if (i > 0 && LOWER_WORDS.has(w)) return w;
+          return w.charAt(0).toUpperCase() + w.slice(1);
+        })
+        .join(" ");
+    }
+
+    function normalizeCliente(s) {
+      return titleCasePT(s);
+    }
+
+    function normalizeForma(s) {
+      return titleCasePT(s);
+    }
+
+    function normalizeProcesso(s) {
+      const str = normalizeSpaces(s);
+      return str ? str.toUpperCase() : "";
+    }
+
+    // Obs: só limpa espaços (não reescreve conteúdo)
+    function normalizeObs(s) {
+      return normalizeSpaces(s);
+    }
+
+    // Valor: permitir só números, vírgula, ponto e espaço (em digitação/colagem)
+    function sanitizeMoneyTextInput(raw) {
+      let v = String(raw || "");
+      v = v.replace(/[^\d.,\s]/g, "");
+      v = v.replace(/\s+/g, " ");
+      return v;
+    }
+
+    function attachMoneyGuards(inputEl) {
+      if (!inputEl) return;
+
+      inputEl.addEventListener("keydown", (e) => {
+        const k = e.key;
+
+        if (
+          k === "Backspace" ||
+          k === "Delete" ||
+          k === "Tab" ||
+          k === "Enter" ||
+          k === "ArrowLeft" ||
+          k === "ArrowRight" ||
+          k === "ArrowUp" ||
+          k === "ArrowDown" ||
+          k === "Home" ||
+          k === "End" ||
+          e.ctrlKey ||
+          e.metaKey
+        )
+          return;
+
+        if (/^\d$/.test(k)) return;
+        if (k === "," || k === "." || k === " ") return;
+
+        e.preventDefault();
+      });
+
+      inputEl.addEventListener("input", () => {
+        const prev = inputEl.value;
+        const next = sanitizeMoneyTextInput(prev);
+        if (next !== prev) inputEl.value = next;
+      });
+
+      inputEl.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData("text") || "";
+        const cleaned = sanitizeMoneyTextInput(text);
+
+        const start = inputEl.selectionStart ?? inputEl.value.length;
+        const end = inputEl.selectionEnd ?? inputEl.value.length;
+
+        const before = inputEl.value.slice(0, start);
+        const after = inputEl.value.slice(end);
+
+        inputEl.value = before + cleaned + after;
+
+        const pos = (before + cleaned).length;
+        try {
+          inputEl.setSelectionRange(pos, pos);
+        } catch (_) {}
+      });
+
+      inputEl.addEventListener("blur", () => {
+        inputEl.value = sanitizeMoneyTextInput(inputEl.value).trim();
+      });
+    }
+
+    function attachTextNormalization(inputEl, fn) {
+      if (!inputEl) return;
+      inputEl.addEventListener("blur", () => {
+        inputEl.value = fn(inputEl.value);
+      });
+    }
+
+    // ---------------------------
+    // Helpers
     // ---------------------------
     function moneyBR(v) {
       const n = Number(v || 0);
       return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     }
 
-    function cleanSpaces(s) {
-      return String(s || "")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
-    // Title Case simples (padroniza nomes)
-    function toTitleCase(s) {
-      const str = cleanSpaces(s).toLowerCase();
-      if (!str) return "";
-
-      return str
-        .split(" ")
-        .map((w) => {
-          // preserva tokens com número (ex: "x2", "prc-2026")
-          if (/\d/.test(w)) return w.toUpperCase();
-          // siglas curtas
-          if (w.length <= 2) return w.toUpperCase();
-          return w.charAt(0).toUpperCase() + w.slice(1);
-        })
-        .join(" ");
-    }
-
-    // Obs em "sentence case" (primeira letra maiúscula)
-    function toSentenceCase(s) {
-      const str = cleanSpaces(s);
-      if (!str) return "";
-      const low = str.toLowerCase();
-      return low.charAt(0).toUpperCase() + low.slice(1);
-    }
-
-    function normalizeProcesso(s) {
-      const str = cleanSpaces(s);
-      if (!str) return "";
-      return str.toUpperCase();
-    }
-
     function parseMoneyInput(v) {
       const raw = String(v || "").trim();
       if (!raw) return 0;
-
       // aceita "1.234,56" e "1234.56"
-      const cleaned = raw
-        .replace(/\s/g, "")
-        .replace(/\./g, "")
-        .replace(",", ".");
+      const cleaned = raw.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
       const n = Number(cleaned);
       return Number.isFinite(n) ? n : 0;
-    }
-
-    // Limpa em tempo real: só dígitos + separadores
-    function sanitizeMoneyTyping(s) {
-      let v = String(s || "");
-
-      // mantém apenas dígitos, vírgula e ponto
-      v = v.replace(/[^\d.,]/g, "");
-
-      // se tiver mais de uma vírgula, mantém só a primeira
-      const partsComma = v.split(",");
-      if (partsComma.length > 2) {
-        v = partsComma.shift() + "," + partsComma.join("");
-      }
-
-      // se tiver mais de um ponto, mantém só o primeiro
-      const partsDot = v.split(".");
-      if (partsDot.length > 2) {
-        v = partsDot.shift() + "." + partsDot.join("");
-      }
-
-      return v;
     }
 
     function formatMonthLabel(dt) {
@@ -198,38 +249,19 @@
       return Date.now() + Math.floor(Math.random() * 1000);
     }
 
-    function safeDateTime(iso) {
-      const d = new Date(String(iso || "") + "T00:00:00");
-      const t = d.getTime();
-      return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
-    }
-
-    function sortByDueDateAsc(list) {
-      // sempre por vencimento (ASC) e, se empatar, por createdAt (ASC)
-      list.sort((a, b) => {
-        const da = safeDateTime(a.data);
-        const db = safeDateTime(b.data);
-        if (da !== db) return da - db;
-        const ca = Number(a.createdAt || 0);
-        const cb = Number(b.createdAt || 0);
-        return ca - cb;
-      });
-      return list;
-    }
-
     // ---------------------------
-    // Normalização de registro (entrada + saída)
+    // Normalização de registro
     // ---------------------------
     function normalizeRow(r) {
       const base = r || {};
       return {
         id: base.id ?? uid(),
-        cliente: toTitleCase(base.cliente ?? ""),
+        cliente: normalizeCliente(base.cliente ?? ""),
         valor: Number(base.valor || 0),
         data: String(base.data || ""),
-        forma: cleanSpaces(base.forma ?? ""),
+        forma: normalizeForma(base.forma ?? ""),
         processo: normalizeProcesso(base.processo ?? ""),
-        obs: toSentenceCase(base.obs ?? ""),
+        obs: normalizeObs(base.obs ?? ""),
         status: base.status === "done" ? "done" : "open",
         createdAt: base.createdAt || Date.now(),
       };
@@ -304,7 +336,7 @@
 
       function dateKey(iso) {
         const t = Date.parse(String(iso || "") + "T00:00:00");
-        return Number.isFinite(t) ? t : 9e15;
+        return Number.isFinite(t) ? t : 9e15; // inválido vai pro fim
       }
 
       function textKey(v) {
@@ -446,26 +478,6 @@
     }
 
     // ---------------------------
-    // Input guards (valor)
-    // ---------------------------
-    function bindValueGuards() {
-      if (!els.valor) return;
-
-      // ajuda teclado no mobile + sem depender do HTML
-      try {
-        els.valor.setAttribute("inputmode", "decimal");
-        els.valor.setAttribute("autocomplete", "off");
-        els.valor.setAttribute("spellcheck", "false");
-      } catch (_) {}
-
-      els.valor.addEventListener("input", () => {
-        const before = els.valor.value;
-        const after = sanitizeMoneyTyping(before);
-        if (before !== after) els.valor.value = after;
-      });
-    }
-
-    // ---------------------------
     // Events
     // ---------------------------
     els.prev.addEventListener("click", () => {
@@ -550,19 +562,14 @@
 
         const id = isEdit ? String(els.id.value) : String(uid());
 
-        const clienteRaw = els.cliente?.value || "";
-        const obsRaw = els.obs?.value || "";
-        const processoRaw = els.processo?.value || "";
-        const valorRaw = els.valor?.value || "";
-
         const payload = {
           id,
-          cliente: toTitleCase(clienteRaw),
-          valor: parseMoneyInput(valorRaw),
+          cliente: normalizeCliente((els.cliente?.value || "").trim()),
+          valor: parseMoneyInput(els.valor?.value || ""),
           data: els.data?.value || "",
-          forma: cleanSpaces(els.forma?.value || ""),
-          processo: normalizeProcesso(processoRaw),
-          obs: toSentenceCase(obsRaw),
+          forma: normalizeForma(els.forma?.value || ""),
+          processo: normalizeProcesso(els.processo?.value || ""),
+          obs: normalizeObs(els.obs?.value || ""),
           status: isEdit ? existing?.status || "open" : "open",
           createdAt: existing?.createdAt || Date.now(),
         };
@@ -574,8 +581,10 @@
         }
 
         // valor: impede "texto virar 0" silenciosamente
-        if (!String(valorRaw || "").trim() || payload.valor <= 0) {
-          tDanger("Informe um valor válido.");
+        const rawValor = String(els.valor?.value || "").trim();
+        if (!rawValor || payload.valor <= 0) {
+          tDanger("Informe um valor válido (somente números).");
+          if (els.valor) els.valor.focus();
           return;
         }
 
@@ -611,10 +620,15 @@
     // ---------------------------
     // Init
     // ---------------------------
+    attachMoneyGuards(els.valor);
+    attachTextNormalization(els.cliente, normalizeCliente);
+    attachTextNormalization(els.forma, normalizeForma);
+    attachTextNormalization(els.processo, normalizeProcesso);
+    attachTextNormalization(els.obs, normalizeObs);
+
     loadStorage();
     viewMonth = new Date();
     adjustCompactButtons();
-    bindValueGuards();
     render();
   });
 })();

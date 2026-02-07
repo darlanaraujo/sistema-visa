@@ -200,6 +200,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   flex-direction:column;
   gap:10px;
   background: var(--fin-panel-inner-bg);
+  height: 100%;
 }
 
 .fin-dash-acc__body.is-scroll{
@@ -396,6 +397,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   gap:10px;
   padding:12px;
   background: var(--fin-panel-inner-bg);
+  height: 100%;
 }
 
 /* ✅ zebra opcional: use .is-zebra no container */

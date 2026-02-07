@@ -44,10 +44,18 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- Toast (global no ambiente privado) -->
   <link rel="stylesheet" href="/sistema-visa/app/static/css/toast.css">
 
+</head>
   <!-- CSS específico da página/módulo -->
   <?php if (!empty($extra_css) && is_array($extra_css)): ?>
     <?php foreach ($extra_css as $css): ?>
       <link rel="stylesheet" href="<?= htmlspecialchars($css) ?>">
+    <?php endforeach; ?>
+  <?php endif; ?>
+
+  <!-- JS no HEAD (use somente se for estritamente necessário) -->
+  <?php if (!empty($extra_head_js) && is_array($extra_head_js)): ?>
+    <?php foreach ($extra_head_js as $js): ?>
+      <script src="<?= htmlspecialchars($js) ?>"></script>
     <?php endforeach; ?>
   <?php endif; ?>
 </head>
@@ -142,12 +150,17 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
     </div>
   </div>
 
-  <!-- JS base do layout privado -->
+  <!-- JS base do layout privado (sempre) -->
   <script src="/sistema-visa/app/static/js/dashboard.js"></script>
 
   <!-- Toast (global no ambiente privado) -->
   <script src="/sistema-visa/app/static/js/toast.js"></script>
-  
-  <script src="/sistema-visa/app/static/js/dashboard_financeiro.js"></script>
+
+  <!-- JS específico da página/módulo (carregado por tela, mantendo ordem declarada) -->
+  <?php if (!empty($extra_js) && is_array($extra_js)): ?>
+    <?php foreach ($extra_js as $js): ?>
+      <script src="<?= htmlspecialchars($js) ?>"></script>
+    <?php endforeach; ?>
+  <?php endif; ?>
 </body>
 </html>

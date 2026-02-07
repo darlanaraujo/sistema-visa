@@ -1,8 +1,7 @@
 // app/static/js/financeiro_contas_pagar.js
 (function () {
   function ready(fn) {
-    if (document.readyState === "loading")
-      document.addEventListener("DOMContentLoaded", fn);
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
     else fn();
   }
 
@@ -80,6 +79,100 @@
     const tShow = (m) => toast("show", m);
 
     // ---------------------------
+    // Data access (FinStore -> fallback localStorage)
+    // ---------------------------
+    function finStore() {
+      return window.FinStore && typeof window.FinStore === "object" ? window.FinStore : null;
+    }
+
+    function storeGetRows() {
+      const fs = finStore();
+      try {
+        if (fs?.cp && typeof fs.cp.getRows === "function") {
+          const v = fs.cp.getRows();
+          return Array.isArray(v) ? v : [];
+        }
+        if (fs?.cp && typeof fs.cp.rowsGet === "function") {
+          const v = fs.cp.rowsGet();
+          return Array.isArray(v) ? v : [];
+        }
+      } catch (_) {}
+
+      try {
+        const raw = localStorage.getItem(STORAGE_ROWS_KEY);
+        if (!raw) return [];
+        const v = JSON.parse(raw);
+        return Array.isArray(v) ? v : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function storeSetRows(nextRows) {
+      const fs = finStore();
+      try {
+        if (fs?.cp && typeof fs.cp.setRows === "function") {
+          fs.cp.setRows(nextRows);
+          return;
+        }
+        if (fs?.cp && typeof fs.cp.rowsSet === "function") {
+          fs.cp.rowsSet(nextRows);
+          return;
+        }
+      } catch (_) {}
+
+      try {
+        localStorage.setItem(STORAGE_ROWS_KEY, JSON.stringify(nextRows));
+      } catch (_) {}
+    }
+
+    function storeGetTemplates() {
+      const fs = finStore();
+      try {
+        if (fs?.cp && typeof fs.cp.getTemplates === "function") {
+          const v = fs.cp.getTemplates();
+          return Array.isArray(v) ? v : [];
+        }
+        if (fs?.cp && typeof fs.cp.templatesGet === "function") {
+          const v = fs.cp.templatesGet();
+          return Array.isArray(v) ? v : [];
+        }
+      } catch (_) {}
+
+      try {
+        const raw = localStorage.getItem(STORAGE_TPL_KEY);
+        if (!raw) return [];
+        const v = JSON.parse(raw);
+        return Array.isArray(v) ? v : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function storeSetTemplates(nextTemplates) {
+      const fs = finStore();
+      try {
+        if (fs?.cp && typeof fs.cp.setTemplates === "function") {
+          fs.cp.setTemplates(nextTemplates);
+          return;
+        }
+        if (fs?.cp && typeof fs.cp.templatesSet === "function") {
+          fs.cp.templatesSet(nextTemplates);
+          return;
+        }
+      } catch (_) {}
+
+      try {
+        localStorage.setItem(STORAGE_TPL_KEY, JSON.stringify(nextTemplates));
+      } catch (_) {}
+    }
+
+    function saveStore() {
+      storeSetRows(rows);
+      storeSetTemplates(templates);
+    }
+
+    // ---------------------------
     // Normalização (texto + valor)
     // ---------------------------
     const LOWER_WORDS = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "por", "com", "a", "o"]);
@@ -121,11 +214,20 @@
 
         // navegação/atalhos
         if (
-          k === "Backspace" || k === "Delete" || k === "Tab" || k === "Enter" ||
-          k === "ArrowLeft" || k === "ArrowRight" || k === "ArrowUp" || k === "ArrowDown" ||
-          k === "Home" || k === "End" ||
-          e.ctrlKey || e.metaKey
-        ) return;
+          k === "Backspace" ||
+          k === "Delete" ||
+          k === "Tab" ||
+          k === "Enter" ||
+          k === "ArrowLeft" ||
+          k === "ArrowRight" ||
+          k === "ArrowUp" ||
+          k === "ArrowDown" ||
+          k === "Home" ||
+          k === "End" ||
+          e.ctrlKey ||
+          e.metaKey
+        )
+          return;
 
         if (/^\d$/.test(k)) return;
         if (k === "," || k === "." || k === " ") return;
@@ -153,7 +255,9 @@
         inputEl.value = before + cleaned + after;
 
         const pos = (before + cleaned).length;
-        try { inputEl.setSelectionRange(pos, pos); } catch (_) {}
+        try {
+          inputEl.setSelectionRange(pos, pos);
+        } catch (_) {}
       });
 
       inputEl.addEventListener("blur", () => {
@@ -180,10 +284,7 @@
       const raw = String(v || "").trim();
       if (!raw) return 0;
       // aceita "1.234,56" e "1234.56"
-      const cleaned = raw
-        .replace(/\s/g, "")
-        .replace(/\./g, "")
-        .replace(",", ".");
+      const cleaned = raw.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
       const n = Number(cleaned);
       return Number.isFinite(n) ? n : 0;
     }
@@ -250,33 +351,8 @@
     }
 
     // ---------------------------
-    // Storage
+    // Storage (via FinStore)
     // ---------------------------
-    function loadStorage() {
-      try {
-        const rs = localStorage.getItem(STORAGE_ROWS_KEY);
-        const ts = localStorage.getItem(STORAGE_TPL_KEY);
-        rows = rs ? JSON.parse(rs) : [];
-        templates = ts ? JSON.parse(ts) : [];
-        if (!Array.isArray(rows) || !rows.length) rows = normalizeFallback(fallback);
-        if (!Array.isArray(templates)) templates = [];
-      } catch (_) {
-        rows = normalizeFallback(fallback);
-        templates = [];
-      }
-
-      // normaliza retroativo (sem quebrar nada)
-      rows = rows.map(normalizeRowTextFields);
-      saveStorage();
-    }
-
-    function saveStorage() {
-      try {
-        localStorage.setItem(STORAGE_ROWS_KEY, JSON.stringify(rows));
-        localStorage.setItem(STORAGE_TPL_KEY, JSON.stringify(templates));
-      } catch (_) {}
-    }
-
     function normalizeFallback(list) {
       return (Array.isArray(list) ? list : []).map((r) =>
         normalizeRowTextFields({
@@ -293,6 +369,24 @@
           createdAt: r.createdAt || Date.now(),
         })
       );
+    }
+
+    function loadStorage() {
+      try {
+        rows = storeGetRows();
+        templates = storeGetTemplates();
+
+        if (!Array.isArray(rows) || !rows.length) rows = normalizeFallback(fallback);
+        if (!Array.isArray(templates)) templates = [];
+      } catch (_) {
+        rows = normalizeFallback(fallback);
+        templates = [];
+      }
+
+      // normaliza retroativo (sem quebrar nada)
+      rows = rows.map(normalizeRowTextFields);
+
+      saveStore();
     }
 
     // ---------------------------
@@ -417,12 +511,12 @@
       const idx = rows.findIndex((r) => String(r.id) === String(it.id));
       if (idx >= 0) rows[idx] = it;
       else rows.unshift(it);
-      saveStorage();
+      saveStore();
     }
 
     function removeById(id) {
       rows = rows.filter((r) => String(r.id) !== String(id));
-      saveStorage();
+      saveStore();
     }
 
     // ---------------------------
@@ -514,11 +608,7 @@
           const toggleTip = r.status === "done" ? "Reabrir" : "Baixar";
           const toggleIcon = r.status === "done" ? "fa-rotate-left" : "fa-check";
 
-          const trClass = [
-            overdue ? "is-overdue" : "",
-            r.status === "done" ? "is-done" : "is-open",
-            r.fixa ? "is-fixed" : "",
-          ]
+          const trClass = [overdue ? "is-overdue" : "", r.status === "done" ? "is-done" : "is-open", r.fixa ? "is-fixed" : ""]
             .filter(Boolean)
             .join(" ");
 
@@ -556,8 +646,7 @@
     function openModal(mode, item) {
       if (!els.modal) return;
 
-      if (els.modalTitle)
-        els.modalTitle.textContent = mode === "edit" ? "Editar lançamento" : "Novo lançamento";
+      if (els.modalTitle) els.modalTitle.textContent = mode === "edit" ? "Editar lançamento" : "Novo lançamento";
 
       if (els.id) els.id.value = item?.id ?? "";
       if (els.conta) els.conta.value = item?.conta ?? "";
@@ -676,7 +765,12 @@
     });
 
     if (els.form) {
-      els.form.addEventListener("submit", () => {
+      els.form.addEventListener("submit", (e) => {
+        // garante que não recarrega a página caso algum HTML esteja com action
+        try {
+          e.preventDefault();
+        } catch (_) {}
+
         const isEdit = Boolean(els.id && els.id.value);
         const existing = isEdit ? getById(els.id.value) : null;
 
@@ -725,7 +819,7 @@
           upsert(payload);
 
           ensureFixedInstancesHorizonFrom(tpl.startMonth || mk);
-          saveStorage();
+          saveStore();
 
           closeModal();
           render();
@@ -781,7 +875,7 @@
     viewMonth = new Date();
 
     ensureFixedInstancesHorizonFrom(monthKeyFromDate(new Date()));
-    saveStorage();
+    saveStore();
 
     render();
   });

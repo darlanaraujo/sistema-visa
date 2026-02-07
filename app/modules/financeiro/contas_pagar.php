@@ -87,11 +87,11 @@ $mock = [
     <div class="fin-filters" id="cpFiltersGrid">
       <div class="fin-filter">
         <label>Imóvel</label>
-        <select id="cpFilterImovel">
+        <select id="cpFilterImovel" data-fin-catalog="imoveis">
           <option value="">Todos</option>
-          <option>Galpão A</option>
-          <option>Galpão B</option>
-          <option>Escritório</option>
+          <option value="Galpão A">Galpão A</option>
+          <option value="Galpão B">Galpão B</option>
+          <option value="Escritório">Escritório</option>
         </select>
       </div>
 
@@ -106,11 +106,11 @@ $mock = [
 
       <div class="fin-filter">
         <label>Categoria</label>
-        <select id="cpFilterCategoria">
+        <select id="cpFilterCategoria" data-fin-catalog="categorias_despesa">
           <option value="">Todas</option>
-          <option>Energia</option>
-          <option>Aluguel</option>
-          <option>Serviços</option>
+          <option value="Energia">Energia</option>
+          <option value="Aluguel">Aluguel</option>
+          <option value="Serviços">Serviços</option>
         </select>
       </div>
 
@@ -209,20 +209,20 @@ $mock = [
           <div class="fin-form__row">
             <div class="fin-field">
               <label>Imóvel</label>
-              <select id="cpImovel" required>
+              <select id="cpImovel" data-fin-catalog="imoveis" required>
                 <option value="">Selecione</option>
-                <option>Galpão A</option>
-                <option>Galpão B</option>
-                <option>Escritório</option>
+                <option value="Galpão A">Galpão A</option>
+                <option value="Galpão B">Galpão B</option>
+                <option value="Escritório">Escritório</option>
               </select>
             </div>
             <div class="fin-field">
               <label>Categoria</label>
-              <select id="cpCategoria" required>
+              <select id="cpCategoria" data-fin-catalog="categorias_despesa" required>
                 <option value="">Selecione</option>
-                <option>Energia</option>
-                <option>Aluguel</option>
-                <option>Serviços</option>
+                <option value="Energia">Energia</option>
+                <option value="Aluguel">Aluguel</option>
+                <option value="Serviços">Serviços</option>
               </select>
             </div>
           </div>
