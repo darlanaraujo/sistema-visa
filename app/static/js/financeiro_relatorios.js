@@ -17,32 +17,37 @@
 
   const favGrid  = document.getElementById('frFavGrid');
   const favEmpty = document.getElementById('frFavEmpty');
-
   const toastEl  = document.getElementById('frToast');
 
+  // Quick charts containers
+  const quickTop = document.getElementById('frQuickTop');
+  const quickMid = document.getElementById('frQuickMid');
+  const quickBottom = document.getElementById('frQuickBottom');
+
+  // Modal
   const modal    = document.getElementById('frModal');
   const modalClose = document.getElementById('frModalClose');
   const modalTitle = document.getElementById('frModalTitle');
-  const modalPeriod = document.getElementById('frModalPeriod');
-  const modalType = document.getElementById('frModalType');
-  const modalReport = document.getElementById('frModalReport');
   const modalRun = document.getElementById('frModalRun');
   const modalExport = document.getElementById('frModalGhost');
-
   const modalPrint = document.getElementById('frModalPrint');
 
-  // Print/preview elements (padrão ouro)
-  const printArea = document.getElementById('frPrintArea');
+  // Print/preview elements
   const printGeneratedAt = document.getElementById('frPrintGeneratedAt');
   const printPeriod = document.getElementById('frPrintPeriod');
   const printType = document.getElementById('frPrintType');
   const printTitle = document.getElementById('frPrintTitle');
   const printDesc = document.getElementById('frPrintDesc');
   const printKpis = document.getElementById('frPrintKpis');
+
   const chartSection = document.getElementById('frPrintChartSection');
   const chartCanvas = document.getElementById('frPrintChart');
   const chartImg = document.getElementById('frPrintChartImg');
   const chartHint = document.getElementById('frPrintChartHint');
+
+  const chartSumEl = document.getElementById('frPrintChartSum');
+  const chartTotalEl = document.getElementById('frPrintChartTotal');
+
   const theadEl = document.getElementById('frPrintThead');
   const tbodyEl = document.getElementById('frPrintTbody');
   const footnoteEl = document.getElementById('frPrintFootnote');
@@ -55,12 +60,12 @@
   // State
   let favorites = loadFavorites();
   let lastOpened = null;
+  let lastExec = null;
 
   // -----------------------------
   // Helpers
   // -----------------------------
   function showToast(msg, kind){
-    // Preferência: Toast global do sistema
     try{
       if(window.Toast){
         if(kind && typeof window.Toast[kind] === 'function'){
@@ -74,7 +79,6 @@
       }
     }catch(_){}
 
-    // Fallback: toast local do relatório
     if(!toastEl) return;
     toastEl.textContent = msg;
     toastEl.classList.add('is-on');
@@ -90,7 +94,6 @@
         if(Array.isArray(arr)) return arr.slice(0, FAV_LIMIT);
       }
     }catch(e){}
-    // fallback do PHP/mock
     return Array.isArray(mock.favorites) ? mock.favorites.slice(0, FAV_LIMIT) : [];
   }
 
@@ -100,11 +103,36 @@
     }catch(e){}
   }
 
-  function isFav(id){
-    return favorites.indexOf(id) !== -1;
+  function uniq(arr){
+    const out = [];
+    const set = new Set();
+    (arr||[]).forEach(x => {
+      const k = String(x||'').trim();
+      if(!k) return;
+      if(set.has(k)) return;
+      set.add(k);
+      out.push(k);
+    });
+    return out;
   }
 
+  function cleanupFavorites(){
+    const valid = new Set(Array.from(root.querySelectorAll('.fin-rep-card[data-report-id]'))
+      .map(c => c.getAttribute('data-report-id'))
+      .filter(Boolean)
+    );
+    favorites = uniq(favorites).filter(id => valid.has(id)).slice(0, FAV_LIMIT);
+    saveFavorites();
+  }
+
+  function isFav(id){ return favorites.indexOf(id) !== -1; }
+
   function setFav(id, on){
+    id = String(id||'').trim();
+    if(!id) return false;
+
+    cleanupFavorites();
+
     if(on){
       if(isFav(id)) return true;
       if(favorites.length >= FAV_LIMIT){
@@ -112,7 +140,7 @@
         return false;
       }
       favorites.push(id);
-      favorites = favorites.slice(0, FAV_LIMIT);
+      favorites = uniq(favorites).slice(0, FAV_LIMIT);
       saveFavorites();
       showToast('Adicionado aos favoritos.', 'success');
       return true;
@@ -127,15 +155,14 @@
     }
   }
 
-  function normalizeStr(s){
-    return String(s || '').toLowerCase().trim();
-  }
-
+  function normalizeStr(s){ return String(s || '').toLowerCase().trim(); }
   function pad2(n){ return String(n).padStart(2, '0'); }
 
   function toBRddmmyyyy(iso){
-    if(!iso || typeof iso !== 'string' || iso.length < 10) return '';
-    return iso.slice(8,10) + '/' + iso.slice(5,7) + '/' + iso.slice(0,4);
+    if(!iso || typeof iso !== 'string') return '';
+    if(/^\d{2}\/\d{2}\/\d{4}$/.test(iso)) return iso;
+    if(iso.length >= 10 && iso[4] === '-' && iso[7] === '-') return iso.slice(8,10) + '/' + iso.slice(5,7) + '/' + iso.slice(0,4);
+    return '';
   }
 
   function moneyBR(v){
@@ -144,17 +171,26 @@
   }
 
   function parseIsoToDate(iso){
-    const d = new Date(String(iso || '') + 'T00:00:00');
-    return Number.isNaN(d.getTime()) ? null : d;
+    const s = String(iso || '').trim();
+    if(!s) return null;
+
+    if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){
+      const [dd, mm, yyyy] = s.split('/').map(Number);
+      const d = new Date(yyyy, (mm||1)-1, dd||1);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    if(s.length >= 10 && s[4] === '-' && s[7] === '-'){
+      const d = new Date(s.slice(0,10) + 'T00:00:00');
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    const d2 = new Date(s);
+    return Number.isNaN(d2.getTime()) ? null : d2;
   }
 
   function todayAtMidnight(){
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-
-  function monthKey(dt){
-    return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1);
   }
 
   function safeTime(iso){
@@ -203,14 +239,11 @@
     }
 
     if(periodKey === 'custom'){
-      // Nesta etapa não há inputs de data no UI.
-      // Mantemos como "este mês" e avisamos.
       const start = new Date(y, m, 1);
       const end = new Date(y, m + 1, 1);
       return { start, end, mode: 'range', warned: true };
     }
 
-    // default: this_month
     const start = new Date(y, m, 1);
     const end = new Date(y, m + 1, 1);
     return { start, end, mode: 'range' };
@@ -252,16 +285,12 @@
     const desc  = normalizeStr(card.getAttribute('data-desc'));
     const tags  = normalizeStr(card.getAttribute('data-tags'));
 
-    // Tipo (grupo)
     if(st.type && group !== st.type) return false;
 
-    // Busca
     if(st.search){
       const hay = `${name} ${desc} ${tags} ${group}`;
       if(hay.indexOf(st.search) === -1) return false;
     }
-
-    // Período no mock não filtra cards (só passa pro modal/execução)
     return true;
   }
 
@@ -293,6 +322,8 @@
   function renderFavorites(){
     if(!favGrid) return;
 
+    cleanupFavorites();
+
     favGrid.innerHTML = '';
 
     const allCards = Array.from(root.querySelectorAll('.fin-rep-card[data-report-id]'));
@@ -320,29 +351,431 @@
     }
   }
 
+  // -----------------------------
+  // Data (localStorage) - NORMALIZAÇÃO
+  // -----------------------------
+  const LS_CP = 'fin_cp_rows_v1';
+  const LS_CR = 'fin_cr_rows_v1';
+
+  function normalizeRowDate(r){
+    if(!r || typeof r !== 'object') return null;
+    const data = r.data ?? r.vencimento ?? r.date ?? r.dt ?? null;
+    if(!data) return null;
+    const out = Object.assign({}, r);
+    out.data = String(data);
+    return out;
+  }
+
+  function readData(){
+    const cp = loadArr(LS_CP).map(normalizeRowDate).filter(r => r && r.data);
+    const cr = loadArr(LS_CR).map(normalizeRowDate).filter(r => r && r.data);
+    return { cp, cr };
+  }
+
+  function sumBy(list, keyFn, valFn){
+    const out = new Map();
+    list.forEach(it => {
+      const k = String(keyFn(it) || '—').trim() || '—';
+      const v = Number(valFn(it) || 0);
+      out.set(k, (out.get(k) || 0) + v);
+    });
+    return out;
+  }
+
+  function sortTop(map, limit){
+    const arr = Array.from(map.entries()).map(([k,v]) => ({ label:k, value:Number(v||0) }));
+    arr.sort((a,b) => (b.value||0) - (a.value||0));
+    if(limit && arr.length > limit) return arr.slice(0, limit);
+    return arr;
+  }
+
+  const PAL = [
+    'rgba(59,130,246,.75)',
+    'rgba(16,185,129,.75)',
+    'rgba(245,158,11,.75)',
+    'rgba(239,68,68,.75)',
+    'rgba(168,85,247,.75)',
+    'rgba(14,165,233,.75)',
+    'rgba(234,88,12,.75)',
+    'rgba(20,184,166,.75)',
+    'rgba(100,116,139,.75)',
+    'rgba(236,72,153,.70)',
+  ];
+
+  function colors(n){
+    const out = [];
+    for(let i=0;i<n;i++) out.push(PAL[i % PAL.length]);
+    return out;
+  }
+
+  function pctOf(value, total){
+    const v = Number(value||0);
+    const t = Number(total||0);
+    if(t <= 0) return 0;
+    return (v / t) * 100;
+  }
+
+  function applyTooltipMoneyAndPct(cfg){
+    if(!cfg || !cfg.options) cfg.options = {};
+    if(!cfg.options.plugins) cfg.options.plugins = {};
+    if(!cfg.options.plugins.tooltip) cfg.options.plugins.tooltip = {};
+
+    cfg.options.plugins.tooltip.callbacks = cfg.options.plugins.tooltip.callbacks || {};
+    cfg.options.plugins.tooltip.callbacks.label = function(ctx){
+      const label = ctx.label || '';
+      const raw = (ctx.raw != null) ? Number(ctx.raw) : Number(ctx.parsed || 0);
+      const ds = ctx.dataset || {};
+      const data = Array.isArray(ds.data) ? ds.data : [];
+      const total = data.reduce((a,b) => a + Number(b||0), 0);
+      const pct = pctOf(raw, total);
+      const pctTxt = total > 0 ? ` (${pct.toFixed(1).replace('.', ',')}%)` : '';
+      return `${label}: ${moneyBR(raw)}${pctTxt}`;
+    };
+
+    return cfg;
+  }
+
+  function clearNode(n){
+    if(!n) return;
+    n.innerHTML = '';
+  }
+
+  // -----------------------------
+  // Chart card (página)
+  // -----------------------------
+  function renderChartCard(container, opt){
+    if(!container) return;
+
+    const id = opt.id;
+    const wide = !!opt.wide;
+    const stack = !!opt.stack;
+
+    const card = document.createElement('div');
+    card.className = 'ui-chart-card' + (wide ? ' is-wide' : '') + (stack ? ' is-stack' : '');
+    card.innerHTML = `
+      <div class="ui-chart-head">
+        <div class="ui-chart-title">${escapeHtml(opt.title || 'Gráfico')}</div>
+        <div class="ui-chart-sub">${escapeHtml(opt.sub || '')}</div>
+      </div>
+
+      <div class="ui-chart-body">
+        <div class="ui-chart-plot ${opt.compact ? 'is-compact' : ''}">
+          <canvas id="${escapeHtml(id)}_cv" aria-label="${escapeHtml(opt.title||'Gráfico')}"></canvas>
+        </div>
+        <div class="ui-chart-sum">
+          <div class="ui-chart-sumtitle">Dados</div>
+          <div class="ui-chart-grid" id="${escapeHtml(id)}_sum"></div>
+          <div class="ui-chart-hint" id="${escapeHtml(id)}_hint" style="display:none;">Chart.js não disponível nesta etapa.</div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+
+    const cv = card.querySelector(`#${CSS.escape(id)}_cv`);
+    const sumEl = card.querySelector(`#${CSS.escape(id)}_sum`);
+    const hintEl = card.querySelector(`#${CSS.escape(id)}_hint`);
+
+    const series = Array.isArray(opt.series) ? opt.series : [];
+    const total = series.reduce((a,b)=>a+Number(b.value||0),0);
+
+    sumEl.innerHTML = series.slice(0, opt.maxRows || 10).map(r => {
+      const pctTxt = total > 0 ? (pctOf(r.value, total)).toFixed(1).replace('.', ',') + '%' : '0,0%';
+      return `
+        <div class="ui-chart-row">
+          <div class="ui-chart-label">${escapeHtml(r.label)}</div>
+          <div class="ui-chart-val">${escapeHtml(moneyBR(r.value))}</div>
+          <div class="ui-chart-pct">${escapeHtml(pctTxt)}</div>
+        </div>
+      `;
+    }).join('');
+
+    if(!window.Chart || !cv){
+      if(hintEl) hintEl.style.display = 'block';
+      return;
+    }
+
+    const ctx = cv.getContext('2d');
+
+    try{
+      if(renderChartCard._instances && renderChartCard._instances[id]){
+        renderChartCard._instances[id].destroy();
+      }
+    }catch(_){}
+
+    try{
+      renderChartCard._instances = renderChartCard._instances || {};
+      renderChartCard._instances[id] = new window.Chart(ctx, opt.chartCfg);
+    }catch(_){}
+  }
+
+  // -----------------------------
+  // Visão rápida (página)
+  // -----------------------------
+  function last12MonthKeys(){
+    const today = todayAtMidnight();
+    const out = [];
+    for(let i=11;i>=0;i--){
+      const d = new Date(today.getFullYear(), today.getMonth()-i, 1);
+      const mk = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      out.push(mk);
+    }
+    return out;
+  }
+
+  function buildQuickCharts(){
+    const st = getFilterState();
+    const { start, end, warned } = getPeriodRange(st.period);
+    const { cp, cr } = readData();
+
+    if(warned){
+      showToast('Período personalizado ainda não está disponível; usando "Este mês".', 'warning');
+    }
+
+    const cpIn = cp.filter(r => inRange(r.data, start, end));
+    const crIn = cr.filter(r => inRange(r.data, start, end));
+    const asVal = (x) => Number(x && x.valor != null ? x.valor : 0);
+
+    // TOP: imóveis + categorias
+    const byImovel = sumBy(cpIn, r => (r.imovel || '—'), asVal);
+    let imSeries = sortTop(byImovel, 9);
+    if(imSeries.length > 8){
+      const top8 = imSeries.slice(0, 8);
+      const rest = imSeries.slice(8).reduce((a,b) => a + Number(b.value||0), 0);
+      imSeries = top8.concat([{ label:'Outros', value: rest }]);
+    }
+    const imCfg = applyTooltipMoneyAndPct({
+      type: 'doughnut',
+      data: {
+        labels: imSeries.map(x => x.label),
+        datasets: [{ data: imSeries.map(x => x.value), backgroundColor: colors(imSeries.length), borderWidth: 0 }],
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '58%' },
+    });
+
+    const byCat = sumBy(cpIn, r => (r.categoria || '—'), asVal);
+    let catSeries = sortTop(byCat, 9);
+    if(catSeries.length > 8){
+      const top8 = catSeries.slice(0, 8);
+      const rest = catSeries.slice(8).reduce((a,b) => a + Number(b.value||0), 0);
+      catSeries = top8.concat([{ label:'Outros', value: rest }]);
+    }
+    const catCfg = applyTooltipMoneyAndPct({
+      type: 'doughnut',
+      data: {
+        labels: catSeries.map(x => x.label),
+        datasets: [{ data: catSeries.map(x => x.value), backgroundColor: colors(catSeries.length), borderWidth: 0 }],
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '58%' },
+    });
+
+    if(quickTop){
+      clearNode(quickTop);
+      renderChartCard(quickTop, {
+        id: 'fr_q_imoveis',
+        title: 'Despesas por Imóvel',
+        sub: `Período: ${getPeriodLabel()}`,
+        compact: true,
+        wide: false,
+        series: imSeries,
+        chartCfg: imCfg,
+        maxRows: 10,
+      });
+      renderChartCard(quickTop, {
+        id: 'fr_q_categorias',
+        title: 'Despesas por Categoria',
+        sub: `Período: ${getPeriodLabel()}`,
+        compact: true,
+        wide: false,
+        series: catSeries,
+        chartCfg: catCfg,
+        maxRows: 10,
+      });
+    }
+
+    // MID: 12m + status
+    if(quickMid){
+      clearNode(quickMid);
+
+      const keys12 = last12MonthKeys();
+      const bucket12 = {};
+      keys12.forEach(k => bucket12[k] = { in:0, out:0 });
+
+      const addMonth = (iso, kind, val) => {
+        const d = parseIsoToDate(iso);
+        if(!d) return;
+        const mk = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        if(!bucket12[mk]) return;
+        if(kind === 'in') bucket12[mk].in += val;
+        else bucket12[mk].out += val;
+      };
+
+      cp.forEach(p => addMonth(p.data, 'out', asVal(p)));
+      cr.forEach(r => addMonth(r.data, 'in', asVal(r)));
+
+      const in12 = keys12.map(k => bucket12[k].in);
+      const out12 = keys12.map(k => bucket12[k].out);
+
+      const histSeries = [
+        { label:'Entradas (12m)', value: in12.reduce((a,b)=>a+Number(b||0),0) },
+        { label:'Saídas (12m)', value: out12.reduce((a,b)=>a+Number(b||0),0) },
+      ];
+
+      const histCfg = {
+        type:'bar',
+        data:{
+          labels: keys12,
+          datasets:[
+            { label:'Entradas', data: in12, backgroundColor:'rgba(16,185,129,.70)' },
+            { label:'Saídas', data: out12, backgroundColor:'rgba(239,68,68,.65)' },
+          ]
+        },
+        options:{
+          responsive:true,
+          plugins:{
+            legend:{ position:'bottom' },
+            tooltip:{ callbacks:{ label:(ctx)=> `${ctx.dataset.label}: ${moneyBR(ctx.parsed.y)}` } }
+          }
+        }
+      };
+
+      // ✅ stack TRUE (resolve seu item 6 sem comentar CSS)
+      renderChartCard(quickMid, {
+        id: 'fr_q_hist12',
+        title: 'Entradas x Saídas — últimos 12 meses',
+        sub: 'Histórico mensal (12m)',
+        compact: false,
+        wide: true,
+        stack: true,
+        series: histSeries,
+        chartCfg: histCfg,
+        maxRows: 6,
+      });
+
+      const sumStatus = (list, stt) => list.reduce((acc, r) => acc + (r.status === stt ? asVal(r) : 0), 0);
+      const pagarOpen = sumStatus(cpIn, 'open');
+      const pagarDone = sumStatus(cpIn, 'done');
+      const recOpen = sumStatus(crIn, 'open');
+      const recDone = sumStatus(crIn, 'done');
+
+      const statusSeries = [
+        { label:'Pagar • Pendente', value: pagarOpen },
+        { label:'Pagar • Concluído', value: pagarDone },
+        { label:'Receber • Pendente', value: recOpen },
+        { label:'Receber • Concluído', value: recDone },
+      ];
+
+      const statusCfg = {
+        type: 'bar',
+        data: {
+          labels: ['Pagar', 'Receber'],
+          datasets: [
+            { label: 'Pendente', data: [pagarOpen, recOpen], backgroundColor: 'rgba(245,158,11,.70)' },
+            { label: 'Concluído', data: [pagarDone, recDone], backgroundColor: 'rgba(59,130,246,.70)' },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${moneyBR(ctx.parsed.y)}` } }
+          },
+          scales: { x: { stacked: true }, y: { stacked: true } },
+        },
+      };
+
+      renderChartCard(quickMid, {
+        id: 'fr_q_status',
+        title: 'Status (Pendente x Concluído)',
+        sub: `Totais no período: ${getPeriodLabel()}`,
+        compact: false,
+        wide: false,
+        stack: false,
+        series: statusSeries,
+        chartCfg: statusCfg,
+        maxRows: 10,
+      });
+    }
+
+    // BOTTOM: vencimentos + fixas
+    if(quickBottom){
+      clearNode(quickBottom);
+
+      const openEvents = [];
+      cpIn.forEach(p => { if(p.status === 'open') openEvents.push({ kind:'Pagar', title:p.conta||'—', data:p.data, valor:asVal(p) }); });
+      crIn.forEach(r => { if(r.status === 'open') openEvents.push({ kind:'Receber', title:(r.cliente||'—'), data:r.data, valor:asVal(r) }); });
+      openEvents.sort((a,b) => safeTime(a.data) - safeTime(b.data));
+      const topEv = openEvents.slice(0, 10);
+
+      const evSeries = topEv.map(x => ({ label: `${x.kind}: ${toBRddmmyyyy(x.data)} • ${x.title}`, value: x.valor }));
+      const vencLabels = topEv.map(x => `${x.kind} ${toBRddmmyyyy(x.data)}`);
+      const vencVals = topEv.map(x => x.valor);
+
+      const vencCfg = {
+        type: 'bar',
+        data: { labels: vencLabels, datasets: [{ label:'Valor', data: vencVals, backgroundColor: colors(vencVals.length || 1) }] },
+        options: { responsive:true, plugins:{ legend:{ position:'bottom' }, tooltip:{ callbacks:{ label:(ctx)=> `${moneyBR(ctx.parsed.y)}` } } } }
+      };
+
+      renderChartCard(quickBottom, {
+        id: 'fr_q_venc',
+        title: 'Próximos vencimentos (em aberto)',
+        sub: 'Top 10 por data (pagar + receber)',
+        compact: false,
+        wide: true,
+        stack: true,
+        series: evSeries.length ? evSeries : [{ label:'Sem vencimentos em aberto no período', value: 0 }],
+        chartCfg: vencCfg,
+        maxRows: 10,
+      });
+
+      const fixas = cpIn.filter(p => (String(p.fixa) === '1' || p.fixa === true));
+      const fixSeries = sortTop(sumBy(fixas, p => (p.conta || '—'), asVal), 10);
+      const fixCfg = applyTooltipMoneyAndPct({
+        type: 'doughnut',
+        data: {
+          labels: fixSeries.map(x => x.label),
+          datasets: [{ data: fixSeries.map(x => x.value), backgroundColor: colors(Math.max(fixSeries.length,1)), borderWidth:0 }],
+        },
+        options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'58%' }
+      });
+
+      renderChartCard(quickBottom, {
+        id: 'fr_q_fixas',
+        title: 'Fixas (recorrentes) — principais contas',
+        sub: 'Top 10 por valor no período',
+        compact: true,
+        wide: false,
+        stack: false,
+        series: fixSeries.length ? fixSeries : [{ label:'Sem contas fixas no período', value: 0 }],
+        chartCfg: fixCfg,
+        maxRows: 10,
+      });
+    }
+  }
+
+  
+
+  // -----------------------------
+  // Modal
+  // -----------------------------
   function openModalFromCard(card){
     if(!card || !modal) return;
 
-    const st = getFilterState();
-
     const rid = card.getAttribute('data-report-id') || '—';
     const name = card.getAttribute('data-name') || 'Relatório';
-    const group = card.getAttribute('data-group') || '—';
 
-    lastOpened = { rid, name, group, desc: card.getAttribute('data-desc') || '' };
+    lastOpened = { rid, name, desc: card.getAttribute('data-desc') || '' };
 
     if(modalTitle) modalTitle.textContent = name;
-    if(modalPeriod) modalPeriod.textContent = periodEl ? periodEl.options[periodEl.selectedIndex].text : st.period;
-    if(modalType) modalType.textContent = typeEl ? (typeEl.options[typeEl.selectedIndex].text || 'Todos') : 'Todos';
-    if(modalReport) modalReport.textContent = `${name} (${rid})`;
 
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
 
     syncModalActionsForViewport();
 
-    // prepara o preview (sem imprimir) assim que abrir
-    try{ renderExecResult(execReport(rid)); }catch(_){ }
+    try{ renderExecResult(execReport(rid)); }catch(_){
+      showToast('Falha ao executar o relatório.', 'danger');
+    }
   }
 
   function closeModal(){
@@ -351,26 +784,18 @@
     modal.setAttribute('aria-hidden', 'true');
   }
 
-  // -----------------------------
-  // Data (localStorage) + Execução
-  // -----------------------------
-  const LS_CP = 'fin_cp_rows_v1';
-  const LS_CR = 'fin_cr_rows_v1';
-
-  function readData(){
-    const cp = loadArr(LS_CP).filter(r => r && r.data);
-    const cr = loadArr(LS_CR).filter(r => r && r.data);
-    return { cp, cr };
-  }
-
   function getCardMetaById(rid){
-    const card = root.querySelector(`.fin-rep-card[data-report-id="${rid}"]`);
-    if(!card) return { name: 'Relatório', desc: '' };
-    return {
-      name: card.getAttribute('data-name') || 'Relatório',
-      desc: card.getAttribute('data-desc') || '',
-      group: card.getAttribute('data-group') || '',
-    };
+    try{
+      const sel = `.fin-rep-card[data-report-id="${CSS.escape(String(rid))}"]`;
+      const card = root.querySelector(sel);
+      if(!card) return { name: 'Relatório', desc: '' };
+      return {
+        name: card.getAttribute('data-name') || 'Relatório',
+        desc: card.getAttribute('data-desc') || '',
+      };
+    }catch(_){
+      return { name: 'Relatório', desc: '' };
+    }
   }
 
   function buildKpiCards(kpis){
@@ -384,20 +809,30 @@
     }).join('');
   }
 
-  function renderTable(columns, rows){
+  function renderTable(columns, rows, totalRow){
     if(!theadEl || !tbodyEl) return;
     const cols = Array.isArray(columns) ? columns : [];
     const rs = Array.isArray(rows) ? rows : [];
 
     theadEl.innerHTML = cols.length ? `<tr>${cols.map(c => `<th>${escapeHtml(c.label || '')}</th>`).join('')}</tr>` : '';
 
-    tbodyEl.innerHTML = rs.length ? rs.map(r => {
+    const bodyRows = rs.map(r => {
       return `<tr>${cols.map(c => {
         const v = typeof c.value === 'function' ? c.value(r) : (r[c.key] ?? '');
         const cls = c.align === 'right' ? 't-right' : (c.align === 'center' ? 't-center' : '');
         return `<td class="${cls}">${escapeHtml(v)}</td>`;
       }).join('')}</tr>`;
-    }).join('') : `<tr><td colspan="${Math.max(cols.length,1)}">Nenhum dado no período.</td></tr>`;
+    }).join('');
+
+    const emptyRow = `<tr><td colspan="${Math.max(cols.length,1)}">Nenhum dado no período.</td></tr>`;
+
+    const totalHtml = totalRow ? `<tr class="is-total">${cols.map((c, idx) => {
+      const v = (idx === 0) ? (totalRow.label || 'Total') : (typeof totalRow.value === 'function' ? totalRow.value(c, idx) : '');
+      const cls = (idx === 0) ? '' : (c.align === 'right' ? 't-right' : (c.align === 'center' ? 't-center' : ''));
+      return `<td class="${cls}">${escapeHtml(v)}</td>`;
+    }).join('')}</tr>` : '';
+
+    tbodyEl.innerHTML = (rs.length ? bodyRows : emptyRow) + totalHtml;
   }
 
   let _chartInstance = null;
@@ -406,12 +841,13 @@
     _chartInstance = null;
   }
 
-  function renderChart(chartCfg){
+  function renderChart(chartCfg, sumRows){
     if(!chartSection || !chartCanvas) return;
 
-    // reset
     destroyChart();
     if(chartImg){ chartImg.removeAttribute('src'); }
+    if(chartSumEl) chartSumEl.innerHTML = '';
+    if(chartTotalEl) chartTotalEl.innerHTML = '';
 
     if(!chartCfg){
       chartSection.hidden = true;
@@ -421,24 +857,36 @@
 
     chartSection.hidden = false;
 
-    // Chart.js disponível?
     if(!window.Chart){
       if(chartHint) chartHint.hidden = false;
       return;
     }
-
     if(chartHint) chartHint.hidden = true;
 
     const ctx = chartCanvas.getContext('2d');
     _chartInstance = new window.Chart(ctx, chartCfg);
 
-    // prepara imagem para impressão (substitui canvas no @media print)
     try{
       const dataUrl = chartCanvas.toDataURL('image/png', 1.0);
-      if(chartImg){
-        chartImg.src = dataUrl;
-      }
-    }catch(_){ }
+      if(chartImg) chartImg.src = dataUrl;
+    }catch(_){}
+
+    // ✅ “Dados” do gráfico com separadores verticais (padrão aprovado)
+    if(chartSumEl && Array.isArray(sumRows) && sumRows.length){
+      chartSumEl.innerHTML = sumRows.map(r => {
+        return `
+          <div class="fr-print__sumrow">
+            <div class="fr-print__sumcell fr-print__sumlabel">${escapeHtml(r.label)}</div>
+            <div class="fr-print__sumcell fr-print__sumval">${escapeHtml(r.value)}</div>
+            <div class="fr-print__sumcell fr-print__sumpct">${escapeHtml(r.pct)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    if(chartTotalEl){
+      chartTotalEl.innerHTML = '';
+    }
   }
 
   function buildCsv(columns, rows){
@@ -446,12 +894,10 @@
     const rs = Array.isArray(rows) ? rows : [];
 
     const header = cols.map(c => escapeCsv(c.label || '')).join(';');
-    const lines = rs.map(r => {
-      return cols.map(c => {
-        const v = typeof c.value === 'function' ? c.value(r) : (r[c.key] ?? '');
-        return escapeCsv(v);
-      }).join(';');
-    });
+    const lines = rs.map(r => cols.map(c => {
+      const v = typeof c.value === 'function' ? c.value(r) : (r[c.key] ?? '');
+      return escapeCsv(v);
+    }).join(';'));
 
     return [header].concat(lines).join('\n');
   }
@@ -472,6 +918,9 @@
     }
   }
 
+  // -----------------------------
+  // Execução de relatórios (RESTaurado p/ seu catálogo atual)
+  // -----------------------------
   function execReport(rid){
     const st = getFilterState();
     const { start, end, warned } = getPeriodRange(st.period);
@@ -486,115 +935,78 @@
     const cpIn = cp.filter(r => inRange(r.data, start, end));
     const crIn = cr.filter(r => inRange(r.data, start, end));
 
-    const sum = (list, stt) => list.reduce((acc, r) => acc + (r.status === stt ? Number(r.valor || 0) : 0), 0);
-
-    // fallback: se não houver dados ainda no LS, usamos o mock/preview sem dados
     const hasData = cp.length || cr.length;
+    const asVal = (x) => Number(x && x.valor != null ? x.valor : 0);
+
+    const sumStatus = (list, stt) => list.reduce((acc, r) => acc + (r.status === stt ? asVal(r) : 0), 0);
 
     let columns = [];
     let rows = [];
     let kpis = [];
     let chart = null;
+    let chartSum = null;     // array {label,value,pct}
+    let totalRow = null;     // linha total na tabela
     let footnote = '';
 
-    if(rid === 'rep_pagar_aberto'){
-      const list = cpIn.filter(r => r.status === 'open').sort((a,b) => safeTime(a.data) - safeTime(b.data));
-      columns = [
-        { label: 'Conta', key: 'conta' },
-        { label: 'Imóvel', key: 'imovel' },
-        { label: 'Venc.', value: r => toBRddmmyyyy(r.data), align: 'center' },
-        { label: 'Categoria', key: 'categoria' },
-        { label: 'Fixa', value: r => (String(r.fixa) === '1' || r.fixa === true) ? 'Sim' : 'Não', align: 'center' },
-        { label: 'Valor', value: r => moneyBR(r.valor), align: 'right' },
-      ];
-      rows = list;
-      kpis = [
-        { label: 'Pendentes', value: String(list.length) },
-        { label: 'Total pendente', value: moneyBR(sum(cpIn, 'open')) },
-      ];
-      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
-    }
-    else if(rid === 'rep_receber_aberto'){
-      const list = crIn.filter(r => r.status === 'open').sort((a,b) => safeTime(a.data) - safeTime(b.data));
-      columns = [
-        { label: 'Cliente', key: 'cliente' },
-        { label: 'Forma', key: 'forma' },
-        { label: 'Processo', key: 'processo' },
-        { label: 'Venc.', value: r => toBRddmmyyyy(r.data), align: 'center' },
-        { label: 'Valor', value: r => moneyBR(r.valor), align: 'right' },
-      ];
-      rows = list;
-      kpis = [
-        { label: 'Pendentes', value: String(list.length) },
-        { label: 'Total a receber', value: moneyBR(sum(crIn, 'open')) },
-      ];
-      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
-    }
-    else if(rid === 'rep_vencimentos'){
-      const list = [];
-      cpIn.forEach(p => {
-        if(p.status !== 'open') return;
-        list.push({
-          kind: 'Pagar',
-          title: p.conta || '',
-          meta: p.imovel || '',
-          data: p.data,
-          valor: Number(p.valor || 0),
-        });
-      });
-      crIn.forEach(r => {
-        if(r.status !== 'open') return;
-        list.push({
-          kind: 'Receber',
-          title: (r.cliente || '') + (r.forma ? ' • ' + r.forma : ''),
-          meta: r.processo ? 'Proc: ' + r.processo : '',
-          data: r.data,
-          valor: Number(r.valor || 0),
-        });
-      });
-      list.sort((a,b) => safeTime(a.data) - safeTime(b.data));
+    // ---- RESUMO DO PERÍODO
+    if(rid === 'rep_resumo_mes'){
+      const pagarOpen = sumStatus(cpIn, 'open');
+      const pagarDone = sumStatus(cpIn, 'done');
+      const recOpen = sumStatus(crIn, 'open');
+      const recDone = sumStatus(crIn, 'done');
 
-      columns = [
-        { label: 'Tipo', key: 'kind', align: 'center' },
-        { label: 'Título', key: 'title' },
-        { label: 'Meta', key: 'meta' },
-        { label: 'Venc.', value: r => toBRddmmyyyy(r.data), align: 'center' },
-        { label: 'Valor', value: r => moneyBR(r.valor), align: 'right' },
-      ];
-      rows = list;
+      const entradas = recDone + recOpen;
+      const saidas = pagarDone + pagarOpen;
+      const saldo = entradas - saidas;
 
-      const pay = list.filter(x => x.kind === 'Pagar').reduce((a,b) => a + b.valor, 0);
-      const rec = list.filter(x => x.kind === 'Receber').reduce((a,b) => a + b.valor, 0);
       kpis = [
-        { label: 'Eventos', value: String(list.length) },
-        { label: 'A pagar', value: moneyBR(pay) },
-        { label: 'A receber', value: moneyBR(rec) },
+        { label: 'Entradas', value: moneyBR(entradas) },
+        { label: 'Saídas', value: moneyBR(saidas) },
+        { label: 'Saldo', value: moneyBR(saldo) },
+        { label: 'Pendências', value: String(cpIn.filter(x => x.status==='open').length + crIn.filter(x => x.status==='open').length) },
       ];
 
-      chart = window.Chart ? {
+      rows = [
+        { k:'Entradas', v: entradas },
+        { k:'Saídas', v: saidas },
+        { k:'Saldo', v: saldo },
+      ];
+
+      columns = [
+        { label:'Indicador', key:'k' },
+        { label:'Valor', value:r => moneyBR(r.v), align:'right' },
+      ];
+
+      chart = window.Chart ? applyTooltipMoneyAndPct({
         type: 'doughnut',
         data: {
-          labels: ['A pagar', 'A receber'],
-          datasets: [{ data: [pay, rec] }],
+          labels: ['Entradas', 'Saídas'],
+          datasets: [{ data: [entradas, saidas], backgroundColor: colors(2), borderWidth:0 }],
         },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: 'bottom' } },
-          cutout: '55%',
-        },
-      } : null;
+        options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'55%' },
+      }) : null;
+
+      const total = entradas + saidas;
+      chartSum = [
+        { label:'Entradas', value: moneyBR(entradas), pct: total>0 ? (pctOf(entradas,total)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+        { label:'Saídas', value: moneyBR(saidas), pct: total>0 ? (pctOf(saidas,total)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+      ];
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
+
+    // ---- STATUS
     else if(rid === 'rep_status'){
-      const pagarOpen = sum(cpIn, 'open');
-      const pagarDone = sum(cpIn, 'done');
-      const recOpen = sum(crIn, 'open');
-      const recDone = sum(crIn, 'done');
+      const pagarOpen = sumStatus(cpIn, 'open');
+      const pagarDone = sumStatus(cpIn, 'done');
+      const recOpen = sumStatus(crIn, 'open');
+      const recDone = sumStatus(crIn, 'done');
 
       kpis = [
         { label: 'Pagar (pendente)', value: moneyBR(pagarOpen) },
-        { label: 'Pagar (pago)', value: moneyBR(pagarDone) },
-        { label: 'Receber (aberto)', value: moneyBR(recOpen) },
-        { label: 'Receber (recebido)', value: moneyBR(recDone) },
+        { label: 'Pagar (concluído)', value: moneyBR(pagarDone) },
+        { label: 'Receber (pendente)', value: moneyBR(recOpen) },
+        { label: 'Receber (concluído)', value: moneyBR(recDone) },
       ];
 
       rows = [
@@ -609,115 +1021,386 @@
       ];
 
       chart = window.Chart ? {
-        type: 'doughnut',
-        data: {
-          labels: ['Pagar pendente', 'Pagar pago', 'Receber aberto', 'Receber recebido'],
-          datasets: [{ data: [pagarOpen, pagarDone, recOpen, recDone] }],
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: 'bottom' } },
-          cutout: '55%',
-        },
-      } : null;
-    }
-    else if(rid === 'rep_lancamentos' || rid === 'rep_exportacao'){
-      const list = [];
-      cpIn.forEach(p => list.push({
-        tipo: 'Pagar',
-        titulo: p.conta || '',
-        meta: p.imovel || '',
-        data: p.data,
-        status: p.status || 'open',
-        valor: Number(p.valor || 0),
-      }));
-      crIn.forEach(r => list.push({
-        tipo: 'Receber',
-        titulo: (r.cliente || '') + (r.forma ? ' • ' + r.forma : ''),
-        meta: r.processo || '',
-        data: r.data,
-        status: r.status || 'open',
-        valor: Number(r.valor || 0),
-      }));
-
-      list.sort((a,b) => safeTime(a.data) - safeTime(b.data));
-
-      columns = [
-        { label: 'Tipo', key: 'tipo', align: 'center' },
-        { label: 'Título', key: 'titulo' },
-        { label: 'Meta', key: 'meta' },
-        { label: 'Data', value: r => toBRddmmyyyy(r.data), align: 'center' },
-        { label: 'Status', value: r => r.status === 'done' ? 'Concluído' : 'Aberto', align: 'center' },
-        { label: 'Valor', value: r => moneyBR(r.valor), align: 'right' },
-      ];
-      rows = list;
-
-      kpis = [
-        { label: 'Itens', value: String(list.length) },
-        { label: 'Total aberto', value: moneyBR(list.filter(x => x.status !== 'done').reduce((a,b) => a + b.valor, 0)) },
-        { label: 'Total concluído', value: moneyBR(list.filter(x => x.status === 'done').reduce((a,b) => a + b.valor, 0)) },
-      ];
-    }
-    else if(rid === 'rep_resumo_mes'){
-      const pagarOpen = sum(cpIn, 'open');
-      const pagarDone = sum(cpIn, 'done');
-      const recOpen = sum(crIn, 'open');
-      const recDone = sum(crIn, 'done');
-
-      const entradas = recDone + recOpen;
-      const saidas = pagarDone + pagarOpen;
-      const saldo = entradas - saidas;
-
-      kpis = [
-        { label: 'Entradas', value: moneyBR(entradas) },
-        { label: 'Saídas', value: moneyBR(saidas) },
-        { label: 'Saldo', value: moneyBR(saldo) },
-        { label: 'Pendências', value: String(cpIn.filter(x => x.status==='open').length + crIn.filter(x => x.status==='open').length) },
-      ];
-
-      // Série últimos 6 meses (se houver dados)
-      const series = {};
-      const addMonth = (iso, kind, val) => {
-        const mk = (typeof iso === 'string' && iso.length >= 7) ? iso.slice(0,7) : '';
-        if(!mk) return;
-        if(!series[mk]) series[mk] = { mk, in:0, out:0 };
-        if(kind === 'in') series[mk].in += val;
-        else series[mk].out += val;
-      };
-
-      cp.forEach(p => addMonth(p.data, 'out', Number(p.valor||0)));
-      cr.forEach(r => addMonth(r.data, 'in', Number(r.valor||0)));
-
-      const months = Object.keys(series).sort().slice(-6);
-      rows = months.map(mk => ({
-        mes: mk,
-        entradas: series[mk].in,
-        saidas: series[mk].out,
-      }));
-
-      columns = [
-        { label: 'Mês', key: 'mes', align: 'center' },
-        { label: 'Entradas', value: r => moneyBR(r.entradas), align: 'right' },
-        { label: 'Saídas', value: r => moneyBR(r.saidas), align: 'right' },
-      ];
-
-      chart = window.Chart ? {
         type: 'bar',
         data: {
-          labels: months,
+          labels: ['Pagar', 'Receber'],
           datasets: [
-            { label: 'Entradas', data: months.map(m => series[m].in) },
-            { label: 'Saídas', data: months.map(m => series[m].out) },
+            { label:'Pendente', data:[pagarOpen, recOpen], backgroundColor:'rgba(245,158,11,.70)' },
+            { label:'Concluído', data:[pagarDone, recDone], backgroundColor:'rgba(59,130,246,.70)' },
           ],
         },
         options: {
-          responsive: true,
-          plugins: { legend: { position: 'bottom' } },
-          scales: { x: { stacked: true }, y: { stacked: true } },
+          responsive:true,
+          plugins:{
+            legend:{ position:'bottom' },
+            tooltip:{ callbacks:{ label:(ctx)=> `${ctx.dataset.label}: ${moneyBR(ctx.parsed.y)}` } }
+          },
+          scales:{ x:{ stacked:true }, y:{ stacked:true } }
         },
       } : null;
 
-      footnote = months.length ? '' : 'Sem histórico suficiente para série mensal.';
+      const total = pagarOpen + pagarDone + recOpen + recDone;
+      chartSum = [
+        { label:'Pagar (pend.)', value: moneyBR(pagarOpen), pct: total>0 ? (pctOf(pagarOpen,total)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+        { label:'Pagar (conc.)', value: moneyBR(pagarDone), pct: total>0 ? (pctOf(pagarDone,total)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+        { label:'Receber (pend.)', value: moneyBR(recOpen), pct: total>0 ? (pctOf(recOpen,total)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+        { label:'Receber (conc.)', value: moneyBR(recDone), pct: total>0 ? (pctOf(recDone,total)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+      ];
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
+    }
+
+    // ---- DESPESAS POR IMÓVEL (CP)
+    else if(rid === 'rep_imoveis'){
+      const map = sumBy(cpIn, r => (r.imovel || '—'), asVal);
+      let series = sortTop(map, 9);
+      if(series.length > 8){
+        const top8 = series.slice(0, 8);
+        const rest = series.slice(8).reduce((a,b)=>a+Number(b.value||0),0);
+        series = top8.concat([{label:'Outros', value:rest}]);
+      }
+
+      const total = series.reduce((a,b)=>a+Number(b.value||0),0);
+
+      kpis = [
+        { label:'Imóveis', value: String(map.size) },
+        { label:'Total despesas', value: moneyBR(cpIn.reduce((a,b)=>a+asVal(b),0)) },
+      ];
+
+      // tabela = agregada (mas com total e separadores)
+      rows = series.map(s => ({ imovel:s.label, valor:s.value, pct: pctOf(s.value,total) }));
+      columns = [
+        { label:'Imóvel', key:'imovel' },
+        { label:'Valor', value:r => moneyBR(r.valor), align:'right' },
+        { label:'%', value:r => (r.pct||0).toFixed(1).replace('.',',')+'%', align:'right' },
+      ];
+      totalRow = {
+        label: 'Total',
+        value: (col, idx) => idx === 1 ? moneyBR(total) : (idx === 2 ? '100,0%' : '')
+      };
+
+      chart = window.Chart ? applyTooltipMoneyAndPct({
+        type:'doughnut',
+        data:{
+          labels: series.map(x=>x.label),
+          datasets:[{ data: series.map(x=>x.value), backgroundColor: colors(series.length), borderWidth:0 }]
+        },
+        options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'58%' }
+      }) : null;
+
+      chartSum = rows.map(r => ({
+        label: r.imovel,
+        value: moneyBR(r.valor),
+        pct: (r.pct||0).toFixed(1).replace('.',',')+'%'
+      }));
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
+    }
+
+    // ---- DESPESAS POR CATEGORIA (CP)
+    else if(rid === 'rep_categorias'){
+      const map = sumBy(cpIn, r => (r.categoria || '—'), asVal);
+      let series = sortTop(map, 9);
+      if(series.length > 8){
+        const top8 = series.slice(0, 8);
+        const rest = series.slice(8).reduce((a,b)=>a+Number(b.value||0),0);
+        series = top8.concat([{label:'Outros', value:rest}]);
+      }
+
+      const total = series.reduce((a,b)=>a+Number(b.value||0),0);
+
+      kpis = [
+        { label:'Categorias', value: String(map.size) },
+        { label:'Total despesas', value: moneyBR(cpIn.reduce((a,b)=>a+asVal(b),0)) },
+      ];
+
+      rows = series.map(s => ({ categoria:s.label, valor:s.value, pct: pctOf(s.value,total) }));
+      columns = [
+        { label:'Categoria', key:'categoria' },
+        { label:'Valor', value:r => moneyBR(r.valor), align:'right' },
+        { label:'%', value:r => (r.pct||0).toFixed(1).replace('.',',')+'%', align:'right' },
+      ];
+      totalRow = {
+        label: 'Total',
+        value: (col, idx) => idx === 1 ? moneyBR(total) : (idx === 2 ? '100,0%' : '')
+      };
+
+      chart = window.Chart ? applyTooltipMoneyAndPct({
+        type:'doughnut',
+        data:{
+          labels: series.map(x=>x.label),
+          datasets:[{ data: series.map(x=>x.value), backgroundColor: colors(series.length), borderWidth:0 }]
+        },
+        options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'58%' }
+      }) : null;
+
+      chartSum = rows.map(r => ({
+        label: r.categoria,
+        value: moneyBR(r.valor),
+        pct: (r.pct||0).toFixed(1).replace('.',',')+'%'
+      }));
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
+    }
+
+    // ---- FLUXO (entradas x saídas) no período (por dia)
+    else if(rid === 'rep_fluxo'){
+      // bucket por dia no período
+      const days = [];
+      const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      while(cur < end){
+        const k = `${cur.getFullYear()}-${pad2(cur.getMonth()+1)}-${pad2(cur.getDate())}`;
+        days.push(k);
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      const bucket = {};
+      days.forEach(d => bucket[d] = { in:0, out:0 });
+
+      const addDay = (iso, kind, val) => {
+        const d = parseIsoToDate(iso);
+        if(!d) return;
+        const k = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+        if(!bucket[k]) return;
+        if(kind === 'in') bucket[k].in += val;
+        else bucket[k].out += val;
+      };
+
+      crIn.forEach(r => addDay(r.data, 'in', asVal(r)));
+      cpIn.forEach(p => addDay(p.data, 'out', asVal(p)));
+
+      const inArr = days.map(k => bucket[k].in);
+      const outArr = days.map(k => bucket[k].out);
+
+      const totalIn = inArr.reduce((a,b)=>a+Number(b||0),0);
+      const totalOut = outArr.reduce((a,b)=>a+Number(b||0),0);
+
+      kpis = [
+        { label:'Entradas', value: moneyBR(totalIn) },
+        { label:'Saídas', value: moneyBR(totalOut) },
+        { label:'Saldo', value: moneyBR(totalIn - totalOut) },
+      ];
+
+      rows = days.map(k => ({ dia: toBRddmmyyyy(k), in: bucket[k].in, out: bucket[k].out }));
+      columns = [
+        { label:'Dia', key:'dia', align:'center' },
+        { label:'Entradas', value:r => moneyBR(r.in), align:'right' },
+        { label:'Saídas', value:r => moneyBR(r.out), align:'right' },
+      ];
+      totalRow = { label:'Total', value:(col, idx)=> idx===1 ? moneyBR(totalIn) : (idx===2 ? moneyBR(totalOut) : '') };
+
+      chart = window.Chart ? {
+        type:'bar',
+        data:{
+          labels: days.map(d => d.slice(8,10)+'/'+d.slice(5,7)),
+          datasets:[
+            { label:'Entradas', data: inArr, backgroundColor:'rgba(16,185,129,.70)' },
+            { label:'Saídas', data: outArr, backgroundColor:'rgba(239,68,68,.65)' },
+          ]
+        },
+        options:{
+          responsive:true,
+          plugins:{
+            legend:{ position:'bottom' },
+            tooltip:{ callbacks:{ label:(ctx)=> `${ctx.dataset.label}: ${moneyBR(ctx.parsed.y)}` } }
+          }
+        }
+      } : null;
+
+      const tot = totalIn + totalOut;
+      chartSum = [
+        { label:'Entradas', value: moneyBR(totalIn), pct: tot>0 ? (pctOf(totalIn,tot)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+        { label:'Saídas', value: moneyBR(totalOut), pct: tot>0 ? (pctOf(totalOut,tot)).toFixed(1).replace('.',',')+'%' : '0,0%' },
+      ];
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
+    }
+
+    // ---- VENCIMENTOS (abertos)
+    else if(rid === 'rep_vencimentos'){
+      const list = [];
+      cpIn.forEach(p => { if(p.status === 'open') list.push({ tipo:'Pagar', titulo:p.conta||'—', meta:p.imovel||'—', data:p.data, valor:asVal(p) }); });
+      crIn.forEach(r => { if(r.status === 'open') list.push({ tipo:'Receber', titulo:r.cliente||'—', meta:r.processo||'—', data:r.data, valor:asVal(r) }); });
+
+      list.sort((a,b)=> safeTime(a.data) - safeTime(b.data));
+
+      columns = [
+        { label:'Tipo', key:'tipo', align:'center' },
+        { label:'Título', key:'titulo' },
+        { label:'Meta', key:'meta' },
+        { label:'Venc.', value:r => toBRddmmyyyy(r.data), align:'center' },
+        { label:'Valor', value:r => moneyBR(r.valor), align:'right' },
+      ];
+      rows = list;
+
+      const total = list.reduce((a,b)=>a+Number(b.valor||0),0);
+      kpis = [
+        { label:'Eventos', value: String(list.length) },
+        { label:'Total em aberto', value: moneyBR(total) },
+      ];
+      totalRow = { label:'Total', value:(col, idx)=> idx===4 ? moneyBR(total) : '' };
+
+      // Gráfico (modal): A pagar x A receber (totais no período)
+      const totalPagar = list.filter(x => x.tipo === 'Pagar').reduce((a,b)=>a+Number(b.valor||0),0);
+      const totalReceber = list.filter(x => x.tipo === 'Receber').reduce((a,b)=>a+Number(b.valor||0),0);
+      const totalChart = totalPagar + totalReceber;
+
+      chart = window.Chart ? applyTooltipMoneyAndPct({
+        type: 'doughnut',
+        data: {
+          labels: ['A pagar', 'A receber'],
+          datasets: [{
+            data: [totalPagar, totalReceber],
+            backgroundColor: colors(2),
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } },
+          cutout: '58%',
+        },
+      }) : null;
+
+      chartSum = [
+        {
+          label: 'A pagar',
+          value: moneyBR(totalPagar),
+          pct: totalChart > 0 ? (pctOf(totalPagar, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
+        },
+        {
+          label: 'A receber',
+          value: moneyBR(totalReceber),
+          pct: totalChart > 0 ? (pctOf(totalReceber, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
+        },
+      ];
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
+    }
+
+    // ---- RECORRENTES (fixas)
+    else if(rid === 'rep_recorrentes'){
+      const fixas = cpIn.filter(p => (String(p.fixa) === '1' || p.fixa === true));
+      fixas.sort((a,b)=> safeTime(a.data) - safeTime(b.data));
+
+      columns = [
+        { label:'Conta', key:'conta' },
+        { label:'Imóvel', key:'imovel' },
+        { label:'Venc.', value:r => toBRddmmyyyy(r.data), align:'center' },
+        { label:'Categoria', key:'categoria' },
+        { label:'Valor', value:r => moneyBR(r.valor), align:'right' },
+      ];
+      rows = fixas;
+
+      const total = fixas.reduce((a,b)=>a+asVal(b),0);
+      kpis = [
+        { label:'Fixas', value: String(fixas.length) },
+        { label:'Total fixas', value: moneyBR(total) },
+      ];
+      totalRow = { label:'Total', value:(col, idx)=> idx===4 ? moneyBR(total) : '' };
+
+      // gráfico agregado por conta (top 10)
+      const map = sumBy(fixas, r => (r.conta || '—'), asVal);
+      const series = sortTop(map, 10);
+      const totalAgg = series.reduce((a,b)=>a+Number(b.value||0),0);
+
+      chart = window.Chart ? applyTooltipMoneyAndPct({
+        type:'doughnut',
+        data:{
+          labels: series.map(x=>x.label),
+          datasets:[{ data: series.map(x=>x.value), backgroundColor: colors(series.length), borderWidth:0 }]
+        },
+        options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'58%' }
+      }) : null;
+
+      chartSum = series.map(s => ({
+        label: s.label,
+        value: moneyBR(s.value),
+        pct: totalAgg>0 ? (pctOf(s.value,totalAgg)).toFixed(1).replace('.',',')+'%' : '0,0%'
+      }));
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
+    }
+
+    // ---- LANÇAMENTOS (CP + CR)
+    else if(rid === 'rep_lancamentos'){
+      const list = [];
+      cpIn.forEach(p => list.push({
+        tipo:'Pagar',
+        titulo: p.conta || '—',
+        meta: p.imovel || '—',
+        data: p.data,
+        status: p.status || 'open',
+        valor: asVal(p),
+      }));
+      crIn.forEach(r => list.push({
+        tipo:'Receber',
+        titulo: r.cliente || '—',
+        meta: r.processo || '—',
+        data: r.data,
+        status: r.status || 'open',
+        valor: asVal(r),
+      }));
+
+      list.sort((a,b)=> safeTime(a.data) - safeTime(b.data));
+
+      columns = [
+        { label:'Tipo', key:'tipo', align:'center' },
+        { label:'Título', key:'titulo' },
+        { label:'Meta', key:'meta' },
+        { label:'Data', value:r => toBRddmmyyyy(r.data), align:'center' },
+        { label:'Status', value:r => r.status === 'done' ? 'Concluído' : 'Aberto', align:'center' },
+        { label:'Valor', value:r => moneyBR(r.valor), align:'right' },
+      ];
+      rows = list;
+
+      const total = list.reduce((a,b)=>a+Number(b.valor||0),0);
+      kpis = [
+        { label:'Itens', value: String(list.length) },
+        { label:'Total', value: moneyBR(total) },
+      ];
+      totalRow = { label:'Total', value:(col, idx)=> idx===5 ? moneyBR(total) : '' };
+
+      // Gráfico (modal): CP x CR (totais no período)
+      const totalCP = list.filter(x => x.tipo === 'Pagar').reduce((a,b)=>a+Number(b.valor||0),0);
+      const totalCR = list.filter(x => x.tipo === 'Receber').reduce((a,b)=>a+Number(b.valor||0),0);
+      const totalChart = totalCP + totalCR;
+
+      chart = window.Chart ? applyTooltipMoneyAndPct({
+        type: 'doughnut',
+        data: {
+          labels: ['Contas a pagar', 'Contas a receber'],
+          datasets: [{
+            data: [totalCP, totalCR],
+            backgroundColor: colors(2),
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } },
+          cutout: '58%',
+        },
+      }) : null;
+
+      chartSum = [
+        {
+          label: 'Contas a pagar',
+          value: moneyBR(totalCP),
+          pct: totalChart > 0 ? (pctOf(totalCP, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
+        },
+        {
+          label: 'Contas a receber',
+          value: moneyBR(totalCR),
+          pct: totalChart > 0 ? (pctOf(totalCR, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
+        },
+      ];
+
+      footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
+    }
+
+    else{
+      footnote = 'Relatório não encontrado (id inválido).';
     }
 
     return {
@@ -730,12 +1413,13 @@
       columns,
       rows,
       chart,
+      chartSum,
+      totalRow,
       footnote,
       periodKey: st.period,
     };
   }
 
-  let lastExec = null;
   function renderExecResult(res){
     if(!res) return;
 
@@ -747,23 +1431,30 @@
     }
     if(printPeriod) printPeriod.textContent = res.periodLabel || '—';
     if(printType) printType.textContent = res.typeLabel || 'Todos';
+
+    // ✅ padrão aprovado: nome no título e descrição embaixo
     if(printTitle) printTitle.textContent = res.title || 'Relatório';
     if(printDesc) printDesc.textContent = res.desc || '';
 
     buildKpiCards(res.kpis);
-    renderTable(res.columns, res.rows);
+    renderTable(res.columns, res.rows, res.totalRow);
 
     if(footnoteEl) footnoteEl.textContent = res.footnote || '';
 
-    renderChart(res.chart);
+    renderChart(res.chart, res.chartSum || null);
+
+    // Total do “Dados” (leve)
+    if(chartTotalEl && Array.isArray(res.chartSum) && res.chartSum.length){
+      // tenta somar valores BRL do próprio relatório quando fizer sentido
+      // (não força 100% sempre, porque pode ser lista)
+      // Aqui deixamos em branco por padrão (padrão anterior era mais discreto).
+      chartTotalEl.innerHTML = '';
+    }
   }
 
-  function isMobile(){
-    return window.matchMedia('(max-width: 700px)').matches;
-  }
+  function isMobile(){ return window.matchMedia('(max-width: 700px)').matches; }
 
   function syncModalActionsForViewport(){
-    // No mobile, escondemos o botão de CSV para não quebrar o layout dos 3 botões.
     if(!modalExport) return;
     const hide = isMobile();
     modalExport.style.display = hide ? 'none' : '';
@@ -824,6 +1515,7 @@
       if(typeEl) typeEl.value = '';
       if(searchEl) searchEl.value = '';
       applyFilters();
+      buildQuickCharts();
       showToast('Filtros limpos.', 'warning');
     });
   }
@@ -831,25 +1523,21 @@
   if(btnRun){
     btnRun.addEventListener('click', () => {
       const shown = applyFilters();
-      showToast(`Executado (mock): ${shown} relatórios encontrados pelo filtro.`, 'success');
+      buildQuickCharts();
+      showToast(`Executado: ${shown} relatórios encontrados pelo filtro.`, 'success');
     });
   }
 
-  if(searchEl){
-    searchEl.addEventListener('input', () => {
-      applyFilters();
-    });
-  }
-  if(typeEl){
-    typeEl.addEventListener('change', () => {
-      applyFilters();
-    });
-  }
-  if(periodEl){
-    periodEl.addEventListener('change', () => {
-      showToast('Período atualizado (mock).', 'success');
-    });
-  }
+  if(searchEl) searchEl.addEventListener('input', applyFilters);
+
+  if(typeEl) typeEl.addEventListener('change', () => {
+    applyFilters();
+  });
+
+  if(periodEl) periodEl.addEventListener('change', () => {
+    buildQuickCharts();
+    showToast('Período atualizado.', 'success');
+  });
 
   if(modalClose) modalClose.addEventListener('click', closeModal);
 
@@ -876,7 +1564,6 @@
     modalExport.addEventListener('click', () => {
       if(!lastOpened) return;
 
-      // garante que temos um resultado renderizado
       if(!lastExec || lastExec.rid !== lastOpened.rid){
         try{ renderExecResult(execReport(lastOpened.rid)); }catch(_){ }
       }
@@ -896,19 +1583,17 @@
     modalPrint.addEventListener('click', () => {
       if(!lastOpened) return;
 
-      // garante que o preview está pronto e que a imagem do gráfico foi gerada
       if(!lastExec || lastExec.rid !== lastOpened.rid){
         try{ renderExecResult(execReport(lastOpened.rid)); }catch(_){ }
       }
 
-      // em alguns browsers o toDataURL precisa de um frame
       setTimeout(() => {
         try{
           if(chartCanvas && chartImg && window.Chart){
             const dataUrl = chartCanvas.toDataURL('image/png', 1.0);
             chartImg.src = dataUrl;
           }
-        }catch(_){ }
+        }catch(_){}
 
         window.print();
       }, 50);
@@ -925,27 +1610,51 @@
     });
   }
 
-  window.addEventListener('resize', applyFilterAccordion);
-  // garante estado correto no carregamento e em mudanças de viewport
-  syncModalActionsForViewport();
+  window.addEventListener('resize', () => {
+    applyFilterAccordion();
+    buildQuickCharts();
+  });
 
   // -----------------------------
   // Init
   // -----------------------------
-  favorites = favorites.slice(0, FAV_LIMIT);
-  saveFavorites();
+  cleanupFavorites();
   updateStarButtons();
   renderFavorites();
   applyFilters();
   applyFilterAccordion();
+  syncModalActionsForViewport();
+  buildQuickCharts();
 
-  // Se o modal estiver aberto, atualiza preview quando o usuário muda período/tipo
-  function refreshIfOpen(){
-    if(!modal || !modal.classList.contains('is-open')) return;
-    if(!lastOpened) return;
-    try{ renderExecResult(execReport(lastOpened.rid)); }catch(_){ }
-  }
+  // Auto-open via URL (?rid=rep_xxx)
+  try {
+    const sp = new URLSearchParams(window.location.search || "");
+    const rid = (sp.get("rid") || "").trim();
+    if (rid) {
+      const card = root.querySelector(`.fin-rep-card[data-report-id="${CSS.escape(rid)}"]`);
+      if (card) openModalFromCard(card);
+    }
+  } catch (_) {}
 
-  if(typeEl) typeEl.addEventListener('change', refreshIfOpen);
-  if(periodEl) periodEl.addEventListener('change', refreshIfOpen);
+  // ==========================================
+  // API pública para o print.js (sem duplicar lógica)
+  // ==========================================
+  window.__FR_API__ = window.__FR_API__ || {};
+  window.__FR_API__.execReport = execReport;
+  window.__FR_API__.renderExecResult = renderExecResult;
+
+  window.__FR_API__.getState = function(){
+    return { lastOpened, lastExec };
+  };
+
+  window.__FR_API__.ensureRendered = function(rid){
+    const st = window.__FR_API__.getState();
+    if(!st.lastExec || st.lastExec.rid !== rid){
+      const res = execReport(rid);
+      renderExecResult(res);
+      return res;
+    }
+    return st.lastExec;
+  };
+
 })();

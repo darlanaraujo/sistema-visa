@@ -4,7 +4,7 @@
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 // ---------------------------
-// MOCKS (sem BD nesta etapa)
+// CATÁLOGO FINAL (sem BD nesta etapa)
 // ---------------------------
 
 $report_groups = [
@@ -15,30 +15,30 @@ $report_groups = [
       [
         'id'    => 'rep_resumo_mes',
         'icon'  => 'fa-solid fa-calendar-days',
-        'name'  => 'Resumo do mês',
-        'desc'  => 'Entradas x saídas, saldo e pendências do mês.',
-        'tags'  => ['Mensal', 'KPIs'],
+        'name'  => 'Resumo do período',
+        'desc'  => 'Entradas x saídas, saldo e pendências no período.',
+        'tags'  => ['KPIs', 'Resumo'],
       ],
       [
-        'id'    => 'rep_vencimentos',
-        'icon'  => 'fa-solid fa-hourglass-half',
-        'name'  => 'Vencimentos',
-        'desc'  => 'A pagar e a receber por data (alertas e atrasos).',
-        'tags'  => ['Agenda', 'Atrasos'],
+        'id'    => 'rep_fluxo',
+        'icon'  => 'fa-solid fa-chart-column',
+        'name'  => 'Fluxo (Entradas x Saídas)',
+        'desc'  => 'Comparativo por dia/mês para visão rápida do caixa.',
+        'tags'  => ['Barras', 'Fluxo'],
       ],
       [
-        'id'    => 'rep_pagar_aberto',
-        'icon'  => 'fa-solid fa-file-invoice-dollar',
-        'name'  => 'Contas a pagar (abertas)',
-        'desc'  => 'Lista de contas pendentes com filtros por mês.',
-        'tags'  => ['Pagar', 'Pendentes'],
+        'id'    => 'rep_imoveis',
+        'icon'  => 'fa-solid fa-building',
+        'name'  => 'Despesas por Imóvel',
+        'desc'  => 'Totais e distribuição de despesas por imóvel.',
+        'tags'  => ['Imóveis', 'Obrigatório'],
       ],
       [
-        'id'    => 'rep_receber_aberto',
-        'icon'  => 'fa-solid fa-hand-holding-dollar',
-        'name'  => 'Contas a receber (abertas)',
-        'desc'  => 'Recebíveis pendentes com filtro por status e mês.',
-        'tags'  => ['Receber', 'Pendentes'],
+        'id'    => 'rep_categorias',
+        'icon'  => 'fa-solid fa-tags',
+        'name'  => 'Despesas por Categoria',
+        'desc'  => 'Totais e distribuição de despesas por categoria.',
+        'tags'  => ['Categoria', 'Obrigatório'],
       ],
     ],
   ],
@@ -47,32 +47,39 @@ $report_groups = [
     'desc'  => 'Relatórios para auditoria, conferência e rastreio de lançamentos.',
     'items' => [
       [
-        'id'    => 'rep_lancamentos',
-        'icon'  => 'fa-solid fa-list-check',
-        'name'  => 'Lançamentos',
-        'desc'  => 'Lista completa com filtros (mock nesta etapa).',
-        'tags'  => ['Lista', 'Filtro'],
+        'id'    => 'rep_vencimentos',
+        'icon'  => 'fa-solid fa-hourglass-half',
+        'name'  => 'Vencimentos (A pagar/A receber)',
+        'desc'  => 'Eventos em aberto por data (alertas e atrasos).',
+        'tags'  => ['Agenda', 'Atrasos'],
       ],
       [
         'id'    => 'rep_status',
         'icon'  => 'fa-solid fa-circle-check',
-        'name'  => 'Status (Pago x Pendente)',
-        'desc'  => 'Distribuição por status e evolução no período.',
+        'name'  => 'Status (Concluído x Pendente)',
+        'desc'  => 'Distribuição por status para pagar/receber.',
         'tags'  => ['Status', 'Comparativo'],
       ],
       [
-        'id'    => 'rep_exportacao',
-        'icon'  => 'fa-solid fa-file-export',
-        'name'  => 'Exportação (CSV/PDF)',
-        'desc'  => 'Gerar arquivos para contabilidade (mock).',
-        'tags'  => ['Exportar', 'Arquivo'],
+        'id'    => 'rep_recorrentes',
+        'icon'  => 'fa-solid fa-repeat',
+        'name'  => 'Recorrentes (Fixas)',
+        'desc'  => 'Contas fixas no período (lista e totais).',
+        'tags'  => ['Fixas', 'Recorrência'],
+      ],
+      [
+        'id'    => 'rep_lancamentos',
+        'icon'  => 'fa-solid fa-list-check',
+        'name'  => 'Lançamentos (CP + CR)',
+        'desc'  => 'Lista consolidada com filtros (para conferência).',
+        'tags'  => ['Lista', 'Conferência'],
       ],
     ],
   ],
 ];
 
-// Favoritos (mock) — ids do array acima (JS pode sobrescrever via localStorage)
-$favorites = ['rep_resumo_mes', 'rep_vencimentos'];
+// Favoritos (mock)
+$favorites = ['rep_resumo_mes', 'rep_imoveis'];
 
 // Períodos (mock)
 $period_options = [
@@ -96,16 +103,16 @@ function group_key_from_title($title){
   return 'outros';
 }
 
-// Identidade corporativa (padrão ouro para impressão)
+// Identidade corporativa
 $corp = [
   'company' => 'Visa Remoções',
   'cnpj'    => '17.686.570/0001-80',
   'tagline' => 'Sistema Financeiro • Relatórios',
   'logo'    => '/sistema-visa/app/static/img/logo.png',
-  'site'    => '',
+  'site'    => 'visaremocoes.com.br',
 ];
 
-// Payload para o JS (sem <script> inline: via data-attribute)
+// Payload para o JS
 $fr_mock_payload = [
   'favorites' => $favorites,
   'groups'    => $report_groups,
@@ -121,12 +128,11 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
 <div class="fin-page" id="frPage" data-fr-mock="<?= $fr_mock_json ?>">
   <div class="fin-head">
     <h1>Relatórios</h1>
-    <p>Relatórios do financeiro para visão rápida e conferência. (Mock nesta etapa — sem banco de dados)</p>
+    <p>Relatórios do financeiro para visão rápida e conferência. (Etapa sem banco de dados — usando localStorage)</p>
   </div>
 
   <?php include __DIR__ . '/_nav.php'; ?>
 
-  <!-- Filtros (PADRÃO do módulo: mesmo bloco de Pagar/Receber) -->
   <div class="fin-filters-wrap fin-rep-filters-wrap" id="frFiltersWrap">
     <div class="fin-filters-summary" id="frFiltersToggle">
       <div><i class="fa-solid fa-filter"></i> Filtros</div>
@@ -154,7 +160,7 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
 
       <div class="fin-filter">
         <label>Buscar</label>
-        <input id="frSearch" type="text" placeholder="Ex: vencimentos, pagar, exportação..." />
+        <input id="frSearch" type="text" placeholder="Ex: imóvel, categoria, fluxo, vencimentos..." />
       </div>
 
       <div class="fin-filter fin-rep-filter-btn">
@@ -173,6 +179,17 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
     </div>
   </div>
 
+  <!-- Visão rápida (obrigatório) -->
+  <section class="fin-panel fin-rep-section" aria-label="Visão rápida — principais gráficos">
+    <div class="fin-panel__head">
+      <div class="fin-panel__title">
+        <i class="fa-solid fa-chart-pie"></i><span>Visão rápida</span>
+      </div>
+      <span class="fin-badge fin-badge--pt">Imóveis e Categorias (obrigatório)</span>
+    </div>
+    <div class="ui-chart" id="frQuickTop"></div>
+  </section>
+
   <!-- Favoritos -->
   <section class="fin-panel fin-rep-section" aria-label="Relatórios favoritos">
     <div class="fin-panel__head">
@@ -189,63 +206,143 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
     </div>
   </section>
 
+  <!-- Visão rápida (Operacional) -->
+  <section class="fin-panel fin-rep-section" aria-label="Visão rápida — operacional">
+    <div class="fin-panel__head">
+      <div class="fin-panel__title">
+        <i class="fa-solid fa-bolt"></i><span>Visão rápida (Operacional)</span>
+      </div>
+      <span class="fin-badge fin-badge--pt">evite impressão quando possível</span>
+    </div>
+    <div class="ui-chart" id="frQuickMid"></div>
+  </section>
+
   <!-- Catálogo -->
   <?php foreach ($report_groups as $g): ?>
     <?php $gkey = group_key_from_title($g['title']); ?>
-    <section class="fin-panel fin-rep-section" data-group="<?= h($gkey) ?>">
-      <div class="fin-panel__head">
-        <div class="fin-panel__title">
-          <i class="fa-solid fa-folder-open"></i><span><?= h($g['title']) ?></span>
+
+    <?php if ($gkey === 'operacional'): ?>
+      <section class="fin-panel fin-rep-section" data-group="<?= h($gkey) ?>">
+        <div class="fin-panel__head">
+          <div class="fin-panel__title">
+            <i class="fa-solid fa-folder-open"></i><span><?= h($g['title']) ?></span>
+          </div>
+          <span class="fin-badge fin-badge--pt"><?= h($g['desc']) ?></span>
         </div>
-        <span class="fin-badge fin-badge--pt"><?= h($g['desc']) ?></span>
-      </div>
 
-      <div class="fin-rep-grid">
-        <?php foreach ($g['items'] as $it): ?>
-          <?php
-            $isFav = in_array($it['id'], $favorites, true);
-            $tags  = implode(' • ', $it['tags'] ?? []);
-          ?>
-          <article
-            class="fin-rep-card"
-            role="button"
-            tabindex="0"
-            data-report-id="<?= h($it['id']) ?>"
-            data-group="<?= h($gkey) ?>"
-            data-name="<?= h($it['name']) ?>"
-            data-desc="<?= h($it['desc']) ?>"
-            data-icon="<?= h($it['icon']) ?>"
-            data-tags="<?= h($tags) ?>"
-          >
-            <div class="fin-rep-card__top">
-              <div class="fin-rep-card__icon"><i class="<?= h($it['icon']) ?>"></i></div>
-              <button
-                class="fin-rep-card__fav <?= $isFav ? 'is-on' : '' ?>"
-                type="button"
-                aria-label="<?= $isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>"
-                title="<?= $isFav ? 'Favorito' : 'Favoritar' ?>"
-              >
-                <i class="fa-solid fa-star"></i>
-              </button>
-            </div>
+        <div class="fin-rep-grid">
+          <?php foreach ($g['items'] as $it): ?>
+            <?php
+              $isFav = in_array($it['id'], $favorites, true);
+              $tags  = implode(' • ', $it['tags'] ?? []);
+            ?>
+            <article
+              class="fin-rep-card"
+              role="button"
+              tabindex="0"
+              data-report-id="<?= h($it['id']) ?>"
+              data-group="<?= h($gkey) ?>"
+              data-name="<?= h($it['name']) ?>"
+              data-desc="<?= h($it['desc']) ?>"
+              data-icon="<?= h($it['icon']) ?>"
+              data-tags="<?= h($tags) ?>"
+            >
+              <div class="fin-rep-card__top">
+                <div class="fin-rep-card__icon"><i class="<?= h($it['icon']) ?>"></i></div>
+                <button
+                  class="fin-rep-card__fav <?= $isFav ? 'is-on' : '' ?>"
+                  type="button"
+                  aria-label="<?= $isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>"
+                  title="<?= $isFav ? 'Favorito' : 'Favoritar' ?>"
+                >
+                  <i class="fa-solid fa-star"></i>
+                </button>
+              </div>
 
-            <div class="fin-rep-card__title"><?= h($it['name']) ?></div>
-            <div class="fin-rep-card__desc"><?= h($it['desc']) ?></div>
+              <div class="fin-rep-card__title"><?= h($it['name']) ?></div>
+              <div class="fin-rep-card__desc"><?= h($it['desc']) ?></div>
 
-            <?php if ($tags): ?>
-              <div class="fin-rep-card__meta"><?= h($tags) ?></div>
-            <?php endif; ?>
+              <?php if ($tags): ?>
+                <div class="fin-rep-card__meta"><?= h($tags) ?></div>
+              <?php endif; ?>
 
-            <div class="fin-rep-card__cta">
-              <i class="fa-solid fa-arrow-right"></i><span>Abrir</span>
-            </div>
-          </article>
-        <?php endforeach; ?>
-      </div>
-    </section>
+              <div class="fin-rep-card__cta">
+                <i class="fa-solid fa-arrow-right"></i><span>Abrir</span>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      </section>
+    <?php endif; ?>
+
+    <?php if ($gkey === 'conferencia'): ?>
+      <!-- Visão rápida (Conferência) -->
+      <section class="fin-panel fin-rep-section" aria-label="Visão rápida — conferência">
+        <div class="fin-panel__head">
+          <div class="fin-panel__title">
+            <i class="fa-solid fa-circle-check"></i><span>Visão rápida (Conferência)</span>
+          </div>
+          <span class="fin-badge fin-badge--pt">auditoria e controle</span>
+        </div>
+        <div class="ui-chart" id="frQuickBottom"></div>
+      </section>
+
+      <section class="fin-panel fin-rep-section" data-group="<?= h($gkey) ?>">
+        <div class="fin-panel__head">
+          <div class="fin-panel__title">
+            <i class="fa-solid fa-folder-open"></i><span><?= h($g['title']) ?></span>
+          </div>
+          <span class="fin-badge fin-badge--pt"><?= h($g['desc']) ?></span>
+        </div>
+
+        <div class="fin-rep-grid">
+          <?php foreach ($g['items'] as $it): ?>
+            <?php
+              $isFav = in_array($it['id'], $favorites, true);
+              $tags  = implode(' • ', $it['tags'] ?? []);
+            ?>
+            <article
+              class="fin-rep-card"
+              role="button"
+              tabindex="0"
+              data-report-id="<?= h($it['id']) ?>"
+              data-group="<?= h($gkey) ?>"
+              data-name="<?= h($it['name']) ?>"
+              data-desc="<?= h($it['desc']) ?>"
+              data-icon="<?= h($it['icon']) ?>"
+              data-tags="<?= h($tags) ?>"
+            >
+              <div class="fin-rep-card__top">
+                <div class="fin-rep-card__icon"><i class="<?= h($it['icon']) ?>"></i></div>
+                <button
+                  class="fin-rep-card__fav <?= $isFav ? 'is-on' : '' ?>"
+                  type="button"
+                  aria-label="<?= $isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>"
+                  title="<?= $isFav ? 'Favorito' : 'Favoritar' ?>"
+                >
+                  <i class="fa-solid fa-star"></i>
+                </button>
+              </div>
+
+              <div class="fin-rep-card__title"><?= h($it['name']) ?></div>
+              <div class="fin-rep-card__desc"><?= h($it['desc']) ?></div>
+
+              <?php if ($tags): ?>
+                <div class="fin-rep-card__meta"><?= h($tags) ?></div>
+              <?php endif; ?>
+
+              <div class="fin-rep-card__cta">
+                <i class="fa-solid fa-arrow-right"></i><span>Abrir</span>
+              </div>
+            </article>
+          <?php endforeach; ?>
+        </div>
+      </section>
+    <?php endif; ?>
+
   <?php endforeach; ?>
 
-  <!-- Modal (execução do relatório: padrão ouro para impressão) -->
+  <!-- Modal -->
   <div class="fin-modal" id="frModal" aria-hidden="true">
     <div class="fin-modal__card" style="max-width:980px">
       <div class="fin-modal__head">
@@ -256,13 +353,6 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
       </div>
 
       <div class="fin-modal__body">
-        <!--
-          Este bloco serve a 2 propósitos:
-          1) Visualização dentro do modal.
-          2) Impressão/PDF no padrão corporativo (via @media print).
-
-          O JS vai preencher: cabeçalho, meta, gráfico (se Chart.js existir), e tabela.
-        -->
         <div class="fr-print" id="frPrintArea">
           <header class="fr-print__head">
             <div class="fr-print__brand">
@@ -284,19 +374,26 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
             <div class="fr-print__desc" id="frPrintDesc">—</div>
           </div>
 
-          <section class="fr-print__kpis" id="frPrintKpis" aria-label="Resumo">
-            <!-- JS injeta cards KPI quando aplicável -->
-          </section>
+          <section class="fr-print__kpis" id="frPrintKpis" aria-label="Resumo"></section>
 
           <section class="fr-print__chart" id="frPrintChartSection" aria-label="Gráfico" hidden>
             <div class="fr-print__sectiontitle"><i class="fa-solid fa-chart-pie"></i> Gráfico</div>
-            <div class="fr-print__chartwrap">
-              <canvas id="frPrintChart" height="180" aria-label="Gráfico do relatório"></canvas>
-              <!-- fallback para impressão: JS pode injetar uma imagem do canvas aqui -->
-              <img id="frPrintChartImg" alt="Gráfico" style="display:none; width:100%; height:auto;" />
-            </div>
-            <div class="fr-print__hint" id="frPrintChartHint" hidden>
-              * Chart.js não disponível nesta etapa. O relatório será impresso sem gráfico.
+
+            <!-- PADRÃO APROVADO: gráfico + dados lado a lado -->
+            <div class="fr-print__chartgrid">
+              <div class="fr-print__chartwrap">
+                <canvas id="frPrintChart" height="180" aria-label="Gráfico do relatório"></canvas>
+                <img id="frPrintChartImg" alt="Gráfico" style="display:none; width:100%; height:auto;" />
+              </div>
+
+              <div class="fr-print__chartsum" aria-label="Dados do gráfico">
+                <div class="fr-print__sumtitle">Dados</div>
+                <div class="fr-print__sumgrid" id="frPrintChartSum"></div>
+                <div class="fr-print__sumtotal" id="frPrintChartTotal"></div>
+                <div class="fr-print__hint" id="frPrintChartHint" hidden>
+                  * Chart.js não disponível nesta etapa. O relatório será impresso sem gráfico.
+                </div>
+              </div>
             </div>
           </section>
 
@@ -332,7 +429,5 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
     </div>
   </div>
 
-  <!-- Toast local (mantido como fallback) -->
   <div class="fin-rep-toast" id="frToast" role="status" aria-live="polite" aria-atomic="true"></div>
-
 </div>

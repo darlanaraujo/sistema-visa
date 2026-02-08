@@ -70,20 +70,35 @@
 }
 
 .fin-dash-grid--charts{
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, .5fr) minmax(0, .5fr);
+  align-items: stretch;
+}
+
+/* o primeiro card ocupa a “metade” (col 1) e é mais alto */
+.fin-dash-chart.is-wide{
+  grid-column: 1;
 }
 
 @media (max-width:1200px){
   .fin-dash-grid--charts{
-    grid-template-columns: repeat(2, minmax(0,1fr));
+    grid-template-columns: 1fr;
   }
-  .fin-dash-grid--charts .fin-dash-chart:first-child{
+  .fin-dash-chart.is-wide{
+    grid-column: 1;
+  }
+  /* em telas médias, os 2 menores ficam 50/50 abaixo */
+  .fin-dash-grid--charts{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fin-dash-chart.is-wide{
     grid-column: 1 / -1;
   }
 }
 
 @media (max-width:980px){
-  .fin-dash-grid--charts{ grid-template-columns: 1fr; }
+  .fin-dash-grid--charts{
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Mock barras fluxo */
@@ -608,4 +623,68 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   font-weight: 900;
   font-size: 12px;
   color: var(--fin-blue);
+}
+
+.fin-dash-chart{
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--fin-panel-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.fin-dash-sechead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 12px;
+  background: var(--fin-panel-head-bg);
+  border-bottom: 1px solid var(--fin-border);
+  font-weight:900;
+  color: var(--fin-text);
+  font-size: 13px;
+}
+
+.fin-dash-sechead__left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width: 0;
+}
+
+.fin-dash-sechead i{
+  color: var(--fin-blue);
+  width:18px;
+  text-align:center;
+}
+
+.fin-dash-sechead span{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fin-dash-chart__body{
+  padding: 12px;
+  background: var(--fin-panel-inner-bg);
+  height: 100%;
+  min-height: 280px;      /* dá “altura” pro Chart.js */
+  position: relative;
+}
+
+.fin-dash-chart.is-wide .fin-dash-chart__body{
+  min-height: 320px;
+}
+
+.fin-dash-cv{
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.fin-dash-charthint{
+  font-size: 12px;
+  color: var(--fin-muted);
+  font-weight: 800;
 }

@@ -682,58 +682,96 @@
     // ---------------------------
     // events
     // ---------------------------
-    document.addEventListener("click", (e) => {
-        if (e.target.closest('.fin-rep-card__fav') || e.target.closest('[data-action="fav"]')) return;
-      const card = e.target.closest(".fin-rep-card[data-report-id]");
-      if (!card) return;
+    // document.addEventListener("click", (e) => {
+    //     if (e.target.closest('.fin-rep-card__fav') || e.target.closest('[data-action="fav"]')) return;
+    //   const card = e.target.closest(".fin-rep-card[data-report-id]");
+    //   if (!card) return;
 
-      const id = card.getAttribute("data-report-id");
-      currentReport = { id };
+    //   const id = card.getAttribute("data-report-id");
+    //   currentReport = { id };
 
-      openModal();
-      renderAll();
-    });
+    //   openModal();
+    //   renderAll();
+    // });
 
     if (els.close) els.close.addEventListener("click", closeModal);
 
     // Executar (re-render com filtros atuais)
     els.run.addEventListener("click", () => {
-      if (!currentReport) return;
-      renderAll();
+      if(!window.__FR_API__) return;
+      const st = window.__FR_API__.getState();
+      if(!st.lastOpened) return;
+      window.__FR_API__.ensureRendered(st.lastOpened.rid);
     });
 
     // Exportar CSV real
     els.csv.addEventListener("click", () => {
-      if (!currentReport || !currentReport._lastTable) return;
-      exportCSV(currentReport._lastTable);
+      if(!window.__FR_API__) return;
+      const st = window.__FR_API__.getState();
+      if(!st.lastExec) return;
+
+      // Reaproveita a tabela já renderizada pelo JS principal
+      const head = (st.lastExec.columns || []).map(c => c.label || '');
+      const rows = (st.lastExec.rows || []).map(r => {
+        return (st.lastExec.columns || []).map(c => {
+          const v = typeof c.value === 'function' ? c.value(r) : (r[c.key] ?? '');
+          return v;
+        });
+      });
+
+      const csv = [
+        head.map((s) => `"${String(s).replaceAll('"', '""')}"`).join(";"),
+        ...rows.map((r) =>
+          (Array.isArray(r) ? r : [r])
+            .map((s) => `"${String(s ?? "").replaceAll('"', '""')}"`)
+            .join(";")
+        ),
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const safe = String(st.lastExec.title || 'relatorio').toLowerCase().replace(/[^a-z0-9\-]+/gi, '_');
+      a.href = url;
+      a.download = `${safe}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     });
 
     // Impressão / PDF
     els.print.addEventListener('click', async () => {
-      if (!currentReport || isPrinting) return;
+      if(!window.__FR_API__ || isPrinting) return;
       isPrinting = true;
-      try {
-        // garante que o relatório esteja renderizado com os filtros atuais
-        renderAll();
 
-        // aguarda o chart desenhar e gera a imagem para o @media print
+      try{
+        const st = window.__FR_API__.getState();
+        if(!st.lastOpened) return;
+
+        // garante que o conteúdo do modal está atualizado pelo JS principal
+        window.__FR_API__.ensureRendered(st.lastOpened.rid);
+
+        // gera a imagem do gráfico para o @media print
         await waitChartPaint();
         await preparePrintImage();
 
-        // Se a imagem existe, espera carregar (Safari/Chromium às vezes imprime antes)
+        // summary do gráfico (usa o cfg do Chart.js já existente)
+        try{
+          if(chartInstance && chartInstance.config){
+            renderChartSummary(chartInstance.config);
+          }
+        }catch(_){}
+
         if (els.chartImg && els.chartImg.src) {
           await waitImageLoaded(els.chartImg);
         }
 
-        // dá mais um frame para estabilizar o layout
         await raf();
-
         window.print();
-      } finally {
-        // evita double click
-        setTimeout(() => {
-          isPrinting = false;
-        }, 500);
+
+      } finally{
+        setTimeout(() => { isPrinting = false; }, 500);
       }
     });
 

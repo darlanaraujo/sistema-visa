@@ -85,3 +85,188 @@ button{
   color: inherit;
   background: transparent;
 }
+
+/* =========================================================
+   PADRÃO GLOBAL — CARD DE GRÁFICO + RESUMO (tabela)
+   - Neutro para qualquer tipo (bar/line/doughnut/pie/etc)
+   - Padrão: gráfico usa 100% da largura do card
+   - Opcional: doughnut/pie compacto via .is-compact
+   ========================================================= */
+
+.ui-chart{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 980px){
+  .ui-chart{ grid-template-columns: 1fr; }
+}
+
+.ui-chart-card{
+  border: 1px solid var(--n-300);
+  border-radius: 14px;
+  background: var(--c-surface);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ui-chart-head{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ui-chart-title{
+  font-weight: 800;
+  color: var(--c-text);
+  font-size: 14px;
+  line-height: 1.2;
+}
+.ui-chart-sub{
+  font-weight: 600;
+  color: color-mix(in srgb, var(--c-text) 65%, transparent);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.ui-chart-body{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* Área do gráfico (neutra) */
+.ui-chart-plot{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 4px;
+  height: 280px;     /* default bom p/ bar/line */
+  max-height: 280px;
+  overflow: hidden;
+}
+
+/* Por padrão, ocupa 100% (bar/line agradecem) */
+.ui-chart-plot canvas,
+.ui-chart-plot img,
+.ui-chart-plot svg{
+  width: 100%;
+  height: 260px;
+  max-height: 260px;
+  display: block;
+}
+
+/* Modifier: doughnut/pie compacto e centralizado */
+.ui-chart-plot.is-compact canvas,
+.ui-chart-plot.is-compact img,
+.ui-chart-plot.is-compact svg{
+  width: 100%;
+  max-width: 360px;
+  height: 240px;
+  max-height: 240px;
+}
+
+.ui-chart-divider{
+  height: 1px;
+  width: 100%;
+  background: var(--n-300);
+  opacity: .9;
+}
+
+/* Resumo (dados) */
+.ui-chart-sum{
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.ui-chart-sumtitle{
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-text) 60%, transparent);
+  margin: 0 0 8px 0;
+}
+
+.ui-chart-grid{
+  border: 1px solid var(--n-300);
+  border-radius: 12px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--c-surface) 70%, var(--c-bg));
+}
+
+/* label | valor | %  (serve pra qualquer chart) */
+.ui-chart-row{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 76px;
+  align-items: center;
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--n-300);
+}
+.ui-chart-row:last-child{ border-bottom: none; }
+
+.ui-chart-label{
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--c-text);
+  padding-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-chart-val{
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--c-text);
+  text-align: right;
+  padding: 0 10px;
+  border-left: 1px solid var(--n-300);
+  white-space: nowrap;
+}
+
+.ui-chart-pct{
+  font-weight: 800;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-text) 60%, transparent);
+  text-align: right;
+  padding-left: 10px;
+  border-left: 1px solid var(--n-300);
+  white-space: nowrap;
+}
+
+.ui-chart-hint{
+  color: color-mix(in srgb, var(--c-text) 60%, transparent);
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+@media (max-width: 560px){
+  .ui-chart-plot{
+    height: 240px;
+    max-height: 240px;
+  }
+  .ui-chart-plot canvas,
+  .ui-chart-plot img,
+  .ui-chart-plot svg{
+    height: 220px;
+    max-height: 220px;
+  }
+  .ui-chart-plot.is-compact canvas,
+  .ui-chart-plot.is-compact img,
+  .ui-chart-plot.is-compact svg{
+    max-width: 320px;
+    height: 210px;
+    max-height: 210px;
+  }
+  .ui-chart-row{
+    grid-template-columns: 1fr 140px 70px;
+  }
+}

@@ -1,11 +1,5 @@
 /* app/static/css/financeiro_relatorios.css */
 
-/* =========================================================
-   RELATÓRIOS — apenas o que é específico desta página
-   (sem duplicar componentes que já existem em financeiro.css)
-   ========================================================= */
-
-/* Filtros: botões ficam alinhados e com largura coerente */
 .fin-rep-filters-wrap .fin-rep-filter-btn{
   min-width: 180px;
 }
@@ -27,6 +21,7 @@
   .fin-rep-grid{ grid-template-columns: 1fr; }
 }
 
+/* Cards (catálogo) */
 .fin-rep-card{
   border:1px solid var(--fin-border);
   border-radius:14px;
@@ -147,50 +142,6 @@
   font-size:12px;
 }
 
-/* Modal de relatório */
-.fin-rep-modal{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.fin-rep-modal__row{
-  display:grid;
-  grid-template-columns: 120px 1fr;
-  gap:10px;
-  align-items:center;
-  border:1px solid var(--fin-border);
-  border-radius:12px;
-  background: var(--fin-panel-bg);
-  padding:10px 12px;
-}
-
-.fin-rep-modal__k{
-  font-weight:900;
-  color: var(--fin-muted);
-  font-size:12px;
-}
-
-.fin-rep-modal__v{
-  font-weight:900;
-  color: var(--fin-text);
-  font-size:12px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-.fin-rep-modal__hint{
-  margin-top:8px;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid var(--fin-border);
-  background: var(--fin-panel-inner-bg);
-  color: var(--fin-muted);
-  font-weight:800;
-  font-size:12px;
-}
-
 /* Toast */
 .fin-rep-toast{
   position: fixed;
@@ -208,5 +159,186 @@
   font-size:12px;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
 }
-
 .fin-rep-toast.is-on{ display:block; }
+
+/* ===============================
+   Visão rápida (página) — wide
+   =============================== */
+.ui-chart-card.is-wide .ui-chart-body{
+  display:grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.ui-chart-card.is-wide .ui-chart-plot{
+  height: 320px;
+  max-height: 320px;
+}
+
+.ui-chart-card.is-wide .ui-chart-plot canvas,
+.ui-chart-card.is-wide .ui-chart-plot img,
+.ui-chart-card.is-wide .ui-chart-plot svg{
+  height: 300px;
+  max-height: 300px;
+}
+
+/* Forçar empilhar (sem editar CSS na mão) */
+.ui-chart-card.is-wide.is-stack .ui-chart-body{
+  display:flex;
+  flex-direction:column;
+}
+
+@media (max-width: 980px){
+  .ui-chart-card.is-wide .ui-chart-body{
+    display:flex;
+    flex-direction:column;
+  }
+}
+
+/* ===============================
+   Mobile: badges longos não quebram
+   =============================== */
+@media (max-width: 700px){
+  .fin-panel__head{
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .fin-badge.fin-badge--pt{
+    white-space: normal;
+    line-height: 1.2;
+    font-size: 11px;
+  }
+}
+
+/* ===============================
+   MODAL (VOLTA AO PADRÃO APROVADO)
+   - gráfico + dados lado a lado
+   - dados com colunas separadas (vertical)
+   - destaque leve no total
+   - tabela com colunas separadas e linha total
+   =============================== */
+
+/* largura melhor: dados não ficam "espremidos" */
+.fr-print__chartgrid{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr);
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 860px){
+  .fr-print__chartgrid{
+    display:flex;
+    flex-direction:column;
+  }
+}
+
+.fr-print__chartsum{
+  border:1px solid var(--fin-border);
+  background: var(--fin-panel-bg);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.fr-print__sumtitle{
+  font-weight: 900;
+  color: var(--fin-text);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+/* “tabela” do resumo: linhas H e separadores V */
+.fr-print__sumgrid{
+  border:1px solid var(--fin-border);
+  border-radius: 12px;
+  overflow:hidden;
+  background: var(--fin-panel-inner-bg);
+}
+
+.fr-print__sumrow{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) 140px 84px;
+  align-items:stretch;
+  border-bottom: 1px solid var(--fin-border);
+  font-weight: 900;
+  font-size: 12px;
+}
+.fr-print__sumrow:last-child{ border-bottom:none; }
+
+.fr-print__sumcell{
+  padding: 10px 10px;
+  display:flex;
+  align-items:center;
+  min-height: 38px;
+}
+.fr-print__sumcell + .fr-print__sumcell{
+  border-left: 1px solid var(--fin-border);
+}
+
+.fr-print__sumlabel{
+  color: var(--fin-text);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.fr-print__sumval{
+  color: var(--fin-text);
+  justify-content:flex-end;
+  width:100%;
+}
+
+.fr-print__sumpct{
+  color: var(--fin-muted);
+  justify-content:flex-end;
+  width:100%;
+}
+
+/* total: leve (somente negrito/linha) */
+.fr-print__sumtotal{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border:1px solid var(--fin-border);
+  background: var(--fin-panel-inner-bg);
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  font-weight: 1000;
+  color: var(--fin-text);
+}
+
+/* tabela principal com colunas separadas */
+.fr-print__t{
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.fr-print__t th,
+.fr-print__t td{
+  border-bottom: 1px solid var(--fin-border);
+  padding: 10px 10px;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.fr-print__t th{
+  color: var(--fin-muted);
+  background: var(--fin-panel-inner-bg);
+}
+
+.fr-print__t th + th,
+.fr-print__t td + td{
+  border-left: 1px solid var(--fin-border);
+}
+
+/* total da tabela (linha final) */
+.fr-print__t tr.is-total td{
+  background: var(--fin-panel-inner-bg);
+  font-weight: 1000;
+}
+
+.fr-print__t tr.is-total td:last-child{
+  font-weight: 1100;
+}
