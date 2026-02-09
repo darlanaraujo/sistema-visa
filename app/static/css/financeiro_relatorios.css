@@ -227,6 +227,10 @@
   align-items: start;
 }
 
+.fr-print__chart {
+    padding: 14px 16px 0 16px;
+}
+
 @media (max-width: 860px){
   .fr-print__chartgrid{
     display:flex;

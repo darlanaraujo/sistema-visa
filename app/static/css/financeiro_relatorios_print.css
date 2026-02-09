@@ -209,6 +209,9 @@
   border-left:1px solid rgba(11,18,32,.08);
   white-space:nowrap;
 }
+.fr-print__chart {
+    padding: 14px 16px 0 16px;
+}
 
 /* ---------------------------
    Tabela / rodapé
@@ -346,4 +349,37 @@
 /* Mobile: remove o botão CSV no modal (evita sobreposição) */
 @media (max-width: 700px){
   #frModalGhost{ display:none !important; }
+}
+
+/* ===============================
+   PRINT: manter gráfico + dados lado a lado
+   =============================== */
+@media print{
+  /* evita regras responsivas/viewport do navegador quebrar o layout */
+  .fr-print__chartgrid{
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr) !important;
+    gap: 12px !important;
+    align-items: start !important;
+  }
+
+  /* impede o bloco do gráfico de “pular” de tamanho e empurrar tudo */
+  .fr-print__chartwrap{
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* garante que a imagem/canvas respeite a coluna */
+  .fr-print__chartwrap img,
+  .fr-print__chartwrap canvas{
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* se houver algum CSS que transforme em coluna, neutraliza */
+  .ui-chart-card.is-wide .ui-chart-body{
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) !important;
+  }
 }

@@ -108,7 +108,7 @@ $corp = [
   'company' => 'Visa Remoções',
   'cnpj'    => '17.686.570/0001-80',
   'tagline' => 'Sistema Financeiro • Relatórios',
-  'logo'    => '/sistema-visa/app/static/img/logo.png',
+  'logo'    => '/sistema-visa/app/static/img/favicon.png',
   'site'    => 'visaremocoes.com.br',
 ];
 
@@ -125,7 +125,12 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
 
 ?>
 
-<div class="fin-page" id="frPage" data-fr-mock="<?= $fr_mock_json ?>">
+<?php
+  $corp_json_attr = h(json_encode($corp, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+?>
+<div class="fin-page" id="frPage"
+    data-fr-mock="<?= $fr_mock_json ?>"
+    data-fr-corp-json="<?= $corp_json_attr ?>">
   <div class="fin-head">
     <h1>Relatórios</h1>
     <p>Relatórios do financeiro para visão rápida e conferência. (Etapa sem banco de dados — usando localStorage)</p>

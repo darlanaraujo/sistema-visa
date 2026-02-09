@@ -389,6 +389,34 @@
     return arr;
   }
 
+  // -----------------------------
+  // Limites de exibição (padrão)
+  // - aplica SOMENTE aos dados do gráfico (legend/summary)
+  // - a tabela do relatório permanece completa (sem "Outros")
+  // -----------------------------
+  const CHART_TOP_N = 8;
+
+  function limitSeriesWithOthers(series, maxItems, othersBaseLabel = 'Outros'){
+    const arr = Array.isArray(series) ? series.slice() : [];
+    const max = Math.max(1, Number(maxItems || 0));
+
+    if(arr.length <= max) return arr;
+
+    // 1 slot reservado para "Outros"
+    const keep = Math.max(1, max - 1);
+
+    const head = arr.slice(0, keep);
+    const tail = arr.slice(keep);
+
+    const restSum = tail.reduce((a,b) => a + Number(b?.value || 0), 0);
+    const restCount = tail.length;
+
+    const label = `${othersBaseLabel} (${restCount})`;
+    head.push({ label, value: restSum });
+
+    return head;
+  }
+
   const PAL = [
     'rgba(59,130,246,.75)',
     'rgba(16,185,129,.75)',
@@ -478,7 +506,7 @@
     const series = Array.isArray(opt.series) ? opt.series : [];
     const total = series.reduce((a,b)=>a+Number(b.value||0),0);
 
-    sumEl.innerHTML = series.slice(0, opt.maxRows || 10).map(r => {
+    sumEl.innerHTML = series.slice(0, opt.maxRows || CHART_TOP_N).map(r => {
       const pctTxt = total > 0 ? (pctOf(r.value, total)).toFixed(1).replace('.', ',') + '%' : '0,0%';
       return `
         <div class="ui-chart-row">
@@ -537,12 +565,8 @@
 
     // TOP: imóveis + categorias
     const byImovel = sumBy(cpIn, r => (r.imovel || '—'), asVal);
-    let imSeries = sortTop(byImovel, 9);
-    if(imSeries.length > 8){
-      const top8 = imSeries.slice(0, 8);
-      const rest = imSeries.slice(8).reduce((a,b) => a + Number(b.value||0), 0);
-      imSeries = top8.concat([{ label:'Outros', value: rest }]);
-    }
+    let imSeriesAll = sortTop(byImovel);
+    let imSeries = limitSeriesWithOthers(imSeriesAll, CHART_TOP_N, 'Outros');
     const imCfg = applyTooltipMoneyAndPct({
       type: 'doughnut',
       data: {
@@ -553,12 +577,8 @@
     });
 
     const byCat = sumBy(cpIn, r => (r.categoria || '—'), asVal);
-    let catSeries = sortTop(byCat, 9);
-    if(catSeries.length > 8){
-      const top8 = catSeries.slice(0, 8);
-      const rest = catSeries.slice(8).reduce((a,b) => a + Number(b.value||0), 0);
-      catSeries = top8.concat([{ label:'Outros', value: rest }]);
-    }
+    let catSeriesAll = sortTop(byCat);
+    let catSeries = limitSeriesWithOthers(catSeriesAll, CHART_TOP_N, 'Outros');
     const catCfg = applyTooltipMoneyAndPct({
       type: 'doughnut',
       data: {
@@ -578,7 +598,7 @@
         wide: false,
         series: imSeries,
         chartCfg: imCfg,
-        maxRows: 10,
+        maxRows: CHART_TOP_N,
       });
       renderChartCard(quickTop, {
         id: 'fr_q_categorias',
@@ -588,7 +608,7 @@
         wide: false,
         series: catSeries,
         chartCfg: catCfg,
-        maxRows: 10,
+        maxRows: CHART_TOP_N,
       });
     }
 
@@ -638,7 +658,6 @@
         }
       };
 
-      // ✅ stack TRUE (resolve seu item 6 sem comentar CSS)
       renderChartCard(quickMid, {
         id: 'fr_q_hist12',
         title: 'Entradas x Saídas — últimos 12 meses',
@@ -648,7 +667,7 @@
         stack: true,
         series: histSeries,
         chartCfg: histCfg,
-        maxRows: 6,
+        maxRows: CHART_TOP_N,
       });
 
       const sumStatus = (list, stt) => list.reduce((acc, r) => acc + (r.status === stt ? asVal(r) : 0), 0);
@@ -692,7 +711,7 @@
         stack: false,
         series: statusSeries,
         chartCfg: statusCfg,
-        maxRows: 10,
+        maxRows: CHART_TOP_N,
       });
     }
 
@@ -706,7 +725,13 @@
       openEvents.sort((a,b) => safeTime(a.data) - safeTime(b.data));
       const topEv = openEvents.slice(0, 10);
 
-      const evSeries = topEv.map(x => ({ label: `${x.kind}: ${toBRddmmyyyy(x.data)} • ${x.title}`, value: x.valor }));
+      const evSeriesFull = topEv.map(x => ({
+        label: `${x.kind}: ${toBRddmmyyyy(x.data)} • ${x.title}`,
+        value: x.valor
+      }));
+
+      const evSeries = limitSeriesWithOthers(evSeriesFull, CHART_TOP_N, 'Outros');
+
       const vencLabels = topEv.map(x => `${x.kind} ${toBRddmmyyyy(x.data)}`);
       const vencVals = topEv.map(x => x.valor);
 
@@ -725,11 +750,12 @@
         stack: true,
         series: evSeries.length ? evSeries : [{ label:'Sem vencimentos em aberto no período', value: 0 }],
         chartCfg: vencCfg,
-        maxRows: 10,
+        maxRows: CHART_TOP_N,
       });
 
       const fixas = cpIn.filter(p => (String(p.fixa) === '1' || p.fixa === true));
-      const fixSeries = sortTop(sumBy(fixas, p => (p.conta || '—'), asVal), 10);
+      const fixSeriesAll = sortTop(sumBy(fixas, p => (p.conta || '—'), asVal));
+      const fixSeries = limitSeriesWithOthers(fixSeriesAll, CHART_TOP_N, 'Outros');
       const fixCfg = applyTooltipMoneyAndPct({
         type: 'doughnut',
         data: {
@@ -748,12 +774,10 @@
         stack: false,
         series: fixSeries.length ? fixSeries : [{ label:'Sem contas fixas no período', value: 0 }],
         chartCfg: fixCfg,
-        maxRows: 10,
+        maxRows: CHART_TOP_N,
       });
     }
   }
-
-  
 
   // -----------------------------
   // Modal
@@ -871,9 +895,8 @@
       if(chartImg) chartImg.src = dataUrl;
     }catch(_){}
 
-    // ✅ “Dados” do gráfico com separadores verticais (padrão aprovado)
     if(chartSumEl && Array.isArray(sumRows) && sumRows.length){
-      chartSumEl.innerHTML = sumRows.map(r => {
+      chartSumEl.innerHTML = sumRows.slice(0, CHART_TOP_N).map(r => {
         return `
           <div class="fr-print__sumrow">
             <div class="fr-print__sumcell fr-print__sumlabel">${escapeHtml(r.label)}</div>
@@ -919,7 +942,7 @@
   }
 
   // -----------------------------
-  // Execução de relatórios (RESTaurado p/ seu catálogo atual)
+  // Execução de relatórios
   // -----------------------------
   function execReport(rid){
     const st = getFilterState();
@@ -944,11 +967,10 @@
     let rows = [];
     let kpis = [];
     let chart = null;
-    let chartSum = null;     // array {label,value,pct}
-    let totalRow = null;     // linha total na tabela
+    let chartSum = null;
+    let totalRow = null;
     let footnote = '';
 
-    // ---- RESUMO DO PERÍODO
     if(rid === 'rep_resumo_mes'){
       const pagarOpen = sumStatus(cpIn, 'open');
       const pagarDone = sumStatus(cpIn, 'done');
@@ -995,7 +1017,6 @@
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
 
-    // ---- STATUS
     else if(rid === 'rep_status'){
       const pagarOpen = sumStatus(cpIn, 'open');
       const pagarDone = sumStatus(cpIn, 'done');
@@ -1050,25 +1071,20 @@
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
 
-    // ---- DESPESAS POR IMÓVEL (CP)
     else if(rid === 'rep_imoveis'){
       const map = sumBy(cpIn, r => (r.imovel || '—'), asVal);
-      let series = sortTop(map, 9);
-      if(series.length > 8){
-        const top8 = series.slice(0, 8);
-        const rest = series.slice(8).reduce((a,b)=>a+Number(b.value||0),0);
-        series = top8.concat([{label:'Outros', value:rest}]);
-      }
+      const seriesAll = sortTop(map);
 
-      const total = series.reduce((a,b)=>a+Number(b.value||0),0);
+      const total = seriesAll.reduce((a,b)=>a+Number(b.value||0),0);
+      const series = limitSeriesWithOthers(seriesAll, CHART_TOP_N, 'Outros');
 
       kpis = [
         { label:'Imóveis', value: String(map.size) },
         { label:'Total despesas', value: moneyBR(cpIn.reduce((a,b)=>a+asVal(b),0)) },
       ];
 
-      // tabela = agregada (mas com total e separadores)
-      rows = series.map(s => ({ imovel:s.label, valor:s.value, pct: pctOf(s.value,total) }));
+      // ✅ tabela completa (sem "Outros")
+      rows = seriesAll.map(s => ({ imovel:s.label, valor:s.value, pct: pctOf(s.value,total) }));
       columns = [
         { label:'Imóvel', key:'imovel' },
         { label:'Valor', value:r => moneyBR(r.valor), align:'right' },
@@ -1088,33 +1104,30 @@
         options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'58%' }
       }) : null;
 
-      chartSum = rows.map(r => ({
-        label: r.imovel,
-        value: moneyBR(r.valor),
-        pct: (r.pct||0).toFixed(1).replace('.',',')+'%'
+      // ✅ chartSum limitado (Top N + Outros)
+      chartSum = series.map(s => ({
+        label: s.label,
+        value: moneyBR(s.value),
+        pct: total > 0 ? (pctOf(s.value, total)).toFixed(1).replace('.', ',') + '%' : '0,0%'
       }));
 
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
 
-    // ---- DESPESAS POR CATEGORIA (CP)
     else if(rid === 'rep_categorias'){
       const map = sumBy(cpIn, r => (r.categoria || '—'), asVal);
-      let series = sortTop(map, 9);
-      if(series.length > 8){
-        const top8 = series.slice(0, 8);
-        const rest = series.slice(8).reduce((a,b)=>a+Number(b.value||0),0);
-        series = top8.concat([{label:'Outros', value:rest}]);
-      }
+      const seriesAll = sortTop(map);
 
-      const total = series.reduce((a,b)=>a+Number(b.value||0),0);
+      const total = seriesAll.reduce((a,b)=>a+Number(b.value||0),0);
+      const series = limitSeriesWithOthers(seriesAll, CHART_TOP_N, 'Outros');
 
       kpis = [
         { label:'Categorias', value: String(map.size) },
         { label:'Total despesas', value: moneyBR(cpIn.reduce((a,b)=>a+asVal(b),0)) },
       ];
 
-      rows = series.map(s => ({ categoria:s.label, valor:s.value, pct: pctOf(s.value,total) }));
+      // ✅ tabela completa (sem "Outros")
+      rows = seriesAll.map(s => ({ categoria:s.label, valor:s.value, pct: pctOf(s.value,total) }));
       columns = [
         { label:'Categoria', key:'categoria' },
         { label:'Valor', value:r => moneyBR(r.valor), align:'right' },
@@ -1134,18 +1147,17 @@
         options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'58%' }
       }) : null;
 
-      chartSum = rows.map(r => ({
-        label: r.categoria,
-        value: moneyBR(r.valor),
-        pct: (r.pct||0).toFixed(1).replace('.',',')+'%'
+      // ✅ chartSum limitado (Top N + Outros)
+      chartSum = series.map(s => ({
+        label: s.label,
+        value: moneyBR(s.value),
+        pct: total > 0 ? (pctOf(s.value, total)).toFixed(1).replace('.', ',') + '%' : '0,0%'
       }));
 
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
 
-    // ---- FLUXO (entradas x saídas) no período (por dia)
     else if(rid === 'rep_fluxo'){
-      // bucket por dia no período
       const days = [];
       const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
       while(cur < end){
@@ -1216,7 +1228,6 @@
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
 
-    // ---- VENCIMENTOS (abertos)
     else if(rid === 'rep_vencimentos'){
       const list = [];
       cpIn.forEach(p => { if(p.status === 'open') list.push({ tipo:'Pagar', titulo:p.conta||'—', meta:p.imovel||'—', data:p.data, valor:asVal(p) }); });
@@ -1240,7 +1251,6 @@
       ];
       totalRow = { label:'Total', value:(col, idx)=> idx===4 ? moneyBR(total) : '' };
 
-      // Gráfico (modal): A pagar x A receber (totais no período)
       const totalPagar = list.filter(x => x.tipo === 'Pagar').reduce((a,b)=>a+Number(b.valor||0),0);
       const totalReceber = list.filter(x => x.tipo === 'Receber').reduce((a,b)=>a+Number(b.valor||0),0);
       const totalChart = totalPagar + totalReceber;
@@ -1263,22 +1273,13 @@
       }) : null;
 
       chartSum = [
-        {
-          label: 'A pagar',
-          value: moneyBR(totalPagar),
-          pct: totalChart > 0 ? (pctOf(totalPagar, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
-        },
-        {
-          label: 'A receber',
-          value: moneyBR(totalReceber),
-          pct: totalChart > 0 ? (pctOf(totalReceber, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
-        },
+        { label: 'A pagar', value: moneyBR(totalPagar), pct: totalChart > 0 ? (pctOf(totalPagar, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%' },
+        { label: 'A receber', value: moneyBR(totalReceber), pct: totalChart > 0 ? (pctOf(totalReceber, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%' },
       ];
 
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
 
-    // ---- RECORRENTES (fixas)
     else if(rid === 'rep_recorrentes'){
       const fixas = cpIn.filter(p => (String(p.fixa) === '1' || p.fixa === true));
       fixas.sort((a,b)=> safeTime(a.data) - safeTime(b.data));
@@ -1299,10 +1300,10 @@
       ];
       totalRow = { label:'Total', value:(col, idx)=> idx===4 ? moneyBR(total) : '' };
 
-      // gráfico agregado por conta (top 10)
       const map = sumBy(fixas, r => (r.conta || '—'), asVal);
-      const series = sortTop(map, 10);
-      const totalAgg = series.reduce((a,b)=>a+Number(b.value||0),0);
+      const seriesAll = sortTop(map);
+      const series = limitSeriesWithOthers(seriesAll, CHART_TOP_N, 'Outros');
+      const totalAgg = seriesAll.reduce((a,b)=>a+Number(b.value||0),0);
 
       chart = window.Chart ? applyTooltipMoneyAndPct({
         type:'doughnut',
@@ -1322,7 +1323,6 @@
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
     }
 
-    // ---- LANÇAMENTOS (CP + CR)
     else if(rid === 'rep_lancamentos'){
       const list = [];
       cpIn.forEach(p => list.push({
@@ -1361,7 +1361,6 @@
       ];
       totalRow = { label:'Total', value:(col, idx)=> idx===5 ? moneyBR(total) : '' };
 
-      // Gráfico (modal): CP x CR (totais no período)
       const totalCP = list.filter(x => x.tipo === 'Pagar').reduce((a,b)=>a+Number(b.valor||0),0);
       const totalCR = list.filter(x => x.tipo === 'Receber').reduce((a,b)=>a+Number(b.valor||0),0);
       const totalChart = totalCP + totalCR;
@@ -1384,16 +1383,8 @@
       }) : null;
 
       chartSum = [
-        {
-          label: 'Contas a pagar',
-          value: moneyBR(totalCP),
-          pct: totalChart > 0 ? (pctOf(totalCP, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
-        },
-        {
-          label: 'Contas a receber',
-          value: moneyBR(totalCR),
-          pct: totalChart > 0 ? (pctOf(totalCR, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%',
-        },
+        { label: 'Contas a pagar', value: moneyBR(totalCP), pct: totalChart > 0 ? (pctOf(totalCP, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%' },
+        { label: 'Contas a receber', value: moneyBR(totalCR), pct: totalChart > 0 ? (pctOf(totalCR, totalChart)).toFixed(1).replace('.', ',') + '%' : '0,0%' },
       ];
 
       footnote = hasData ? '' : 'Sem dados no localStorage nesta etapa.';
@@ -1432,7 +1423,6 @@
     if(printPeriod) printPeriod.textContent = res.periodLabel || '—';
     if(printType) printType.textContent = res.typeLabel || 'Todos';
 
-    // ✅ padrão aprovado: nome no título e descrição embaixo
     if(printTitle) printTitle.textContent = res.title || 'Relatório';
     if(printDesc) printDesc.textContent = res.desc || '';
 
@@ -1443,11 +1433,7 @@
 
     renderChart(res.chart, res.chartSum || null);
 
-    // Total do “Dados” (leve)
     if(chartTotalEl && Array.isArray(res.chartSum) && res.chartSum.length){
-      // tenta somar valores BRL do próprio relatório quando fizer sentido
-      // (não força 100% sempre, porque pode ser lista)
-      // Aqui deixamos em branco por padrão (padrão anterior era mais discreto).
       chartTotalEl.innerHTML = '';
     }
   }
@@ -1587,16 +1573,85 @@
         try{ renderExecResult(execReport(lastOpened.rid)); }catch(_){ }
       }
 
-      setTimeout(() => {
-        try{
-          if(chartCanvas && chartImg && window.Chart){
-            const dataUrl = chartCanvas.toDataURL('image/png', 1.0);
-            chartImg.src = dataUrl;
-          }
-        }catch(_){}
+      if(!lastExec){
+        showToast('Nada para imprimir ainda.', 'warning');
+        return;
+      }
 
-        window.print();
-      }, 50);
+      let chartDataUrl = '';
+      try{
+        if(chartCanvas && window.Chart){
+          chartDataUrl = chartCanvas.toDataURL('image/png', 1.0);
+        }
+      }catch(_){
+        chartDataUrl = '';
+      }
+
+      const cols = Array.isArray(lastExec.columns) ? lastExec.columns : [];
+      const head = cols.map(c => String(c.label || ''));
+
+      const rows = (Array.isArray(lastExec.rows) ? lastExec.rows : []).map(r => {
+        return cols.map(c => {
+          try{
+            const v = (typeof c.value === 'function') ? c.value(r) : (r[c.key] ?? '');
+            return String(v ?? '');
+          }catch(_){
+            return '';
+          }
+        });
+      });
+
+      let total = null;
+      if(lastExec.totalRow && cols.length){
+        total = cols.map((c, idx) => {
+          try{
+            if(idx === 0) return String(lastExec.totalRow.label || 'Total');
+            if(typeof lastExec.totalRow.value === 'function') return String(lastExec.totalRow.value(c, idx) ?? '');
+            return '';
+          }catch(_){
+            return '';
+          }
+        });
+      }
+
+      const corp = (window.__FR_MOCK__ && window.__FR_MOCK__.corp) ? window.__FR_MOCK__.corp : {};
+
+      const payload = {
+        corp,
+        meta: {
+          generatedAt: (printGeneratedAt ? (printGeneratedAt.textContent || '') : '').trim() || '—',
+          period: lastExec.periodLabel || '—',
+          type: lastExec.typeLabel || '—',
+        },
+        title: lastExec.title || 'Relatório',
+        desc: lastExec.desc || '',
+        kpis: Array.isArray(lastExec.kpis) ? lastExec.kpis : [],
+        chart: {
+          img: chartDataUrl || '',
+          sum: Array.isArray(lastExec.chartSum) ? lastExec.chartSum : [],
+        },
+        table: {
+          head,
+          rows,
+          total,
+        },
+        footnote: lastExec.footnote || '',
+      };
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.target = '_blank';
+      form.action = '/sistema-visa/app/templates/financeiro_relatorios_print_preview.php';
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payload';
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
     });
   }
 
@@ -1626,7 +1681,6 @@
   syncModalActionsForViewport();
   buildQuickCharts();
 
-  // Auto-open via URL (?rid=rep_xxx)
   try {
     const sp = new URLSearchParams(window.location.search || "");
     const rid = (sp.get("rid") || "").trim();
@@ -1636,9 +1690,6 @@
     }
   } catch (_) {}
 
-  // ==========================================
-  // API pública para o print.js (sem duplicar lógica)
-  // ==========================================
   window.__FR_API__ = window.__FR_API__ || {};
   window.__FR_API__.execReport = execReport;
   window.__FR_API__.renderExecResult = renderExecResult;
