@@ -4,8 +4,6 @@
 $rel = (string)($_GET['rel'] ?? '');
 $rel = trim($rel);
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
-
 $nome = $rel !== '' ? $rel : 'Selecione um relatório';
 $desc = $rel !== '' ? 'Placeholder de geração/visualização do relatório selecionado.' : 'Escolha um relatório pelo Dashboard ou pelo menu.';
 ?>

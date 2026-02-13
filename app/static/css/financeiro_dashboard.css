@@ -34,7 +34,7 @@
 .fin-dash-kpi:hover{
   border-color: var(--fin-hover-bd);
   background: var(--fin-hover-bg);
-  box-shadow: var(--fin-shadow-soft, 0 10px 26px rgba(15, 23, 42, 0.06));
+  box-shadow: var(--shadow-soft);
   transform: translateY(-1px);
 }
 
@@ -113,16 +113,16 @@
   height: 12px;
   border-radius: 999px;
   border: 1px solid var(--fin-border);
-  background: color-mix(in srgb, var(--fin-border) 45%, #ffffff);
+  background: color-mix(in srgb, var(--fin-border) 45%, var(--fin-surface));
 }
 
 .fin-dash-mockbar.is-in{
-  background: color-mix(in srgb, var(--fin-success) 16%, #ffffff);
+  background: color-mix(in srgb, var(--fin-success) 16%, var(--fin-surface));
   border-color: color-mix(in srgb, var(--fin-success) 28%, transparent);
 }
 
 .fin-dash-mockbar.is-out{
-  background: color-mix(in srgb, var(--fin-danger) 14%, #ffffff);
+  background: color-mix(in srgb, var(--fin-danger) 14%, var(--fin-surface));
   border-color: color-mix(in srgb, var(--fin-danger) 28%, transparent);
 }
 

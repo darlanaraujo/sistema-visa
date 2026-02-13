@@ -279,6 +279,4 @@ $mock = [
       </div>
     </div>
   </div>
-
-  <script src="/sistema-visa/app/static/js/financeiro_contas_pagar.js"></script>
 </div>

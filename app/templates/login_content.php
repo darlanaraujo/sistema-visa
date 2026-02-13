@@ -1,9 +1,18 @@
 <div class="login-page">
   <div class="login-card">
-
-    <div class="logo-wrap">
-      <img class="logo" src="/sistema-visa/app/static/img/logo.png" alt="Logo">
-    </div>
+    <div class="sidebar__brand">
+        <div class="sidebar__logo-wrap logo-wrap ">
+          <img
+          id="sidebarLogo"
+          src="/sistema-visa/app/static/img/logo.png"
+          data-logo="/sistema-visa/app/static/img/logo.png"
+          data-favicon="/sistema-visa/app/static/img/favicon.png"
+          data-logo-default="/sistema-visa/app/static/img/logo.png"
+          data-favicon-default="/sistema-visa/app/static/img/favicon.png"
+          alt="Sistema Visa"
+          class="sidebar__logo"
+        >
+        </div>
 
     <div class="login-separator"></div>
 

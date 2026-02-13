@@ -41,5 +41,8 @@ $title = $title ?? 'Sistema Visa';
       require $contentFile;
     }
   ?>
+
+    <!-- JS personalização da empresa -->
+  <script src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
 </body>
 </html>

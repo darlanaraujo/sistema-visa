@@ -1,8 +1,6 @@
 <?php
 // app/modules/financeiro/home.php
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
-
 // ---------------------------
 // MOCKS
 // ---------------------------

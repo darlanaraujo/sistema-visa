@@ -25,7 +25,7 @@
     linear-gradient(
       180deg,
       var(--grad-login-deep) 0%,
-      #0a1020 100%
+      color-mix(in srgb, var(--grad-login-deep) 35%, #000) 100%
     );
 }
 
@@ -35,7 +35,7 @@
   background: var(--c-surface);
   border-radius: 18px;
   padding: 26px 22px;
-  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+  box-shadow: var(--shadow-soft-2);
 }
 
 .logo-wrap {
@@ -49,7 +49,7 @@
   max-width: 220px;
 }
 
-.logo {
+#sidebarLogo {
   max-width: 220px;
   height: auto;
 }
@@ -116,7 +116,6 @@
 
 .login-footer {
   margin-top: 16px;
-  color: rgba(255,255,255,0.85);
   font-size: 13px;
   text-align: center;
 }

@@ -1,5 +1,7 @@
 <?php
 // app/templates/financeiro_relatorios_print_preview.php
+// Preview de impressão do relatório (tela separada / janela nova).
+// ⚠️ Esta página NÃO usa base_private.php, então precisa carregar helpers manualmente.
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -11,8 +13,23 @@ if (!isset($_SESSION['auth_user'])) {
   exit;
 }
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+// ---------------------------------------------------------
+// Helpers globais (fonte única)
+// - Necessário porque esta página usa h() e não passa pelo base_private.php
+// ---------------------------------------------------------
+require_once __DIR__ . '/../../public_php/src/Support/helpers.php';
 
+// ---------------------------------------------------------
+// Company (fonte única dos dados da empresa)
+// ---------------------------------------------------------
+require_once __DIR__ . '/../core/company.php'; // app/core/company.php
+
+/**
+ * Classe de alinhamento das colunas da tabela
+ * @param array $alignArr
+ * @param int $i
+ * @return string
+ */
 function alignClass($alignArr, $i){
   $a = strtolower((string)($alignArr[$i] ?? 'left'));
   if ($a === 'right') return 't-right';
@@ -20,6 +37,9 @@ function alignClass($alignArr, $i){
   return '';
 }
 
+// ---------------------------------------------------------
+// Payload vindo do POST
+// ---------------------------------------------------------
 $raw = $_POST['payload'] ?? '';
 $data = null;
 
@@ -34,8 +54,10 @@ if (!$data) {
   exit;
 }
 
-// Normaliza campos esperados (sem confiar 100% no front)
-$corp = is_array($data['corp'] ?? null) ? $data['corp'] : [];
+// ---------------------------------------------------------
+// Identidade corporativa (fonte única)
+// ---------------------------------------------------------
+$corp = company_get();
 
 $meta  = is_array($data['meta'] ?? null) ? $data['meta'] : [];
 $title = (string)($data['title'] ?? 'Relatório');
@@ -54,7 +76,6 @@ $chartImg = (string)($chart['img'] ?? '');
 $chartSum = is_array($chart['sum'] ?? null) ? $chart['sum'] : [];
 
 $footnote = (string)($data['footnote'] ?? '');
-
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -63,10 +84,10 @@ $footnote = (string)($data['footnote'] ?? '');
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= h($title) ?> • Preview</title>
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="32x32" href="/sistema-visa/app/static/img/favicon.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/sistema-visa/app/static/img/favicon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/sistema-visa/app/static/img/favicon.png">
+  <!-- Favicon (usa fonte única; fallback mantém padrão) -->
+  <link rel="icon" type="image/png" sizes="32x32" href="<?= h($corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>">
+  <link rel="icon" type="image/png" sizes="16x16" href="<?= h($corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>">
+  <link rel="apple-touch-icon" sizes="180x180" href="<?= h($corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>">
 
   <!-- Fonte -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -84,7 +105,6 @@ $footnote = (string)($data['footnote'] ?? '');
   <link rel="stylesheet" href="/sistema-visa/app/static/css/financeiro_relatorios.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/financeiro_relatorios_print.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/financeiro_relatorios_print_preview.css">
-
 </head>
 <body>
 
@@ -112,9 +132,11 @@ $footnote = (string)($data['footnote'] ?? '');
 
       <header class="fr-print__head">
         <div class="fr-print__brand">
-          <?php if (!empty($corp['logo'])): ?>
-            <img class="fr-print__logo" src="<?= h($corp['logo']) ?>" alt="<?= h($corp['company'] ?? 'Empresa') ?>">
-          <?php endif; ?>
+          <img
+            class="fr-print__logo"
+            src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? $corp['logo'] ?? '/sistema-visa/app/static/img/favicon.png') ?>"
+            alt="<?= h($corp['company'] ?? 'Empresa') ?>"
+          >
 
           <div class="fr-print__brandtxt">
             <div class="fr-print__company"><?= h($corp['company'] ?? '—') ?></div>
@@ -242,11 +264,14 @@ $footnote = (string)($data['footnote'] ?? '');
       </section>
 
       <footer class="fr-print__footer">
-        <div>Documento gerado automaticamente pelo Sistema Visa.</div>
+        <div><?= h($corp['report_footer_note'] ?? 'Documento gerado automaticamente pelo Sistema Visa.') ?></div>
         <div class="fr-print__pagenum">Página <span class="fr-page"></span></div>
       </footer>
 
     </div>
   </div>
+
+  <!-- Personalização via localStorage (tema/cores/logo/favicon) -->
+  <script src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
 </body>
 </html>

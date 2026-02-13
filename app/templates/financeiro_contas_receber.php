@@ -11,6 +11,7 @@ $extra_css = [
 $extra_js = [
   '/sistema-visa/app/static/js/financeiro/data/fin_bootstrap_refs.js',
   '/sistema-visa/app/static/js/financeiro/data/fin_store.js',
+  '/sistema-visa/app/static/js/financeiro/data/fin_refs_bridge.js', // <<< ADICIONA
   '/sistema-visa/app/static/js/financeiro_contas_receber.js',
 ];
 

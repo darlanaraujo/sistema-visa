@@ -55,7 +55,7 @@ input, select, button {
 
 /* Campos */
 input, select {
-  border: 1px solid var(--n-300);
+  border: 1px solid var(--c-border-2);
   padding: 0 14px;
   background: var(--c-surface);
   color: var(--c-text);
@@ -88,9 +88,6 @@ button{
 
 /* =========================================================
    PADRÃO GLOBAL — CARD DE GRÁFICO + RESUMO (tabela)
-   - Neutro para qualquer tipo (bar/line/doughnut/pie/etc)
-   - Padrão: gráfico usa 100% da largura do card
-   - Opcional: doughnut/pie compacto via .is-compact
    ========================================================= */
 
 .ui-chart{
@@ -103,7 +100,7 @@ button{
 }
 
 .ui-chart-card{
-  border: 1px solid var(--n-300);
+  border: 1px solid var(--c-border);
   border-radius: 14px;
   background: var(--c-surface);
   padding: 12px;
@@ -144,12 +141,11 @@ button{
   align-items: center;
   justify-content: center;
   padding-top: 4px;
-  height: 280px;     /* default bom p/ bar/line */
+  height: 280px;
   max-height: 280px;
   overflow: hidden;
 }
 
-/* Por padrão, ocupa 100% (bar/line agradecem) */
 .ui-chart-plot canvas,
 .ui-chart-plot img,
 .ui-chart-plot svg{
@@ -159,7 +155,6 @@ button{
   display: block;
 }
 
-/* Modifier: doughnut/pie compacto e centralizado */
 .ui-chart-plot.is-compact canvas,
 .ui-chart-plot.is-compact img,
 .ui-chart-plot.is-compact svg{
@@ -172,7 +167,7 @@ button{
 .ui-chart-divider{
   height: 1px;
   width: 100%;
-  background: var(--n-300);
+  background: var(--c-border);
   opacity: .9;
 }
 
@@ -194,19 +189,18 @@ button{
 }
 
 .ui-chart-grid{
-  border: 1px solid var(--n-300);
+  border: 1px solid var(--c-border);
   border-radius: 12px;
   overflow: hidden;
   background: color-mix(in srgb, var(--c-surface) 70%, var(--c-bg));
 }
 
-/* label | valor | %  (serve pra qualquer chart) */
 .ui-chart-row{
   display: grid;
   grid-template-columns: minmax(0, 1fr) 160px 76px;
   align-items: center;
   padding: 10px 10px;
-  border-bottom: 1px solid var(--n-300);
+  border-bottom: 1px solid var(--c-border);
 }
 .ui-chart-row:last-child{ border-bottom: none; }
 
@@ -226,7 +220,7 @@ button{
   color: var(--c-text);
   text-align: right;
   padding: 0 10px;
-  border-left: 1px solid var(--n-300);
+  border-left: 1px solid var(--c-border);
   white-space: nowrap;
 }
 
@@ -236,7 +230,7 @@ button{
   color: color-mix(in srgb, var(--c-text) 60%, transparent);
   text-align: right;
   padding-left: 10px;
-  border-left: 1px solid var(--n-300);
+  border-left: 1px solid var(--c-border);
   white-space: nowrap;
 }
 
@@ -249,16 +243,15 @@ button{
 }
 
 @media (max-width: 560px){
-  .ui-chart-plot{
-    height: 240px;
-    max-height: 240px;
-  }
+  .ui-chart-plot{ height: 240px; max-height: 240px; }
+
   .ui-chart-plot canvas,
   .ui-chart-plot img,
   .ui-chart-plot svg{
     height: 220px;
     max-height: 220px;
   }
+
   .ui-chart-plot.is-compact canvas,
   .ui-chart-plot.is-compact img,
   .ui-chart-plot.is-compact svg{
@@ -266,7 +259,14 @@ button{
     height: 210px;
     max-height: 210px;
   }
+
   .ui-chart-row{
     grid-template-columns: 1fr 140px 70px;
   }
+}
+
+:root[data-theme="dark"] .is-overdue,
+:root[data-theme="dark"] tr.is-overdue,
+:root[data-theme="dark"] .fin-row--overdue{
+  background: color-mix(in srgb, var(--c-danger) 18%, transparent) !important;
 }

@@ -28,7 +28,7 @@
 
 /* caso o título “Listagem” não tenha <i>, adiciona automaticamente */
 #cpPage .fin-panel__title:not(:has(i))::before{
-  content:"\f03a"; /* fa-list (solid) */
+  content:"\f03a";
   font-family: "Font Awesome 6 Free";
   font-weight: 900;
   color: var(--fin-blue);
@@ -43,7 +43,7 @@
    - não altera itens pagos (done)
 --------------------------------------------------------- */
 #cpPage .fin-table tbody tr.is-overdue td{
-  background: color-mix(in srgb, var(--fin-danger) 7%, #ffffff) !important;
+  background: color-mix(in srgb, var(--fin-danger) 7%, var(--fin-surface)) !important;
   border-bottom-color: color-mix(in srgb, var(--fin-danger) 18%, var(--fin-border-2)) !important;
 }
 

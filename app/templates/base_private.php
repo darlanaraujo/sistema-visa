@@ -6,9 +6,31 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 /**
- * IMPORTANTÍSSIMO:
- * Seu AuthService grava a sessão em $_SESSION['auth_user'] (já validado por você).
- * Então o dashboard precisa validar essa chave, não $_SESSION['user'].
+ * Helpers globais do sistema (única fonte).
+ * - Este arquivo deve conter funções utilitárias como h().
+ * - require_once evita múltiplas inclusões.
+ * - O caminho usa __DIR__ porque este arquivo está em app/templates.
+ */
+require_once __DIR__ . '/../../public_php/src/Support/helpers.php';
+
+// ✅ Fonte única (server-side)
+require_once __DIR__ . '/../core/company.php';
+$corp = company_get();
+
+/**
+ * Fallback de segurança:
+ * - Se por algum motivo o helpers.php não carregar (path errado, arquivo ausente),
+ *   evitamos “tela branca” e garantimos que h() exista.
+ * - Não conflita com o helper, pois só define se ainda não existir.
+ */
+if (!function_exists('h')) {
+  function h($v) {
+    return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+  }
+}
+
+/**
+ * AuthService grava a sessão em $_SESSION['auth_user'].
  */
 if (!isset($_SESSION['auth_user'])) {
   header('Location: /sistema-visa/app/templates/login.php');
@@ -24,7 +46,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= htmlspecialchars($page_title) ?> • Sistema Visa</title>
+  <title><?= h($page_title) ?> • Sistema Visa</title>
 
   <link rel="icon" href="/sistema-visa/app/static/img/favicon.png">
 
@@ -44,18 +66,17 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- Toast (global no ambiente privado) -->
   <link rel="stylesheet" href="/sistema-visa/app/static/css/toast.css">
 
-</head>
   <!-- CSS específico da página/módulo -->
   <?php if (!empty($extra_css) && is_array($extra_css)): ?>
     <?php foreach ($extra_css as $css): ?>
-      <link rel="stylesheet" href="<?= htmlspecialchars($css) ?>">
+      <link rel="stylesheet" href="<?= h($css) ?>">
     <?php endforeach; ?>
   <?php endif; ?>
 
   <!-- JS no HEAD (use somente se for estritamente necessário) -->
   <?php if (!empty($extra_head_js) && is_array($extra_head_js)): ?>
     <?php foreach ($extra_head_js as $js): ?>
-      <script src="<?= htmlspecialchars($js) ?>"></script>
+      <script src="<?= h($js) ?>"></script>
     <?php endforeach; ?>
   <?php endif; ?>
 </head>
@@ -72,6 +93,8 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
             src="/sistema-visa/app/static/img/logo.png"
             data-logo="/sistema-visa/app/static/img/logo.png"
             data-favicon="/sistema-visa/app/static/img/favicon.png"
+            data-logo-default="/sistema-visa/app/static/img/logo.png"
+            data-favicon-default="/sistema-visa/app/static/img/favicon.png"
             alt="Sistema Visa"
             class="sidebar__logo"
           >
@@ -98,6 +121,12 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
           <i class="fa-solid fa-chart-line"></i>
           <span>Relatórios</span>
         </a>
+
+        <!-- (Parte 1 Ferramentas) -->
+        <a class="sidebar__item" href="/sistema-visa/app/templates/ferramentas.php" data-nav="ferramentas">
+          <i class="fa-solid fa-screwdriver-wrench"></i>
+          <span>Ferramentas</span>
+        </a>
       </nav>
 
       <div class="sidebar__footer">
@@ -121,8 +150,8 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
         <div class="topbar__divider" aria-hidden="true"></div>
 
         <div class="topbar__title">
-          <i class="<?= htmlspecialchars($page_icon) ?>"></i>
-          <span><?= htmlspecialchars($page_title) ?></span>
+          <i class="<?= h($page_icon) ?>"></i>
+          <span><?= h($page_title) ?></span>
         </div>
 
         <div class="topbar__right"></div>
@@ -142,7 +171,8 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       <!-- Rodapé -->
       <footer class="private-footer">
         <div class="private-footer__inner">
-          <span><strong>Sistema Visa Remoções</strong> • © <?= date('Y') ?> • Desenvolvido por
+          <span>
+            <strong><?= h($corp['system_name'] ?? 'Sistema Visa Remoções') ?></strong> • © <?= date('Y') ?> • Desenvolvido por
             <a href="https://grupoi9.com.br" target="_blank" rel="noopener noreferrer">Darlan P. Araujo</a>
           </span>
         </div>
@@ -156,10 +186,13 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- Toast (global no ambiente privado) -->
   <script src="/sistema-visa/app/static/js/toast.js"></script>
 
-  <!-- JS específico da página/módulo (carregado por tela, mantendo ordem declarada) -->
+  <!-- JS personalização da empresa -->
+  <script src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
+
+  <!-- JS específico da página/módulo -->
   <?php if (!empty($extra_js) && is_array($extra_js)): ?>
     <?php foreach ($extra_js as $js): ?>
-      <script src="<?= htmlspecialchars($js) ?>"></script>
+      <script src="<?= h($js) ?>"></script>
     <?php endforeach; ?>
   <?php endif; ?>
 </body>

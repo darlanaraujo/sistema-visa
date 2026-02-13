@@ -76,6 +76,71 @@
     const tShow = (m) => toast("show", m);
 
     // ---------------------------
+    // Tools -> Selects (Ferramentas)
+    // ---------------------------
+    function getTools() {
+      return window.FinStore && window.FinStore.tools ? window.FinStore.tools : null;
+    }
+
+    function ensureRemovedOption(selectEl, value) {
+      if (!selectEl || !value) return;
+      const exists = Array.from(selectEl.options).some((o) => o.value === value);
+      if (exists) return;
+
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = `(Removido) ${value}`;
+      opt.disabled = true;
+      selectEl.appendChild(opt);
+    }
+
+    function fillSelectFromList(selectEl, list, placeholderLabel) {
+      if (!selectEl) return;
+
+      const current = String(selectEl.value || "");
+
+      const first = selectEl.querySelector("option[value='']") || selectEl.options[0] || null;
+      const firstText = first ? first.textContent : (placeholderLabel || "Selecione");
+
+      selectEl.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = firstText;
+      selectEl.appendChild(opt0);
+
+      (Array.isArray(list) ? list : []).forEach((name) => {
+        const n = String(name || "").trim();
+        if (!n) return;
+        const opt = document.createElement("option");
+        opt.value = n;
+        opt.textContent = n;
+        selectEl.appendChild(opt);
+      });
+
+      if (current) {
+        ensureRemovedOption(selectEl, current);
+        selectEl.value = current;
+      }
+    }
+
+    function syncCatalogsFromTools() {
+      const tools = getTools();
+      if (!tools) return;
+
+      // CR: Formas vêm do Ferramentas (financeiro.formas)
+      const formas = tools.getFormas ? tools.getFormas() : [];
+      fillSelectFromList(els.filterForma, formas, "Todas");
+      fillSelectFromList(els.forma, formas, "Selecione");
+    }
+
+    window.addEventListener((window.FinStore && window.FinStore.EVT) ? window.FinStore.EVT : "fin:change", (e) => {
+      const k = e?.detail?.key || "";
+      if (String(k).startsWith("tools:")) {
+        syncCatalogsFromTools();
+      }
+    });
+
+    // ---------------------------
     // Normalização (texto + valor) — igual padrão do pagar
     // ---------------------------
     const LOWER_WORDS = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "por", "com", "a", "o"]);
@@ -84,7 +149,6 @@
       return String(s || "").replace(/\s+/g, " ").trim();
     }
 
-    // Title Case PT-BR (não “grita” tokens com número)
     function titleCasePT(s) {
       const raw = normalizeSpaces(s);
       if (!raw) return "";
@@ -111,12 +175,10 @@
       return str ? str.toUpperCase() : "";
     }
 
-    // Obs: só limpa espaços (não reescreve conteúdo)
     function normalizeObs(s) {
       return normalizeSpaces(s);
     }
 
-    // Valor: permitir só números, vírgula, ponto e espaço (em digitação/colagem)
     function sanitizeMoneyTextInput(raw) {
       let v = String(raw || "");
       v = v.replace(/[^\d.,\s]/g, "");
@@ -200,7 +262,6 @@
     function parseMoneyInput(v) {
       const raw = String(v || "").trim();
       if (!raw) return 0;
-      // aceita "1.234,56" e "1234.56"
       const cleaned = raw.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
       const n = Number(cleaned);
       return Number.isFinite(n) ? n : 0;
@@ -284,7 +345,6 @@
         rows = normalizeFallback(fallback);
       }
 
-      // garante persistência já normalizada
       saveStorage();
     }
 
@@ -336,7 +396,7 @@
 
       function dateKey(iso) {
         const t = Date.parse(String(iso || "") + "T00:00:00");
-        return Number.isFinite(t) ? t : 9e15; // inválido vai pro fim
+        return Number.isFinite(t) ? t : 9e15;
       }
 
       function textKey(v) {
@@ -344,27 +404,22 @@
       }
 
       filtered.sort((a, b) => {
-        // 1) Vencidas em aberto primeiro
         const ao = a.status !== "done" && isOverdue(a);
         const bo = b.status !== "done" && isOverdue(b);
         if (ao !== bo) return ao ? -1 : 1;
 
-        // 2) Data de vencimento (asc)
         const da = dateKey(a.data);
         const db = dateKey(b.data);
         if (da !== db) return da - db;
 
-        // 3) Na mesma data: open antes de done
         const sa = a.status === "open" ? 0 : 1;
         const sb = b.status === "open" ? 0 : 1;
         if (sa !== sb) return sa - sb;
 
-        // 4) Desempate: createdAt (mais antigo primeiro)
         const ca = Number(a.createdAt || 0);
         const cb = Number(b.createdAt || 0);
         if (ca !== cb) return ca - cb;
 
-        // 5) Desempate textual (cliente)
         return textKey(a.cliente).localeCompare(textKey(b.cliente), "pt-BR", { sensitivity: "base" });
       });
 
@@ -436,13 +491,23 @@
     // ---------------------------
     function openModal(mode, item) {
       if (!els.modal) return;
+
+      // atualiza catálogo de formas ao abrir modal
+      syncCatalogsFromTools();
+
       if (els.modalTitle) els.modalTitle.textContent = mode === "edit" ? "Editar lançamento" : "Novo lançamento";
 
       if (els.id) els.id.value = item?.id ?? "";
       if (els.cliente) els.cliente.value = item?.cliente ?? "";
       if (els.valor) els.valor.value = item?.valor ?? "";
       if (els.data) els.data.value = item?.data ?? "";
-      if (els.forma) els.forma.value = item?.forma ?? "";
+
+      if (els.forma) {
+        const v = item?.forma ?? "";
+        if (v) ensureRemovedOption(els.forma, v);
+        els.forma.value = v;
+      }
+
       if (els.processo) els.processo.value = item?.processo ?? "";
       if (els.obs) els.obs.value = item?.obs ?? "";
 
@@ -574,13 +639,11 @@
           createdAt: existing?.createdAt || Date.now(),
         };
 
-        // obrigatórios
         if (!payload.cliente || !payload.data || !payload.forma) {
           tDanger("Preencha os campos obrigatórios.");
           return;
         }
 
-        // valor: impede "texto virar 0" silenciosamente
         const rawValor = String(els.valor?.value || "").trim();
         if (!rawValor || payload.valor <= 0) {
           tDanger("Informe um valor válido (somente números).");
@@ -628,6 +691,10 @@
 
     loadStorage();
     viewMonth = new Date();
+
+    // liga Ferramentas -> formas logo na entrada
+    syncCatalogsFromTools();
+
     adjustCompactButtons();
     render();
   });

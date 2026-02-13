@@ -4,7 +4,6 @@
   min-width: 180px;
 }
 
-/* Grid de cards */
 .fin-rep-grid{
   display:grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -21,7 +20,6 @@
   .fin-rep-grid{ grid-template-columns: 1fr; }
 }
 
-/* Cards (catálogo) */
 .fin-rep-card{
   border:1px solid var(--fin-border);
   border-radius:14px;
@@ -38,7 +36,7 @@
 .fin-rep-card:hover{
   border-color: var(--fin-hover-bd);
   background: var(--fin-hover-bg);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-soft);
   transform: translateY(-1px);
 }
 
@@ -130,7 +128,6 @@
   color: var(--fin-blue);
 }
 
-/* Favoritos vazio */
 .fin-rep-empty{
   margin-top:10px;
   padding:12px;
@@ -142,28 +139,6 @@
   font-size:12px;
 }
 
-/* Toast */
-.fin-rep-toast{
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  max-width: 420px;
-  z-index: 10000;
-  display:none;
-  padding:12px 14px;
-  border-radius:14px;
-  border:1px solid var(--fin-border);
-  background: color-mix(in srgb, var(--fin-text) 92%, #000);
-  color:#fff;
-  font-weight:900;
-  font-size:12px;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
-}
-.fin-rep-toast.is-on{ display:block; }
-
-/* ===============================
-   Visão rápida (página) — wide
-   =============================== */
 .ui-chart-card.is-wide .ui-chart-body{
   display:grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
@@ -183,7 +158,6 @@
   max-height: 300px;
 }
 
-/* Forçar empilhar (sem editar CSS na mão) */
 .ui-chart-card.is-wide.is-stack .ui-chart-body{
   display:flex;
   flex-direction:column;
@@ -196,9 +170,6 @@
   }
 }
 
-/* ===============================
-   Mobile: badges longos não quebram
-   =============================== */
 @media (max-width: 700px){
   .fin-panel__head{
     flex-wrap: wrap;
@@ -211,15 +182,8 @@
   }
 }
 
-/* ===============================
-   MODAL (VOLTA AO PADRÃO APROVADO)
-   - gráfico + dados lado a lado
-   - dados com colunas separadas (vertical)
-   - destaque leve no total
-   - tabela com colunas separadas e linha total
-   =============================== */
+/* MODAL (VOLTA AO PADRÃO APROVADO) */
 
-/* largura melhor: dados não ficam "espremidos" */
 .fr-print__chartgrid{
   display:grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr);
@@ -227,9 +191,7 @@
   align-items: start;
 }
 
-.fr-print__chart {
-    padding: 14px 16px 0 16px;
-}
+.fr-print__chart { padding: 14px 16px 0 16px; }
 
 @media (max-width: 860px){
   .fr-print__chartgrid{
@@ -252,7 +214,6 @@
   margin-bottom: 8px;
 }
 
-/* “tabela” do resumo: linhas H e separadores V */
 .fr-print__sumgrid{
   border:1px solid var(--fin-border);
   border-radius: 12px;
@@ -299,7 +260,6 @@
   width:100%;
 }
 
-/* total: leve (somente negrito/linha) */
 .fr-print__sumtotal{
   margin-top: 10px;
   padding: 10px 12px;
@@ -313,7 +273,6 @@
   color: var(--fin-text);
 }
 
-/* tabela principal com colunas separadas */
 .fr-print__t{
   border-collapse: separate;
   border-spacing: 0;
@@ -337,7 +296,6 @@
   border-left: 1px solid var(--fin-border);
 }
 
-/* total da tabela (linha final) */
 .fr-print__t tr.is-total td{
   background: var(--fin-panel-inner-bg);
   font-weight: 1000;

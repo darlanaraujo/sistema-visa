@@ -22,3 +22,4 @@ $extra_js = [
 
 $content = __DIR__ . '/../modules/financeiro/home.php';
 include __DIR__ . '/base_private.php';
+

@@ -8,12 +8,12 @@
   ready(function () {
     const STORAGE_ROWS_KEY = "fin_cp_rows_v1";
     const STORAGE_TPL_KEY = "fin_cp_templates_v1";
-    const FIXED_LIMIT = 12; // mês atual + próximos 11
+    const FIXED_LIMIT = 12;
 
     const fallback = Array.isArray(window.__CP_MOCK__) ? window.__CP_MOCK__ : [];
 
     let rows = [];
-    let templates = []; // modelos de contas fixas
+    let templates = [];
     let viewMonth = new Date();
     let pendingDeleteId = null;
 
@@ -77,6 +77,79 @@
     const tDanger = (m) => toast("danger", m);
     const tWarning = (m) => toast("warning", m);
     const tShow = (m) => toast("show", m);
+
+    // ---------------------------
+    // Tools -> Selects (Ferramentas)
+    // ---------------------------
+    function getTools() {
+      return window.FinStore && window.FinStore.tools ? window.FinStore.tools : null;
+    }
+
+    function ensureRemovedOption(selectEl, value) {
+      if (!selectEl || !value) return;
+      const exists = Array.from(selectEl.options).some((o) => o.value === value);
+      if (exists) return;
+
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = `(Removido) ${value}`;
+      opt.disabled = true;
+      selectEl.appendChild(opt);
+    }
+
+    function fillSelectFromList(selectEl, list, placeholderLabel) {
+      if (!selectEl) return;
+
+      const current = String(selectEl.value || "");
+
+      // preserva o primeiro option (placeholder)
+      const first = selectEl.querySelector("option[value='']") || selectEl.options[0] || null;
+      const firstText = first ? first.textContent : (placeholderLabel || "Selecione");
+
+      selectEl.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = firstText;
+      selectEl.appendChild(opt0);
+
+      (Array.isArray(list) ? list : []).forEach((name) => {
+        const n = String(name || "").trim();
+        if (!n) return;
+        const opt = document.createElement("option");
+        opt.value = n;
+        opt.textContent = n;
+        selectEl.appendChild(opt);
+      });
+
+      if (current) {
+        ensureRemovedOption(selectEl, current);
+        selectEl.value = current;
+      }
+    }
+
+    function syncCatalogsFromTools() {
+      const tools = getTools();
+      if (!tools) return;
+
+      // CP: Imóveis e Categorias vêm do Ferramentas
+      const imoveis = tools.getImoveis ? tools.getImoveis() : [];
+      const cats = tools.getCategorias ? tools.getCategorias() : [];
+
+      fillSelectFromList(els.filterImovel, imoveis, "Todos");
+      fillSelectFromList(els.imovel, imoveis, "Selecione");
+
+      fillSelectFromList(els.filterCategoria, cats, "Todas");
+      fillSelectFromList(els.categoria, cats, "Selecione");
+    }
+
+    // escuta alterações do Ferramentas/FinStore na mesma aba
+    window.addEventListener((window.FinStore && window.FinStore.EVT) ? window.FinStore.EVT : "fin:change", (e) => {
+      const k = e?.detail?.key || "";
+      // qualquer mudança em tools:* recarrega selects
+      if (String(k).startsWith("tools:")) {
+        syncCatalogsFromTools();
+      }
+    });
 
     // ---------------------------
     // Data access (FinStore -> fallback localStorage)
@@ -198,7 +271,6 @@
       return titleCasePT(s);
     }
 
-    // Valor: permitir só números, vírgula, ponto e espaço (em digitação/colagem)
     function sanitizeMoneyTextInput(raw) {
       let v = String(raw || "");
       v = v.replace(/[^\d.,\s]/g, "");
@@ -212,7 +284,6 @@
       inputEl.addEventListener("keydown", (e) => {
         const k = e.key;
 
-        // navegação/atalhos
         if (
           k === "Backspace" ||
           k === "Delete" ||
@@ -283,7 +354,6 @@
     function parseMoneyInput(v) {
       const raw = String(v || "").trim();
       if (!raw) return 0;
-      // aceita "1.234,56" e "1234.56"
       const cleaned = raw.replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
       const n = Number(cleaned);
       return Number.isFinite(n) ? n : 0;
@@ -299,7 +369,7 @@
     function monthKeyFromDate(dt) {
       const y = dt.getFullYear();
       const m = String(dt.getMonth() + 1).padStart(2, "0");
-      return `${y}-${m}`; // yyyy-mm
+      return `${y}-${m}`;
     }
 
     function monthKeyFromIso(iso) {
@@ -351,7 +421,7 @@
     }
 
     // ---------------------------
-    // Storage (via FinStore)
+    // Storage
     // ---------------------------
     function normalizeFallback(list) {
       return (Array.isArray(list) ? list : []).map((r) =>
@@ -383,7 +453,6 @@
         templates = [];
       }
 
-      // normaliza retroativo (sem quebrar nada)
       rows = rows.map(normalizeRowTextFields);
 
       saveStore();
@@ -559,7 +628,7 @@
 
       function dateKey(iso) {
         const t = Date.parse(String(iso || "") + "T00:00:00");
-        return Number.isFinite(t) ? t : 9e15; // inválido vai pro fim
+        return Number.isFinite(t) ? t : 9e15;
       }
 
       function textKey(v) {
@@ -567,27 +636,22 @@
       }
 
       filtered.sort((a, b) => {
-        // 1) Vencidas em aberto primeiro
         const ao = a.status !== "done" && isOverdue(a);
         const bo = b.status !== "done" && isOverdue(b);
         if (ao !== bo) return ao ? -1 : 1;
 
-        // 2) Data de vencimento (asc)
         const da = dateKey(a.data);
         const db = dateKey(b.data);
         if (da !== db) return da - db;
 
-        // 3) Na mesma data: open antes de done
         const sa = a.status === "open" ? 0 : 1;
         const sb = b.status === "open" ? 0 : 1;
         if (sa !== sb) return sa - sb;
 
-        // 4) Desempate: createdAt (mais antigo primeiro)
         const ca = Number(a.createdAt || 0);
         const cb = Number(b.createdAt || 0);
         if (ca !== cb) return ca - cb;
 
-        // 5) Desempate textual (conta)
         return textKey(a.conta).localeCompare(textKey(b.conta), "pt-BR", { sensitivity: "base" });
       });
 
@@ -646,13 +710,27 @@
     function openModal(mode, item) {
       if (!els.modal) return;
 
+      // sempre atualiza os catalogs quando abrir modal
+      syncCatalogsFromTools();
+
       if (els.modalTitle) els.modalTitle.textContent = mode === "edit" ? "Editar lançamento" : "Novo lançamento";
 
       if (els.id) els.id.value = item?.id ?? "";
       if (els.conta) els.conta.value = item?.conta ?? "";
       if (els.valor) els.valor.value = item?.valor ?? "";
-      if (els.imovel) els.imovel.value = item?.imovel ?? "";
-      if (els.categoria) els.categoria.value = item?.categoria ?? "";
+
+      if (els.imovel) {
+        const v = item?.imovel ?? "";
+        if (v) ensureRemovedOption(els.imovel, v);
+        els.imovel.value = v;
+      }
+
+      if (els.categoria) {
+        const v = item?.categoria ?? "";
+        if (v) ensureRemovedOption(els.categoria, v);
+        els.categoria.value = v;
+      }
+
       if (els.data) els.data.value = item?.data ?? "";
       if (els.fixa) els.fixa.value = String(Number(Boolean(item?.fixa ?? true)));
 
@@ -766,10 +844,7 @@
 
     if (els.form) {
       els.form.addEventListener("submit", (e) => {
-        // garante que não recarrega a página caso algum HTML esteja com action
-        try {
-          e.preventDefault();
-        } catch (_) {}
+        try { e.preventDefault(); } catch (_) {}
 
         const isEdit = Boolean(els.id && els.id.value);
         const existing = isEdit ? getById(els.id.value) : null;
@@ -873,6 +948,9 @@
 
     loadStorage();
     viewMonth = new Date();
+
+    // liga Ferramentas -> selects logo na entrada
+    syncCatalogsFromTools();
 
     ensureFixedInstancesHorizonFrom(monthKeyFromDate(new Date()));
     saveStore();

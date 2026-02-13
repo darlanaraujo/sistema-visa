@@ -6,52 +6,47 @@
    - Padronizar camadas (panel/head/inner/foot), zebra e hover
    ========================================================= */
 
+
 :root{
-  /* superfícies */
   --dash-bg: var(--c-bg);
   --dash-surface: var(--c-surface);
   --dash-surface-2: var(--c-surface-2);
 
-  /* padrão de camadas (fallback se tokens globais não existirem ainda) */
   --dash-panel-bg:       var(--panel-bg, var(--dash-surface));
-  --dash-panel-head-bg:  var(--panel-head-bg, color-mix(in srgb, var(--n-150) 70%, #ffffff));
-  --dash-panel-foot-bg:  var(--panel-foot-bg, color-mix(in srgb, var(--n-150) 62%, #ffffff));
-  --dash-panel-inner-bg: var(--panel-inner-bg, color-mix(in srgb, var(--n-150) 40%, #ffffff));
+  --dash-panel-head-bg:  var(--panel-head-bg, color-mix(in srgb, var(--n-150) 70%, var(--n-0)));
+  --dash-panel-foot-bg:  var(--panel-foot-bg, color-mix(in srgb, var(--n-150) 62%, var(--n-0)));
+  --dash-panel-inner-bg: var(--panel-inner-bg, color-mix(in srgb, var(--n-150) 40%, var(--n-0)));
 
-  /* zebra */
-  --dash-table-head-bg: var(--table-head-bg, color-mix(in srgb, var(--n-150) 78%, #ffffff));
-  --dash-row-a:         var(--table-row-a, color-mix(in srgb, var(--n-150) 28%, #ffffff));
-  --dash-row-b:         var(--table-row-b, color-mix(in srgb, var(--n-150) 14%, #ffffff));
+  --dash-table-head-bg: var(--table-head-bg, color-mix(in srgb, var(--n-150) 78%, var(--n-0)));
+  --dash-row-a:         var(--table-row-a, color-mix(in srgb, var(--n-150) 28%, var(--n-0)));
+  --dash-row-b:         var(--table-row-b, color-mix(in srgb, var(--n-150) 14%, var(--n-0)));
 
-  /* texto */
   --dash-text:  var(--c-text);
   --dash-muted: var(--c-muted);
 
-  /* bordas */
   --dash-border:   var(--c-border);
   --dash-border-2: var(--c-border-2);
 
-  /* acento */
   --dash-accent: var(--c-accent);
 
-  /* hover neutro */
-  --dash-hover-soft: var(--hover-soft, color-mix(in srgb, var(--dash-border) 55%, #ffffff));
+  --dash-hover-soft: var(--hover-soft, color-mix(in srgb, var(--dash-border) 55%, var(--n-0)));
 
-  /* sidebar */
   --dash-sidebar-bg:            var(--sidebar-bg);
   --dash-sidebar-text:          var(--sidebar-text);
   --dash-sidebar-hover:         var(--sidebar-item-hover);
   --dash-sidebar-active-bg:     var(--sidebar-active-bg);
   --dash-sidebar-active-outline:var(--sidebar-active-outline);
 
-  /* shadows */
-  --dash-shadow-soft:   0 10px 26px rgba(15, 23, 42, 0.06);
-  --dash-shadow-soft-2: 0 10px 26px rgba(15, 23, 42, 0.08);
+  --dash-shadow-soft: var(--shadow-soft);
+  --dash-shadow-soft-2: var(--shadow-soft-2);
+
+  /* edge toggle */
+  --dash-edge-bg: color-mix(in srgb, var(--c-text) 92%, #000);
+  --dash-edge-bg-hover: color-mix(in srgb, var(--c-text) 85%, #000);
+  --dash-edge-ico: #fff;
 }
 
-/* ===========================
-   BASE
-   =========================== */
+/* BASE */
 
 .private-layout{
   min-height: 100vh;
@@ -82,9 +77,7 @@
   padding: 22px;
 }
 
-/* ===========================
-   TOPBAR
-   =========================== */
+/* TOPBAR */
 
 .topbar{
   height: 58px;
@@ -114,7 +107,6 @@
   min-width: 0;
 }
 
-/* ✅ ícone do título com cor do tema */
 .topbar__title i{ color: var(--dash-accent); }
 
 .topbar__title span{
@@ -145,9 +137,7 @@
 
 .private-footer__inner a:hover{ text-decoration: underline; }
 
-/* ===========================
-   SIDEBAR
-   =========================== */
+/* SIDEBAR */
 
 .sidebar{
   width: 260px;
@@ -157,8 +147,7 @@
   padding: 18px 14px;
   z-index: 50;
 
-  /* ✅ degradê aprovado */
-  background: linear-gradient(180deg, #000000 0%, #2e2e2e 100%);
+  background: var(--dash-sidebar-bg);
 }
 
 .sidebar__brand{
@@ -235,9 +224,7 @@
 
 .sidebar__logout:hover{ background: rgba(255,255,255,0.12); }
 
-/* ===========================
-   COLLAPSE (DESKTOP)
-   =========================== */
+/* COLLAPSE */
 
 .sidebar.is-collapsed{
   width: 96px;
@@ -250,7 +237,6 @@
 }
 
 .sidebar.is-collapsed .sidebar__brand{ justify-content: center; }
-
 .sidebar.is-collapsed .sidebar__logo-wrap{ width: auto; }
 
 .sidebar.is-collapsed .sidebar__logo{
@@ -265,9 +251,7 @@
 
 .sidebar.is-collapsed .sidebar__logout{ justify-content: center; }
 
-/* ===========================
-   OVERLAY + MOBILE DRAWER
-   =========================== */
+/* OVERLAY + MOBILE DRAWER */
 
 .sidebar-overlay{
   position: fixed;
@@ -279,7 +263,7 @@
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden;
-  background: rgba(0,0,0,0.45);
+  background: color-mix(in srgb, #000 45%, transparent);
   opacity: 0;
   pointer-events: none;
   transition: opacity 180ms ease;
@@ -318,9 +302,7 @@
   }
 }
 
-/* ===========================
-   EDGE TOGGLE (SETA)
-   =========================== */
+/* EDGE TOGGLE */
 
 .sidebar-edge-toggle{ display: none; }
 
@@ -334,8 +316,8 @@
     height: 32px;
     border-radius: 999px;
     border: 0;
-    background: #0d0d0d;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    background: var(--dash-edge-bg);
+    box-shadow: var(--shadow-soft);
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -344,13 +326,13 @@
   }
 
   .sidebar-edge-toggle i{
-    color: #ffffff;
+    color: var(--dash-edge-ico);
     transition: transform 160ms ease;
   }
 
   .sidebar-edge-toggle:hover{
-    background: #1a1a1a;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.20);
+    background: var(--dash-edge-bg-hover);
+    box-shadow: var(--shadow-soft-2);
   }
 
   .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{
@@ -368,9 +350,7 @@
   .sidebar-edge-toggle.is-nudge-right i{ transform: translateX(3px); }
 }
 
-/* ===========================
-   HAMBÚRGUER / X (CSS PURO)
-   =========================== */
+/* HAMBÚRGUER / X */
 
 .topbar__menu{
   width: 38px;
@@ -393,7 +373,7 @@
   position: absolute;
   width: 18px;
   height: 2px;
-  background: var(--n-800);
+  background: var(--dash-text);
   border-radius: 999px;
   left: 50%;
   top: 50%;
@@ -402,7 +382,7 @@
 }
 
 .topbar__menu::before{
-  box-shadow: 0 -6px 0 var(--n-800), 0 6px 0 var(--n-800);
+  box-shadow: 0 -6px 0 var(--dash-text), 0 6px 0 var(--dash-text);
 }
 .topbar__menu::after{ opacity: 0; }
 
@@ -418,6 +398,7 @@
 @media (min-width: 981px){
   .topbar__menu{ display: none !important; }
 }
+
 
 /* =========================================================
    PADRÃO DE SEÇÃO (camadas)
@@ -888,3 +869,6 @@
   font-size: 12px;
   color: var(--dash-muted);
 }
+
+/* ✅ degradê aprovado */
+  /* background: linear-gradient(180deg, #000000 0%, #2e2e2e 100%); */

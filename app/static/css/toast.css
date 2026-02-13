@@ -25,7 +25,7 @@
   font-size: 12px;
   line-height: 1.25;
 
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
+  box-shadow: var(--shadow-soft-2, 0 16px 40px rgba(15, 23, 42, 0.25));
 
   /* animação (sem mexer em display) */
   opacity: 0;

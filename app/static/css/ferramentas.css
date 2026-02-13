@@ -1,0 +1,328 @@
+/* app/static/css/ferramentas.css */
+
+.ft-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:14px;
+}
+@media (max-width: 980px){
+  .ft-grid{ grid-template-columns: 1fr; }
+}
+
+.ft-card{
+  border:1px solid var(--fin-border);
+  border-radius:14px;
+  background: var(--fin-panel-bg);
+  overflow:hidden;
+}
+
+.ft-card__head{
+  padding:12px;
+  background: var(--fin-panel-head-bg);
+  border-bottom:1px solid var(--fin-border);
+}
+
+.ft-card__title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:900;
+  font-size:13px;
+  color: var(--fin-text);
+}
+.ft-card__title i{
+  width:18px;
+  text-align:center;
+  color: var(--fin-blue);
+}
+
+.ft-card__desc{
+  margin-top:6px;
+  font-size:12px;
+  font-weight:700;
+  color: color-mix(in srgb, var(--fin-text) 65%, transparent);
+}
+
+.ft-card__items{
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background: var(--fin-panel-inner-bg);
+  height: 100%;
+}
+
+.ft-item{
+  height:auto;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid var(--fin-border);
+  background: var(--fin-panel-bg);
+  display:flex;
+  align-items:center;
+  text-align: left;
+  justify-content:space-between;
+  gap:12px;
+  cursor:pointer;
+}
+.ft-item:hover{
+  background:var(--fin-hover-bg);
+  border-color:var(--fin-hover-bd);
+}
+
+.ft-item__title{
+  font-weight:900;
+  font-size:13px;
+  color: var(--fin-text);
+}
+.ft-item__desc{
+  margin-top:4px;
+  font-weight:700;
+  font-size:12px;
+  color: color-mix(in srgb, var(--fin-text) 60%, transparent);
+}
+.ft-item i{ color: var(--fin-blue); }
+
+.ft-modal-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.ft-modal-hint{
+  font-weight:800;
+  font-size:12px;
+  color: color-mix(in srgb, var(--fin-text) 60%, transparent);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media (max-width:700px){
+  .ft-modal-top{ flex-direction:column; align-items:stretch; }
+  .ft-modal-hint{ white-space:normal; }
+}
+
+.ft-table-wrap{ margin-top:8px; }
+
+.ft-empty{
+  margin-top:12px;
+  padding:12px;
+  border:1px dashed var(--fin-border);
+  border-radius:12px;
+  background: var(--fin-panel-inner-bg);
+  color: var(--fin-muted);
+  font-weight:800;
+  font-size:12px;
+}
+
+/* =========================================================
+   MODAIS — altura máxima + rolagem interna
+   ========================================================= */
+#ftModal .fin-modal__card,
+#ftFormModal .fin-modal__card,
+#ftDelModal .fin-modal__card{
+  width: 100%;
+  max-width: 850px;
+  max-height: calc(100vh - 60px);
+}
+
+#ftModal .fin-modal__body,
+#ftFormModal .fin-modal__body,
+#ftDelModal .fin-modal__body{
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* tabela scroll */
+#ftModal .ft-table-wrap,
+#ftModal .fin-table-wrap{
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  display: block;
+}
+#ftModal .ft-table,
+#ftModal .fin-table{
+  width: 100% !important;
+  min-width: 740px;
+  table-layout: fixed !important;
+}
+#ftModal .ft-table th:nth-child(2),
+#ftModal .ft-table td:nth-child(2),
+#ftModal .fin-table th:nth-child(2),
+#ftModal .fin-table td:nth-child(2){
+  width: 110px;
+  white-space: nowrap;
+}
+#ftModal .ft-table th:nth-child(3),
+#ftModal .ft-table td:nth-child(3),
+#ftModal .fin-table th:nth-child(3),
+#ftModal .fin-table td:nth-child(3){
+  width: 210px;
+  white-space: nowrap;
+}
+#ftModal .ft-table th:nth-child(1),
+#ftModal .ft-table td:nth-child(1),
+#ftModal .fin-table th:nth-child(1),
+#ftModal .fin-table td:nth-child(1){
+  width: 420px;
+  max-width: 420px;
+  text-align: left;
+}
+#ftModal .ft-table td:nth-child(1),
+#ftModal .fin-table td:nth-child(1){
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 700px){
+  #ftModal .ft-table,
+  #ftModal .fin-table{ min-width: 680px; }
+  #ftModal .ft-table th:nth-child(1),
+  #ftModal .ft-table td:nth-child(1),
+  #ftModal .fin-table th:nth-child(1),
+  #ftModal .fin-table td:nth-child(1){
+    width: 320px;
+    max-width: 320px;
+  }
+}
+
+/* alerta delete */
+#ftDelModal .fin-modal__body p {
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+  font-weight: 600;
+  color: var(--fin-text);
+}
+
+/* =========================================================
+   PERSONALIZAÇÃO — modal
+   ========================================================= */
+#ftSysModal .fin-modal__card{
+  width: 100%;
+  max-width: 980px;
+  max-height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+#ftSysModal .fin-modal__body{
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: 16px;
+}
+
+#ftSysModal .fin-form__row{ margin-bottom: 12px; }
+#ftSysModal .fin-form__row:last-child{ margin-bottom: 0; }
+
+/* File input: padronizar altura + alinhar botão/texto */
+#ftSysModal input[type="file"]{
+  width: 100%;
+  height: 42px;
+  padding: 6px 10px;
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  background: var(--fin-panel-bg);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--fin-text);
+  box-sizing: border-box;
+}
+
+#ftSysModal input[type="file"]::file-selector-button{
+  height: 30px;
+  margin: 0 12px 0 0;
+  border: 1px solid var(--fin-border);
+  border-radius: 10px;
+  background: var(--fin-panel-head-bg);
+  color: var(--fin-text);
+  font-weight: 900;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+/* linha preview */
+#ftSysModal .ft-brand-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+#ftSysModal #ftSysLogoPreview{
+  width:170px;
+  height:50px;
+  object-fit:contain;
+  border:1px solid var(--fin-border);
+  border-radius:12px;
+  background:var(--fin-panel-bg);
+  padding:6px;
+}
+
+#ftSysModal #ftSysFaviconPreview{
+  width:50px;
+  height:50px;
+  object-fit:contain;
+  border:1px solid var(--fin-border);
+  border-radius:12px;
+  background:var(--fin-panel-bg);
+  padding:6px;
+}
+
+#ftSysModal .ft-brand-tip{
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: color-mix(in srgb, var(--fin-text) 60%, transparent);
+}
+
+/* alerta de perigo */
+#ftSysModal .ft-theme-warning{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin: 6px 0 14px 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--fin-danger) 45%, var(--fin-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fin-danger) 10%, transparent);
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 800;
+  text-align: center;
+  color: color-mix(in srgb, var(--fin-text) 92%, #000);
+}
+
+/* paleta + hex */
+#ftSysModal .ft-colorline{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#ftSysModal .ft-colorline input[type="color"]{
+  width: 52px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--fin-border);
+  border-radius: 12px;
+  background: var(--fin-panel-bg);
+}
+#ftSysModal .ft-colorline input[type="text"]{
+  flex: 1;
+}
+
+#ftSysModal .ft-theme-actions{
+  display:flex;
+  justify-content:flex-end;
+}
+
+@media (max-width: 700px){
+  #ftSysModal #ftSysLogoPreview{ width:100%; max-width:240px; }
+}

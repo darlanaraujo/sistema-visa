@@ -28,7 +28,7 @@
 
 /* fallback: se não houver <i> no título */
 #crPage .fin-panel__title:not(:has(i))::before{
-  content:"\f09d"; /* fa-hand-holding-dollar */
+  content:"\f09d";
   font-family: "Font Awesome 6 Free";
   font-weight: 900;
   color: var(--fin-blue);
@@ -42,7 +42,7 @@
    - depende do JS marcar <tr class="is-overdue">
 --------------------------------------------------------- */
 #crPage .fin-table tbody tr.is-overdue td{
-  background: color-mix(in srgb, var(--fin-success) 9%, #ffffff) !important;
+  background: color-mix(in srgb, var(--fin-success) 9%, var(--fin-surface)) !important;
   border-bottom-color: color-mix(in srgb, var(--fin-success) 22%, var(--fin-border-2)) !important;
 }
 
@@ -60,7 +60,7 @@
 
 /* hover coerente */
 #crPage .fin-table tbody tr.is-overdue:hover td{
-  background: color-mix(in srgb, var(--fin-success) 12%, #ffffff) !important;
+  background: color-mix(in srgb, var(--fin-success) 12%, var(--fin-surface)) !important;
 }
 
 /* se estiver recebido, não pinta */

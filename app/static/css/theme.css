@@ -1,33 +1,34 @@
-/* app/static/css/theme.css
-   Objetivo:
-   - Centralizar cores e permitir tema customizável
-   - Evitar hex espalhado em múltiplos CSS
-   - Manter estética consistente (mesma “intensidade” de cores)
-*/
+/* app/static/css/theme.css */
+
+/* =========================================================
+   THEME SYSTEM — SISTEMA VISA
+   - Light / Dark / Print
+   - Tokens coerentes para bordas, linhas, superfícies e sombras
+========================================================= */
 
 :root{
   /* =========================================================
      1) BRAND — PALETA INSTITUCIONAL (LOGO)
      ========================================================= */
-  --brand-charcoal: #343434; /* base escura elegante (sidebar / texto forte) */
-  --brand-red:      #a42d2d; /* acento institucional */
-  --brand-gray-100: #e9e9e9; /* superfícies claras derivadas */
+  --brand-charcoal: #343434;
+  --brand-red:      #a42d2d;
+  --brand-gray-100: #e9e9e9;
   --brand-gray-200: #d5d3d3;
   --brand-gray-300: #a99494;
   --brand-gray-500: #7d7c7c;
 
   /* =========================================================
-     2) NEUTRALS — (superfícies e textos)
+     2) NEUTRALS — (superfícies e textos) — LIGHT
      ========================================================= */
   --n-0:   #ffffff;
   --n-50:  #fbfcff;
-  --n-100: #f5f7fb; /* fundo do app */
+  --n-100: #f5f7fb;
   --n-150: #eef1f6;
-  --n-200: #e7ebf3; /* bordas padrão */
+  --n-200: #e7ebf3;
   --n-300: #cbd5e1;
-  --n-600: #5b6476; /* texto secundário */
+  --n-600: #5b6476;
   --n-800: #1f2a44;
-  --n-900: #0b1220; /* texto principal forte */
+  --n-900: #0b1220;
 
   /* =========================================================
      3) SEMANTIC — (papéis do sistema)
@@ -40,79 +41,65 @@
   --c-muted:     var(--n-600);
 
   --c-border:    var(--n-200);
-  --c-border-2:  #edf0f7;
+  --c-border-2:  color-mix(in srgb, var(--n-200) 70%, var(--n-0));
 
   /* Acento principal do sistema (CTA / links / foco) */
   --c-accent:    var(--brand-red);
-  --c-accent-2:  color-mix(in srgb, var(--c-accent) 75%, #ffffff);
+  --c-accent-2:  color-mix(in srgb, var(--c-accent) 75%, var(--n-0));
 
-  /* Estados — tons mais “fechados” (sofisticados) */
-  --c-danger:  var(--brand-red); /* pagar / alerta institucional */
-  --c-success: #2f6b4f;          /* verde fechado */
-  --c-warning: #b07a1a;          /* âmbar fechado */
+  /* Estados */
+  --c-danger:  var(--brand-red);
+  --c-success: #2f6b4f;
+  --c-warning: #b07a1a;
 
   /* =========================================================
-     4) COMPONENT TOKENS — (para não “poluir” CSS das páginas)
+     4) COMPONENT TOKENS
      ========================================================= */
-
-  /* Sidebar */
-  --sidebar-bg: var(--brand-charcoal);
-  --sidebar-bg-2: #2e2e2e; /* para gradiente */
+  --sidebar-bg: linear-gradient(180deg, #000000 0%, #2e2e2e 100%);
+  --sidebar-bg-2: #2e2e2e;
   --sidebar-text: rgba(255,255,255,0.92);
   --sidebar-item-hover: rgba(255,255,255,0.08);
   --sidebar-active-bg: color-mix(in srgb, var(--c-accent) 25%, transparent);
   --sidebar-active-outline: color-mix(in srgb, var(--c-accent) 35%, transparent);
 
-  /* Topbar */
   --topbar-bg: var(--c-surface);
   --topbar-border: var(--c-border);
 
-  /* Cards/painéis (genérico) */
   --card-bg: var(--c-surface);
   --card-border: var(--c-border);
 
   /* =========================================================
-     5) PANELS / TABLES — PADRÃO GLOBAL DE CAMADAS
-     (isso é o que vai “harmonizar” todas as páginas)
+     5) PANELS / TABLES — CAMADAS
      ========================================================= */
-
-  /* painéis / seções (camadas) */
   --panel-bg:        var(--c-surface);
-  --panel-head-bg:   color-mix(in srgb, var(--n-150) 70%, #ffffff);
-  --panel-inner-bg:  color-mix(in srgb, var(--n-150) 40%, #ffffff);
-  --panel-foot-bg:   color-mix(in srgb, var(--n-150) 62%, #ffffff);
+  --panel-head-bg:   color-mix(in srgb, var(--n-150) 70%, var(--n-0));
+  --panel-inner-bg:  color-mix(in srgb, var(--n-150) 40%, var(--n-0));
+  --panel-foot-bg:   color-mix(in srgb, var(--n-150) 62%, var(--n-0));
 
-  /* hover neutro (sem pintar com vermelho/verde) */
-  --hover-soft: color-mix(in srgb, var(--c-border) 55%, #ffffff);
+  --hover-soft: color-mix(in srgb, var(--c-border) 55%, var(--n-0));
 
-  /* tabelas/listas: head + zebra */
-  --table-head-bg: color-mix(in srgb, var(--n-150) 78%, #ffffff);
-  --table-row-a:  color-mix(in srgb, var(--n-150) 28%, #ffffff);
-  --table-row-b:  color-mix(in srgb, var(--n-150) 14%, #ffffff);
+  --table-head-bg: color-mix(in srgb, var(--n-150) 78%, var(--n-0));
+  --table-row-a:  color-mix(in srgb, var(--n-150) 28%, var(--n-0));
+  --table-row-b:  color-mix(in srgb, var(--n-150) 14%, var(--n-0));
 
   /* =========================================================
-     6) BUTTON SYSTEM — PADRÃO GLOBAL (primário/secundário/ghost)
+     6) BUTTON SYSTEM
      ========================================================= */
-
-  /* primário */
   --btn-bg:     var(--c-accent);
-  --btn-text:   #ffffff;
+  --btn-text:   var(--n-0);
   --btn-border: var(--c-accent);
 
-  /* secundário (menos “forte”, ainda institucional) */
-  --btn-secondary-bg: color-mix(in srgb, var(--c-accent) 12%, #ffffff);
+  --btn-secondary-bg: color-mix(in srgb, var(--c-accent) 12%, var(--n-0));
   --btn-secondary-text: color-mix(in srgb, var(--c-text) 92%, #000);
   --btn-secondary-border: color-mix(in srgb, var(--c-accent) 22%, var(--c-border));
 
-  /* ghost (neutro elegante) */
-  --btn-ghost-bg: color-mix(in srgb, var(--n-150) 30%, #ffffff);
+  --btn-ghost-bg: color-mix(in srgb, var(--n-150) 30%, var(--n-0));
   --btn-ghost-text: color-mix(in srgb, var(--c-text) 88%, #000);
-  --btn-ghost-border: color-mix(in srgb, var(--c-border) 70%, #ffffff);
+  --btn-ghost-border: color-mix(in srgb, var(--c-border) 70%, var(--n-0));
 
   /* =========================================================
-     7) GRADIENTES CONTEXTUAIS (LOGIN, HERO, DESTAQUES)
+     7) GRADIENTES (LOGIN)
      ========================================================= */
-
   --grad-login-accent: #a70000;
   --grad-login-deep:   #492222;
   --grad-login-hot:    #ff0000;
@@ -125,34 +112,141 @@
   --grad-login-opacity-soft:   0.55;
 
   /* =========================================================
-     8) CHART TOKENS (p/ não depender de hex em cada CSS)
+     8) CHART TOKENS
      ========================================================= */
-
-  /* pagar (vermelho institucional em 3 intensidades) */
   --chart-pay-a: color-mix(in srgb, var(--c-danger) 92%, #000);
-  --chart-pay-b: color-mix(in srgb, var(--c-danger) 70%, #fff);
-  --chart-pay-c: color-mix(in srgb, var(--c-danger) 45%, #fff);
+  --chart-pay-b: color-mix(in srgb, var(--c-danger) 70%, var(--n-0));
+  --chart-pay-c: color-mix(in srgb, var(--c-danger) 45%, var(--n-0));
 
-  /* receber (verde fechado em 3 intensidades) */
   --chart-rec-a: color-mix(in srgb, var(--c-success) 92%, #000);
-  --chart-rec-b: color-mix(in srgb, var(--c-success) 70%, #fff);
-  --chart-rec-c: color-mix(in srgb, var(--c-success) 45%, #fff);
+  --chart-rec-b: color-mix(in srgb, var(--c-success) 70%, var(--n-0));
+  --chart-rec-c: color-mix(in srgb, var(--c-success) 45%, var(--n-0));
 
-  /* neutro elegante */
-  --chart-neu-a: color-mix(in srgb, var(--brand-charcoal) 70%, #fff);
-  --chart-neu-b: color-mix(in srgb, var(--brand-charcoal) 50%, #fff);
-  --chart-neu-c: color-mix(in srgb, var(--brand-charcoal) 30%, #fff);
+  --chart-neu-a: color-mix(in srgb, var(--brand-charcoal) 70%, var(--n-0));
+  --chart-neu-b: color-mix(in srgb, var(--brand-charcoal) 50%, var(--n-0));
+  --chart-neu-c: color-mix(in srgb, var(--brand-charcoal) 30%, var(--n-0));
+
+  /* =========================================================
+     9) SHADOW TOKENS (light/dark adaptável)
+     ========================================================= */
+  --shadow-soft:   0 10px 26px rgba(0,0,0,0.06);
+  --shadow-soft-2: 0 16px 40px rgba(0,0,0,0.14);
+
+  /* =========================================================
+     ALIASES — compatibilidade (fin-*)
+     ========================================================= */
+  --fin-bg: var(--c-bg);
+  --fin-text: var(--c-text);
+  --fin-muted: var(--c-muted);
+  --fin-border: var(--c-border);
+
+  --fin-panel-bg: var(--panel-bg);
+  --fin-panel-head-bg: var(--panel-head-bg);
+  --fin-panel-inner-bg: var(--panel-inner-bg);
+
+  --fin-hover-bg: var(--hover-soft);
+  --fin-hover-bd: color-mix(in srgb, var(--c-border) 82%, #000);
+
+  --fin-blue: var(--c-accent);
+  --fin-danger: var(--c-danger);
+  --fin-success: var(--c-success);
 }
 
 /* =========================================================
-   THEMES / ACCENTS (futuro)
+   DARK MODE
 ========================================================= */
-:root[data-theme="visa"]{
-  --c-accent: var(--brand-red);
-  --sidebar-bg: var(--brand-charcoal);
+:root[data-theme="dark"]{
+  /* neutros (dark) */
+  --n-0:   #0b1220;
+  --n-50:  #0f172a;
+  --n-100: #0b1220;
+  --n-150: #111b2f;
+  --n-200: #1b2a46;
+  --n-300: #2a3a5b;
+
+  /* texto */
+  --n-600: #b6c2d9;
+  --n-800: #e1e7f5;
+  --n-900: #f1f5ff;
+
+  /* semantic */
+  --c-bg:        var(--n-100);
+  --c-surface:   color-mix(in srgb, var(--n-50) 92%, #000);
+  --c-surface-2: color-mix(in srgb, var(--n-50) 78%, #000);
+
+  --c-text:      var(--n-900);
+  --c-muted:     var(--n-600);
+
+  --c-border:    color-mix(in srgb, var(--n-300) 65%, #000);
+  --c-border-2:  color-mix(in srgb, var(--n-300) 45%, #000);
+
+  /* panels / tables */
+  --panel-bg:        var(--c-surface);
+  --panel-head-bg:   color-mix(in srgb, var(--n-150) 78%, #000);
+  --panel-inner-bg:  color-mix(in srgb, var(--n-150) 60%, #000);
+  --panel-foot-bg:   color-mix(in srgb, var(--n-150) 70%, #000);
+
+  --hover-soft: color-mix(in srgb, var(--n-200) 70%, #000);
+
+  --table-head-bg: color-mix(in srgb, var(--n-150) 72%, #000);
+  --table-row-a:  color-mix(in srgb, var(--n-150) 52%, #000);
+  --table-row-b:  color-mix(in srgb, var(--n-150) 42%, #000);
+
+  /* botões ghost no dark */
+  --btn-ghost-bg: color-mix(in srgb, var(--n-150) 70%, #000);
+  --btn-ghost-text: color-mix(in srgb, var(--c-text) 92%, #000);
+  --btn-ghost-border: color-mix(in srgb, var(--c-border) 70%, #000);
+
+  /* shadows mais fortes no dark */
+  --shadow-soft:   0 10px 26px rgba(0,0,0,0.40);
+  --shadow-soft-2: 0 16px 40px rgba(0,0,0,0.55);
+
+  /* aliases (recalcula) */
+  --fin-bg: var(--c-bg);
+  --fin-text: var(--c-text);
+  --fin-muted: var(--c-muted);
+  --fin-border: var(--c-border);
+
+  --fin-panel-bg: var(--panel-bg);
+  --fin-panel-head-bg: var(--panel-head-bg);
+  --fin-panel-inner-bg: var(--panel-inner-bg);
+
+  --fin-hover-bg: var(--hover-soft);
+  --fin-hover-bd: color-mix(in srgb, var(--c-border) 78%, var(--n-0));
 }
 
-/* Exemplo opcional */
+/* exemplos existentes */
+:root[data-theme="visa"]{
+  --c-accent: var(--brand-red);
+  --sidebar-bg: var(--sidebar-bg);
+}
 :root[data-accent="blue"]{
   --c-accent: #2563eb;
+}
+
+/* =========================================================
+   PRINT/PDF MODE
+   - Força documento claro usando tokens (não hex solto no CSS das páginas)
+========================================================= */
+@media print{
+  :root{
+    --c-bg: #ffffff;
+    --c-surface: #ffffff;
+    --c-surface-2: #ffffff;
+
+    --c-text: #0b1220;
+    --c-muted: #5b6476;
+
+    --c-border: rgba(11,18,32,.12);
+    --c-border-2: rgba(11,18,32,.08);
+
+    --panel-bg: #ffffff;
+    --panel-head-bg: #f3f5f9;
+    --panel-inner-bg: #f9fafc;
+    --panel-foot-bg: #f3f5f9;
+
+    --table-head-bg: #f3f5f9;
+    --table-row-a: #ffffff;
+    --table-row-b: #fbfcff;
+  }
 }

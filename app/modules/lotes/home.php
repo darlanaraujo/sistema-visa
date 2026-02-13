@@ -4,7 +4,6 @@
 $proc = (string)($_GET['processo'] ?? '');
 $proc = trim($proc);
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 ?>
 
 <div class="module-page">

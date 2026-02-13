@@ -144,7 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (path.includes('/dashboard.php')) key = 'dashboard';
     else if (path.includes('/lotes.php')) key = 'lotes';
     else if (path.includes('/relatorios.php')) key = 'relatorios';
-    else if (path.includes('/financeiro')) key = 'financeiro'; // <- cobre todas as telas do módulo
+    else if (path.includes('/financeiro')) key = 'financeiro'; // cobre o módulo todo
+    else if (path.includes('/ferramentas')) key = 'ferramentas';
 
     if (!key) return;
 
@@ -164,8 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function setLogoByState() {
     if (!sidebarLogo || !sidebar) return;
 
-    const logo = sidebarLogo.getAttribute('data-logo');
-    const fav = sidebarLogo.getAttribute('data-favicon');
+    // ✅ prioridade: dataset (sys_personalizacao escreve aqui)
+    const logo = sidebarLogo.dataset?.logo || sidebarLogo.getAttribute('data-logo');
+    const fav  = sidebarLogo.dataset?.favicon || sidebarLogo.getAttribute('data-favicon');
     const collapsed = sidebar.classList.contains('is-collapsed');
 
     if (isMobile()) {
@@ -182,10 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setEdgeIconByState();
     setLogoByState();
     layout?.classList.add('is-sidebar-open');
+    try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
   }
 
   function closeMobileSidebar() {
-    layout?.classList.remove('is-sidebar-open');
+    layout?.classList?.remove('is-sidebar-open');
+    try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
   }
 
   const STORAGE_KEY = 'sv_sidebar_collapsed';
@@ -200,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setEdgeIconByState();
     setLogoByState();
+    try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
   }
 
   function nudgeEdgeByState() {
@@ -223,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setEdgeIconByState();
     setLogoByState();
     nudgeEdgeByState();
+    try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
   }
 
   if (btnToggle) {
@@ -275,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sidebar) sidebar.classList.remove('is-collapsed');
       setEdgeIconByState();
       setLogoByState();
+      try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
       return;
     }
 
@@ -286,4 +293,5 @@ document.addEventListener('DOMContentLoaded', () => {
   applyDesktopSidebarStateFromStorage();
   setEdgeIconByState();
   setLogoByState();
+  try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
 });

@@ -242,7 +242,7 @@ $mock = [
               <input id="crData" type="date" required />
             </div>
             <div class="fin-field">
-              <label>Forma</label>
+              <label>Meio de Pagamento</label>
               <select id="crForma" data-fin-catalog="formas_recebimento" required>
                 <option value="">Selecione</option>
                 <option value="Boleto">Boleto</option>
@@ -300,6 +300,4 @@ $mock = [
       </div>
     </div>
   </div>
-
-  <script src="/sistema-visa/app/static/js/financeiro_contas_receber.js"></script>
 </div>

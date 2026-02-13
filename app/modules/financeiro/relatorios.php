@@ -1,8 +1,6 @@
 <?php
 // app/modules/financeiro/relatorios.php
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
-
 // ---------------------------
 // CATÁLOGO FINAL (sem BD nesta etapa)
 // ---------------------------
@@ -104,13 +102,10 @@ function group_key_from_title($title){
 }
 
 // Identidade corporativa
-$corp = [
-  'company' => 'Visa Remoções',
-  'cnpj'    => '17.686.570/0001-80',
-  'tagline' => 'Sistema Financeiro • Relatórios',
-  'logo'    => '/sistema-visa/app/static/img/favicon.png',
-  'site'    => 'visaremocoes.com.br',
-];
+require_once __DIR__ . '/../../core/company.php';
+
+// Identidade corporativa (fonte única)
+$corp = company_get();
 
 // Payload para o JS
 $fr_mock_payload = [
@@ -359,14 +354,38 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
 
       <div class="fin-modal__body">
         <div class="fr-print" id="frPrintArea">
+
           <header class="fr-print__head">
             <div class="fr-print__brand">
-              <img class="fr-print__logo" src="<?= h($corp['logo']) ?>" alt="<?= h($corp['company']) ?>">
+
+              <!-- Logo pequena do relatório (padrão: report_logo -> favicon -> logo) -->
+              <img
+                class="fr-print__logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? $corp['logo'] ?? '/sistema-visa/app/static/img/favicon.png') ?>"
+                alt="<?= h($corp['company'] ?? 'Empresa') ?>"
+              >
+
+              <!-- ✅ Texto da marca (NOME + CNPJ + TAGLINE) -->
               <div class="fr-print__brandtxt">
-                <div class="fr-print__company"><?= h($corp['company']) ?></div>
-                <div class="fr-print__sub">CNPJ: <?= h($corp['cnpj']) ?> • <?= h($corp['tagline']) ?></div>
+                <div class="fr-print__company">
+                  <?= h($corp['company'] ?? '—') ?>
+                </div>
+
+                <div class="fr-print__sub">
+                  <?php
+                    $cnpj = (string)($corp['cnpj'] ?? '');
+                    $tag  = (string)($corp['tagline'] ?? '');
+                    $subParts = [];
+
+                    if ($cnpj !== '') $subParts[] = 'CNPJ: ' . $cnpj;
+                    $subParts[] = ($tag !== '') ? $tag : 'Sistema Financeiro • Relatórios';
+
+                    echo h(implode(' • ', $subParts));
+                  ?>
+                </div>
               </div>
             </div>
+
             <div class="fr-print__meta">
               <div><span>Gerado em:</span> <strong id="frPrintGeneratedAt">—</strong></div>
               <div><span>Período:</span> <strong id="frPrintPeriod">—</strong></div>
@@ -414,7 +433,7 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
           </section>
 
           <footer class="fr-print__footer">
-            <div>Documento gerado automaticamente pelo Sistema Visa.</div>
+            <div><?= h($corp['report_footer_note'] ?? 'Documento gerado automaticamente pelo Sistema Visa Remoções.') ?></div>
             <div class="fr-print__pagenum">Página <span class="fr-page"></span></div>
           </footer>
         </div>

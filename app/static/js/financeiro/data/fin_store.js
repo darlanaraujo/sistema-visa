@@ -21,6 +21,17 @@
     version: "fin_store_version_v1",
   };
 
+  // ---------- Tools (Ferramentas) ----------
+  // Ferramentas grava em: tools_ns_<namespace>_v1
+  const TOOLS = {
+    prefix: "tools_ns_",
+    version: "v1",
+  };
+
+  function toolsKey(ns) {
+    return `${TOOLS.prefix}${ns}_${TOOLS.version}`;
+  }
+
   // ---------- Utils ----------
   function now() {
     return Date.now();
@@ -88,11 +99,6 @@
     return d < todayAtMidnight();
   }
 
-  // Regra de ordenação padrão (já validada por você nas páginas):
-  // 1) vencidas em aberto primeiro
-  // 2) data asc
-  // 3) na mesma data: open antes
-  // 4) desempate por texto
   function sortByPriority(list, getText) {
     if (!Array.isArray(list)) return list;
 
@@ -132,7 +138,6 @@
       fixa: Boolean(r?.fixa),
       status: r?.status === "done" ? "done" : "open",
 
-      // campos de compatibilidade com a lógica de fixas
       templateId: r?.templateId || null,
       instanceMonth: r?.instanceMonth || (String(r?.data || "").slice(0, 7) || ""),
       createdAt: Number(r?.createdAt || now()),
@@ -190,15 +195,37 @@
   }
 
   // ---------- Events ----------
-  // Importante: "storage" NÃO dispara na mesma aba.
-  // Então criamos um CustomEvent para updates imediatos (mesma aba),
-  // e o "storage" continua valendo para outras abas.
   const EVT = "fin:change";
 
   function emitChange(key) {
     try {
       window.dispatchEvent(new CustomEvent(EVT, { detail: { key, at: now() } }));
     } catch (_) {}
+  }
+
+  // ---------- Tools reader ----------
+  function toolsList(ns) {
+    const key = toolsKey(ns);
+    const arr = lsGetArr(key);
+
+    // normaliza formato vindo do Ferramentas
+    const out = (Array.isArray(arr) ? arr : []).map((x) => ({
+      id: String(x?.id ?? ""),
+      name: normalizeStr(x?.name ?? ""),
+      active: Boolean(x?.active ?? true),
+      createdAt: Number(x?.createdAt || 0),
+      updatedAt: Number(x?.updatedAt || 0),
+    }));
+
+    // ordena por nome (pt-BR)
+    out.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+    return out;
+  }
+
+  function toolsActiveNames(ns) {
+    return toolsList(ns)
+      .filter((x) => x.active && x.name)
+      .map((x) => x.name);
   }
 
   // ---------- Public API ----------
@@ -214,12 +241,23 @@
     isOverdue,
     sortByPriority,
 
-    // refs
+    // refs (legado do financeiro)
     refs: {
       listImoveis: () => list(KEYS.imoveis),
       listCategorias: () => list(KEYS.categorias),
       listFormas: () => list(KEYS.formas),
       listClientes: () => list(KEYS.clientes),
+    },
+
+    // tools (Ferramentas)
+    tools: {
+      listNs: (ns) => toolsList(ns),
+      activeNames: (ns) => toolsActiveNames(ns),
+
+      // atalhos do seu fluxo atual
+      getImoveis: () => toolsActiveNames("financeiro.imoveis"),
+      getCategorias: () => toolsActiveNames("financeiro.categorias"),
+      getFormas: () => toolsActiveNames("financeiro.formas"),
     },
 
     // contas a pagar
@@ -245,10 +283,8 @@
     },
   };
 
-  // expõe
   window.FinStore = window.FinStore || Store;
 
-  // version marker (p/ migrações futuras)
   if (!lsGetRaw(KEYS.version)) {
     lsSetRaw(KEYS.version, "1");
   }

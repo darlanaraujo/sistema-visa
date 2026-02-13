@@ -2,12 +2,9 @@
 
 /* =========================================================
    FINANCEIRO — TOKENS (compatibilidade + theme-driven)
-   - Mantém o padrão antigo (--fin-*)
-   - Deriva do theme.css (mais fácil manutenção)
-   ========================================================= */
+========================================================= */
 
 :root{
-  /* Neutros / superfícies */
   --fin-soft:      var(--c-bg);
   --fin-border:    var(--c-border);
   --fin-border-2:  var(--c-border-2);
@@ -16,33 +13,23 @@
   --fin-surface:   var(--c-surface);
   --fin-surface-2: var(--c-surface-2);
 
-  /* Acento do sistema */
   --fin-blue:      var(--c-accent);
 
-  /* Estados (tons sofisticados vindos do theme.css) */
   --fin-danger:    var(--c-danger);
   --fin-success:   var(--c-success);
   --fin-warning:   var(--c-warning);
 
-  /* =========================================================
-     CAMADAS (padrão visual do módulo)
-     - topo diferente do miolo
-     - miolo levemente “neutro”
-     ========================================================= */
   --fin-panel-bg:       var(--panel-bg, var(--fin-surface));
-  --fin-panel-head-bg:  var(--panel-head-bg, color-mix(in srgb, var(--n-150) 70%, #ffffff));
-  --fin-panel-inner-bg: var(--panel-inner-bg, color-mix(in srgb, var(--n-150) 40%, #ffffff));
-  --fin-panel-foot-bg:  var(--panel-foot-bg, color-mix(in srgb, var(--n-150) 62%, #ffffff));
+  --fin-panel-head-bg:  var(--panel-head-bg, color-mix(in srgb, var(--n-150) 70%, var(--n-0)));
+  --fin-panel-inner-bg: var(--panel-inner-bg, color-mix(in srgb, var(--n-150) 40%, var(--n-0)));
+  --fin-panel-foot-bg:  var(--panel-foot-bg, color-mix(in srgb, var(--n-150) 62%, var(--n-0)));
 
-  /* Header de tabela (discreto, sem “pintar” de vermelho) */
-  --fin-head-bg:   var(--table-head-bg, color-mix(in srgb, var(--n-150) 78%, #ffffff));
+  --fin-head-bg:   var(--table-head-bg, color-mix(in srgb, var(--n-150) 78%, var(--n-0)));
   --fin-head-text: var(--n-800);
 
-  /* zebra */
-  --fin-row-a: var(--table-row-a, color-mix(in srgb, var(--n-150) 28%, #ffffff));
-  --fin-row-b: var(--table-row-b, color-mix(in srgb, var(--n-150) 14%, #ffffff));
+  --fin-row-a: var(--table-row-a, color-mix(in srgb, var(--n-150) 28%, var(--n-0)));
+  --fin-row-b: var(--table-row-b, color-mix(in srgb, var(--n-150) 14%, var(--n-0)));
 
-  /* Hovers / pills (neutros + leve toque do acento) */
   --fin-hover-bg: color-mix(in srgb, var(--fin-blue) 6%, var(--fin-surface));
   --fin-hover-bd: color-mix(in srgb, var(--fin-blue) 14%, var(--fin-border));
 
@@ -50,21 +37,12 @@
   --fin-pill-bd:  color-mix(in srgb, var(--fin-blue) 18%, var(--fin-border));
 }
 
-/* =========================================================
-   BASE
-   ========================================================= */
-
 *, *::before, *::after{ box-sizing:border-box; }
 
-/* mantém o comportamento do layout privado (dashboard.css controla o overflow global) */
 html, body{
   max-width:100%;
   overflow-x:visible;
 }
-
-/* =========================================================
-   ESTRUTURA BASE
-   ========================================================= */
 
 .fin-page{
   display:flex;
@@ -93,9 +71,7 @@ html, body{
   .fin-head h1{ font-size:20px; }
 }
 
-/* =========================================================
-   NAV INTERNA
-   ========================================================= */
+/* NAV INTERNA */
 
 .fin-nav-wrap{
   background:var(--fin-panel-bg);
@@ -158,15 +134,13 @@ html, body{
 .fin-nav__item.is-active{
   background:var(--fin-blue);
   border-color:var(--fin-blue);
-  color:#fff;
+  color:var(--n-0);
 }
 
-.fin-nav__item.is-active i{ color:#fff; }
+.fin-nav__item.is-active i{ color:var(--n-0); }
 
 @media (max-width:700px){
-  .fin-nav-summary{
-    display:flex;
-  }
+  .fin-nav-summary{ display:flex; }
 
   .fin-nav{
     justify-content:flex-start;
@@ -190,9 +164,7 @@ html, body{
 
 .fin-nav-wrap.is-collapsed .fin-nav{ display:none; }
 
-/* =========================================================
-   PAINÉIS / CARDS (camadas padrão)
-   ========================================================= */
+/* PAINÉIS / CARDS */
 
 .fin-card,
 .fin-panel{
@@ -203,7 +175,6 @@ html, body{
   overflow:hidden;
 }
 
-/* ✅ topo com fundo diferente do miolo */
 .fin-panel__head{
   display:flex;
   align-items:center;
@@ -218,7 +189,6 @@ html, body{
   margin-bottom: 12px;
 }
 
-/* ✅ PADRÃO ÚNICO: título com ícone + gap + cor */
 .fin-panel__title{
   display:flex;
   align-items:center;
@@ -228,10 +198,7 @@ html, body{
   color:var(--fin-text);
 }
 
-/* ✅ remove “bolinha” antiga (se existir regra legada em algum lugar) */
-.fin-panel__title::before{
-  content:none !important;
-}
+.fin-panel__title::before{ content:none !important; }
 
 .fin-panel__title i{
   color: var(--fin-blue);
@@ -253,7 +220,6 @@ html, body{
   white-space:nowrap;
 }
 
-/* Header da listagem: 1 linha no mobile */
 @media (max-width:700px){
   .fin-panel__head{
     flex-wrap:nowrap;
@@ -268,9 +234,7 @@ html, body{
 .t-center{ text-align:center !important; }
 .t-right{ text-align:right !important; }
 
-/* =========================================================
-   BOTÕES (padrão: principal + ghost)
-   ========================================================= */
+/* BOTÕES */
 
 .fin-btn{
   height:44px;
@@ -278,7 +242,7 @@ html, body{
   border-radius:12px;
   border:1px solid var(--fin-blue);
   background:var(--fin-blue);
-  color:#fff;
+  color:var(--n-0);
   font-weight:900;
   cursor:pointer;
   display:inline-flex;
@@ -294,20 +258,16 @@ html, body{
 .fin-btn:hover{ filter:brightness(0.97); }
 
 .fin-btn--ghost{
-  background: var(--btn-ghost-bg, color-mix(in srgb, var(--n-150) 30%, #ffffff));
+  background: var(--btn-ghost-bg, color-mix(in srgb, var(--n-150) 30%, var(--n-0)));
   color: var(--fin-blue);
-  border-color: var(--btn-ghost-border, color-mix(in srgb, var(--fin-border) 70%, #ffffff));
+  border-color: var(--btn-ghost-border, color-mix(in srgb, var(--fin-border) 70%, var(--n-0)));
 }
 
-.fin-btn--ghost:hover{
-  background: var(--fin-hover-bg);
-}
+.fin-btn--ghost:hover{ background: var(--fin-hover-bg); }
 
-/* remover comportamento antigo de esconder texto */
 .fin-btn.is-icon{ padding:0 14px; }
 .fin-btn.is-icon span{ display:inline; }
 
-/* botões icônicos */
 .fin-icon-btn{
   width:38px;
   height:38px;
@@ -348,9 +308,7 @@ html, body{
   .fin-icon-btn--sm{ width:30px; height:30px; }
 }
 
-/* =========================================================
-   KPI / TOOLBAR
-   ========================================================= */
+/* KPI / TOOLBAR */
 
 .fin-toolbar-panel{
   background:var(--fin-panel-bg);
@@ -491,9 +449,7 @@ html, body{
   .fin-kpi__value{ font-size:16px; }
 }
 
-/* =========================================================
-   FILTROS (camadas)
-   ========================================================= */
+/* FILTROS */
 
 .fin-filters-wrap{
   background:var(--fin-panel-bg);
@@ -546,7 +502,7 @@ html, body{
 .fin-filter input{
   height:44px;
   border-radius:12px;
-  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #cbd5e1);
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, var(--n-300));
   padding:0 12px;
   outline:none;
   background:var(--fin-surface);
@@ -571,9 +527,7 @@ html, body{
   .fin-filter input{ font-size:12px; }
 }
 
-/* =========================================================
-   TABELAS (zebra + head distinto)
-   ========================================================= */
+/* TABELAS */
 
 .fin-table-wrap{
   width:100%;
@@ -620,7 +574,6 @@ html, body{
   border-bottom:1px solid var(--fin-border-2);
 }
 
-/* ✅ zebra no TR */
 .fin-table tbody tr:nth-child(odd) td{ background: var(--fin-row-a); }
 .fin-table tbody tr:nth-child(even) td{ background: var(--fin-row-b); }
 
@@ -629,9 +582,7 @@ html, body{
 .fin-table th + th,
 .fin-table td + td{ border-left:1px solid var(--fin-border-2); }
 
-/* =========================================================
-   AÇÕES (ícones)
-   ========================================================= */
+/* AÇÕES */
 
 .fin-actions-row{
   display:flex;
@@ -644,7 +595,7 @@ html, body{
   width:34px;
   height:34px;
   border-radius:10px;
-  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, var(--fin-border-2));
   background:var(--fin-surface);
   cursor:pointer;
   display:inline-flex;
@@ -683,21 +634,19 @@ html, body{
   width:32px;
   height:32px;
   border-radius:999px;
-  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, var(--fin-border-2));
   background:var(--fin-surface);
 }
 
 .fin-status.is-open i{ color:var(--fin-danger); }
 .fin-status.is-done i{ color:var(--fin-success); }
 
-/* =========================================================
-   MODAL (camadas)
-   ========================================================= */
+/* MODAL */
 
 .fin-modal{
   position:fixed;
   inset:0;
-  background:rgba(15, 23, 42, 0.55);
+  background:color-mix(in srgb, var(--c-text) 55%, transparent);
   display:none;
   align-items:center;
   justify-content:center;
@@ -749,7 +698,7 @@ html, body{
   width:38px;
   height:38px;
   border-radius:12px;
-  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, var(--fin-border-2));
   background:var(--fin-surface);
   cursor:pointer;
 }
@@ -787,7 +736,7 @@ html, body{
 .fin-field select{
   height:44px;
   border-radius:12px;
-  border:1px solid color-mix(in srgb, var(--fin-border) 75%, #dbe2f1);
+  border:1px solid color-mix(in srgb, var(--fin-border) 75%, var(--fin-border-2));
   padding:0 12px;
   outline:none;
   background:var(--fin-surface);
