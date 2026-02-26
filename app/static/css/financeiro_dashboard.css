@@ -41,7 +41,7 @@
 .fin-dash-kpi-sep{
   align-self:stretch;
   border-radius:999px;
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   border: 1px solid var(--fin-border);
 }
 
@@ -185,7 +185,7 @@
   border: 1px solid var(--fin-border);
   border-radius: 12px;
   overflow: hidden;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
 }
 
 .fin-dash-acc__sum{
@@ -214,7 +214,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   display:flex;
   flex-direction:column;
   gap:10px;
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   height: 100%;
 }
 
@@ -239,7 +239,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   border: 1px solid var(--fin-border);
   border-radius: 12px;
   padding: 10px 10px;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   transition: background 120ms ease, border-color 120ms ease;
 }
 
@@ -306,7 +306,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   border: 1px solid var(--fin-border);
   border-radius: 12px;
   overflow:hidden;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
 }
 
 /* ✅ zebra opcional: use .is-zebra no container */
@@ -326,7 +326,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   color: var(--fin-text);
   font-weight:900;
   border-top: 1px solid var(--fin-border);
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   transition: background 120ms ease, border-color 120ms ease;
 }
 .fin-dash-shortcut:first-child{ border-top:0; }
@@ -375,7 +375,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   border: 1px solid var(--fin-border);
   border-radius: 12px;
   overflow:hidden;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
 }
 
 .fin-dash-listbox__head{
@@ -411,7 +411,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   flex-direction:column;
   gap:10px;
   padding:12px;
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   height: 100%;
 }
 
@@ -431,7 +431,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   border: 1px solid var(--fin-border);
   border-radius:12px;
   padding:10px 12px;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   transition: background 120ms ease, border-color 120ms ease;
 }
 
@@ -573,7 +573,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
 }
 
 .rep-card{
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   border: 1px solid var(--fin-border);
   border-radius: 12px;
   padding: 12px;
@@ -629,7 +629,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   border: 1px solid var(--fin-border);
   border-radius: 12px;
   overflow: hidden;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   display: flex;
   flex-direction: column;
 }
@@ -645,6 +645,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   font-weight:900;
   color: var(--fin-text);
   font-size: 13px;
+  border-radius: 10px 10px 0px 0px;
 }
 
 .fin-dash-sechead__left{
@@ -668,7 +669,7 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
 
 .fin-dash-chart__body{
   padding: 12px;
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   height: 100%;
   min-height: 280px;      /* dá “altura” pro Chart.js */
   position: relative;
@@ -688,3 +689,25 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   color: var(--fin-muted);
   font-weight: 800;
 }
+
+/* =========================================================
+   FIX — sombra real nos cards do dashboard (charts)
+========================================================= */
+
+/* Importante: precisa permitir a sombra “sair” */
+.fin-dash-grid--charts{ overflow: visible; }
+
+/* Card do gráfico: mantém hairline e adiciona sombra visível */
+.fin-dash-chart{
+  overflow: visible !important;        /* deixa a sombra aparecer */
+  border: 1px solid var(--fin-stroke-soft) !important; /* borda fina */
+  box-shadow: var(--fin-elev-1) !important;
+}
+
+.fin-dash-chart:hover{
+  box-shadow: var(--fin-elev-2) !important;
+  border-color: color-mix(in srgb, var(--fin-blue) 22%, var(--fin-stroke-soft)) !important;
+}
+
+/* Se algum filho estiver “cortando” a sombra por overflow, mantém só o corpo recortando */
+.fin-dash-chart__body{ overflow: hidden; border-radius: 0 0 12px 12px; }

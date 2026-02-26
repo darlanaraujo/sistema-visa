@@ -8,6 +8,19 @@
 
 :root{
   /* =========================================================
+     0) MOTION (global)
+     - Padrão para transições (modais, sidebar, dropdown, etc.)
+     ========================================================= */
+  --ease-standard: cubic-bezier(.2,.8,.2,1);
+  --ease-emph:     cubic-bezier(.16,1,.3,1);
+
+  --motion-fast:  140ms;
+  --motion-md:    200ms;
+  --motion-slow:  320ms;
+
+  --motion-enter-y: 18px;
+
+  /* =========================================================
      1) BRAND — PALETA INSTITUCIONAL (LOGO)
      ========================================================= */
   --brand-charcoal: #343434;
@@ -33,12 +46,30 @@
   /* =========================================================
      3) SEMANTIC — (papéis do sistema)
      ========================================================= */
+  /* Fundo base “compat” (não remover) */
   --c-bg:        var(--n-100);
+
+  /* Mesa/backdrop (full width) — premium */
+  --c-backdrop:  var(--n-100);
+   --c-backdrop-grad:
+      radial-gradient(1200px 760px at 18% -12%, color-mix(in srgb, var(--c-accent) 16%, transparent), transparent 56%),
+      radial-gradient(980px 640px at 92% 6%,  rgba(0,0,0,0.06), transparent 62%),
+      radial-gradient(900px 520px at 50% 120%, rgba(0,0,0,0.05), transparent 65%),
+      linear-gradient(180deg, var(--n-100) 0%, color-mix(in srgb, var(--n-150) 62%, var(--n-100)) 100%);
+
+   --shadow-soft:   0 10px 26px rgba(0,0,0,0.06);
+   --shadow-soft-2: 0 16px 40px rgba(0,0,0,0.14);
+
   --c-surface:   var(--n-0);
   --c-surface-2: var(--n-50);
 
   --c-text:      var(--n-900);
   --c-muted:     var(--n-600);
+
+  /* Semânticos auxiliares (reduz dependência de --n-*) */
+  --c-heading:   var(--n-800);
+  --c-on-accent: #ffffff;
+  --c-soft:      color-mix(in srgb, var(--n-150) 46%, var(--n-0));
 
   --c-border:    var(--n-200);
   --c-border-2:  color-mix(in srgb, var(--n-200) 70%, var(--n-0));
@@ -86,7 +117,7 @@
      6) BUTTON SYSTEM
      ========================================================= */
   --btn-bg:     var(--c-accent);
-  --btn-text:   var(--n-0);
+  --btn-text:   var(--c-on-accent);
   --btn-border: var(--c-accent);
 
   --btn-secondary-bg: color-mix(in srgb, var(--c-accent) 12%, var(--n-0));
@@ -132,6 +163,15 @@
   --shadow-soft:   0 10px 26px rgba(0,0,0,0.06);
   --shadow-soft-2: 0 16px 40px rgba(0,0,0,0.14);
 
+   /* =========================================================
+     9.1) DEPTH / STROKES — premium (reutilizável)
+     ========================================================= */
+  --elev-1: var(--shadow-soft);
+  --elev-2: var(--shadow-soft-2);
+
+  /* borda sutil “glow/soft” que funciona no light/dark */
+  --stroke-soft: color-mix(in srgb, var(--c-border) 68%, var(--n-0));
+
   /* =========================================================
      ALIASES — compatibilidade (fin-*)
      ========================================================= */
@@ -171,11 +211,33 @@
 
   /* semantic */
   --c-bg:        var(--n-100);
+
+  /* Mesa/backdrop (dark) */
+  --c-backdrop:  var(--n-100);
+  /* ✅ Mesa mais perceptível no DARK (sem perder contraste do texto) */
+  --c-backdrop-grad:
+    radial-gradient(1200px 760px at 18% -12%, color-mix(in srgb, var(--c-accent) 18%, transparent), transparent 58%),
+    radial-gradient(980px 640px at 90% 6%,  rgba(255,255,255,0.08), transparent 64%),
+    radial-gradient(900px 520px at 50% 120%, rgba(255,255,255,0.05), transparent 68%),
+    linear-gradient(180deg, var(--n-100) 0%, color-mix(in srgb, var(--n-50) 46%, var(--n-100)) 100%);
+
+   --shadow-soft:   0 10px 26px rgba(0,0,0,0.40);
+   --shadow-soft-2: 0 16px 40px rgba(0,0,0,0.55);
+
+   /* depth/stroke no dark */
+  --elev-1: var(--shadow-soft);
+  --elev-2: var(--shadow-soft-2);
+  --stroke-soft: color-mix(in srgb, var(--c-border) 72%, #000);
+
   --c-surface:   color-mix(in srgb, var(--n-50) 92%, #000);
   --c-surface-2: color-mix(in srgb, var(--n-50) 78%, #000);
 
   --c-text:      var(--n-900);
   --c-muted:     var(--n-600);
+
+  --c-heading:   var(--n-900);
+  --c-on-accent: #ffffff;
+  --c-soft:      color-mix(in srgb, var(--n-150) 62%, #000);
 
   --c-border:    color-mix(in srgb, var(--n-300) 65%, #000);
   --c-border-2:  color-mix(in srgb, var(--n-300) 45%, #000);
@@ -216,12 +278,55 @@
 }
 
 /* exemplos existentes */
-:root[data-theme="visa"]{
+/* :root[data-theme="visa"]{
   --c-accent: var(--brand-red);
   --sidebar-bg: var(--sidebar-bg);
 }
 :root[data-accent="blue"]{
   --c-accent: #2563eb;
+} */
+
+:root[data-accent="visa"]{
+  --c-accent: var(--brand-red);
+}
+
+:root[data-accent="blue"]{
+  --c-accent: #2563eb;
+}
+
+:root[data-accent="green"]{
+  --c-accent: #16a34a;
+}
+
+:root[data-accent="purple"]{
+  --c-accent: #7c3aed;
+}
+
+:root[data-accent="orange"]{
+  --c-accent: #f97316;
+}
+
+:root[data-accent="slate"]{
+  --c-accent: #334155;
+}
+
+/* =========================================================
+   ACCENTS (presets)
+   - Controlado por :root[data-accent="..."]
+   - Mantém dark intacto (tokens derivados já se adaptam)
+========================================================= */
+
+:root[data-accent="red"]   { --c-accent: #a42d2d; }
+:root[data-accent="blue"]  { --c-accent: #2563eb; }
+:root[data-accent="green"] { --c-accent: #16a34a; }
+:root[data-accent="amber"] { --c-accent: #d97706; }
+:root[data-accent="purple"]{ --c-accent: #7c3aed; }
+:root[data-accent="teal"]  { --c-accent: #0d9488; }
+:root[data-accent="slate"] { --c-accent: #334155; }
+
+/* (opcional) “accent-2” sempre derivado do accent principal */
+:root{
+  --c-accent-2: color-mix(in srgb, var(--c-accent) 78%, var(--n-0));
 }
 
 /* =========================================================
@@ -231,11 +336,19 @@
 @media print{
   :root{
     --c-bg: #ffffff;
+
+    /* backdrop também forçado para branco no print */
+    --c-backdrop: #ffffff;
+    --c-backdrop-grad: #ffffff;
+
     --c-surface: #ffffff;
     --c-surface-2: #ffffff;
 
     --c-text: #0b1220;
     --c-muted: #5b6476;
+
+    --c-heading: #0b1220;
+    --c-soft: #ffffff;
 
     --c-border: rgba(11,18,32,.12);
     --c-border-2: rgba(11,18,32,.08);
@@ -249,4 +362,14 @@
     --table-row-a: #ffffff;
     --table-row-b: #fbfcff;
   }
+}
+
+/* theme.css (ou global.css, se preferir) */
+:root{
+  /* ✅ padrão novo: cards deixam a “mesa” aparecer */
+  --surface-card: transparent;
+
+  /* opcional: se quiser um véu mínimo no futuro (deixe comentado)
+  --surface-card: rgba(255,255,255,0.02);
+  */
 }

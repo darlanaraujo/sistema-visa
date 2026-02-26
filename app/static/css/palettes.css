@@ -1,0 +1,164 @@
+/* app/static/css/palettes.css */
+/* ---------------------------------------------------------
+  PALETAS DO SISTEMA (por variáveis)
+  Objetivo:
+  - Trocar o "DNA visual" do sistema via tokens (sem reescrever CSS)
+  - Funciona junto com: theme.css (light/dark) + global.css (componentes)
+  Como usa:
+  - <html data-palette="red|blue|yellow"> ...
+  - <html data-theme="light|dark"> já existe no sys_personalizacao.js
+
+  Regra:
+  - theme.css define base/estrutura
+  - palettes.css define identidade cromática
+---------------------------------------------------------- */
+
+/* Fallback (se nada definido) */
+:root {
+  --c-accent: #a42d2d;
+  --c-accent-weak: rgba(164, 45, 45, 0.12);
+  --c-accent-strong: rgba(164, 45, 45, 0.22);
+
+  --c-danger: #a42d2d;
+  --c-danger-weak: rgba(164, 45, 45, 0.12);
+
+  --c-success: #2f6b4f;
+  --c-success-weak: rgba(47, 107, 79, 0.12);
+
+  /* Tokens usados em vários pontos do seu CSS atual */
+  --fin-blue: var(--c-accent);
+  --accent: var(--c-accent);
+
+  /* Sugestões de tokens extras (se quiser usar depois) */
+  --c-ring: rgba(164, 45, 45, 0.35);
+  --c-link: var(--c-accent);
+
+  /* Gráficos (opcional) */
+  --chart-1: var(--c-accent);
+  --chart-2: var(--c-success);
+  --chart-3: #64748b;
+  --chart-4: #f59e0b;
+  --chart-5: #8b5cf6;
+  --chart-6: #06b6d4;
+}
+
+/* ---------------------------------------------------------
+  PALETA: RED (atual)
+---------------------------------------------------------- */
+html[data-palette="red"][data-theme="light"],
+html[data-palette="red"]:not([data-theme]) {
+  --c-accent: #a42d2d;
+  --c-accent-weak: rgba(164, 45, 45, 0.12);
+  --c-accent-strong: rgba(164, 45, 45, 0.22);
+
+  --c-danger: #a42d2d;
+  --c-danger-weak: rgba(164, 45, 45, 0.12);
+
+  --c-success: #2f6b4f;
+  --c-success-weak: rgba(47, 107, 79, 0.12);
+
+  --c-ring: rgba(164, 45, 45, 0.35);
+  --c-link: var(--c-accent);
+
+  --fin-blue: var(--c-accent);
+  --accent: var(--c-accent);
+}
+
+html[data-palette="red"][data-theme="dark"] {
+  /* Dark red: um pouco mais “limpo” pra não estourar saturação */
+  --c-accent: #d35b5b;
+  --c-accent-weak: rgba(211, 91, 91, 0.14);
+  --c-accent-strong: rgba(211, 91, 91, 0.24);
+
+  --c-danger: #e36b6b;
+  --c-danger-weak: rgba(227, 107, 107, 0.16);
+
+  --c-success: #55b58a;
+  --c-success-weak: rgba(85, 181, 138, 0.16);
+
+  --c-ring: rgba(211, 91, 91, 0.38);
+  --c-link: var(--c-accent);
+
+  --fin-blue: var(--c-accent);
+  --accent: var(--c-accent);
+}
+
+/* ---------------------------------------------------------
+  PALETA: BLUE
+---------------------------------------------------------- */
+html[data-palette="blue"][data-theme="light"],
+html[data-palette="blue"]:not([data-theme]) {
+  --c-accent: #2563eb; /* blue-600 */
+  --c-accent-weak: rgba(37, 99, 235, 0.12);
+  --c-accent-strong: rgba(37, 99, 235, 0.22);
+
+  --c-danger: #dc2626; /* red-600 */
+  --c-danger-weak: rgba(220, 38, 38, 0.12);
+
+  --c-success: #16a34a; /* green-600 */
+  --c-success-weak: rgba(22, 163, 74, 0.12);
+
+  --c-ring: rgba(37, 99, 235, 0.35);
+  --c-link: var(--c-accent);
+
+  --fin-blue: var(--c-accent);
+  --accent: var(--c-accent);
+}
+
+html[data-palette="blue"][data-theme="dark"] {
+  --c-accent: #60a5fa; /* blue-400 */
+  --c-accent-weak: rgba(96, 165, 250, 0.14);
+  --c-accent-strong: rgba(96, 165, 250, 0.24);
+
+  --c-danger: #f87171; /* red-400 */
+  --c-danger-weak: rgba(248, 113, 113, 0.16);
+
+  --c-success: #4ade80; /* green-400 */
+  --c-success-weak: rgba(74, 222, 128, 0.16);
+
+  --c-ring: rgba(96, 165, 250, 0.36);
+  --c-link: var(--c-accent);
+
+  --fin-blue: var(--c-accent);
+  --accent: var(--c-accent);
+}
+
+/* ---------------------------------------------------------
+  PALETA: YELLOW (atenção a contraste)
+---------------------------------------------------------- */
+html[data-palette="yellow"][data-theme="light"],
+html[data-palette="yellow"]:not([data-theme]) {
+  --c-accent: #f59e0b; /* amber-500 */
+  --c-accent-weak: rgba(245, 158, 11, 0.16);
+  --c-accent-strong: rgba(245, 158, 11, 0.26);
+
+  --c-danger: #dc2626;
+  --c-danger-weak: rgba(220, 38, 38, 0.12);
+
+  --c-success: #16a34a;
+  --c-success-weak: rgba(22, 163, 74, 0.12);
+
+  --c-ring: rgba(245, 158, 11, 0.38);
+  --c-link: #b45309; /* amber-700 p/ link ficar legível */
+
+  --fin-blue: var(--c-accent);
+  --accent: var(--c-accent);
+}
+
+html[data-palette="yellow"][data-theme="dark"] {
+  --c-accent: #fbbf24; /* amber-400 */
+  --c-accent-weak: rgba(251, 191, 36, 0.18);
+  --c-accent-strong: rgba(251, 191, 36, 0.28);
+
+  --c-danger: #f87171;
+  --c-danger-weak: rgba(248, 113, 113, 0.16);
+
+  --c-success: #4ade80;
+  --c-success-weak: rgba(74, 222, 128, 0.16);
+
+  --c-ring: rgba(251, 191, 36, 0.40);
+  --c-link: var(--c-accent);
+
+  --fin-blue: var(--c-accent);
+  --accent: var(--c-accent);
+}

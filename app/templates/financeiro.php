@@ -16,7 +16,6 @@ $extra_js = [
 
   '/sistema-visa/app/static/js/financeiro/data/fin_bootstrap_refs.js',
   '/sistema-visa/app/static/js/financeiro/data/fin_store.js',
-  '/sistema-visa/app/static/js/financeiro_relatorios_print.js',
   '/sistema-visa/app/static/js/financeiro_dashboard.js',
 ];
 

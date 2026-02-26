@@ -46,6 +46,9 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="/sistema-visa/app/static/js/system/sys_bootstrap_ui.js"></script>
+
   <title><?= h($page_title) ?> • Sistema Visa</title>
 
   <link rel="icon" href="/sistema-visa/app/static/img/favicon.png">
@@ -72,6 +75,15 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       <link rel="stylesheet" href="<?= h($css) ?>">
     <?php endforeach; ?>
   <?php endif; ?>
+
+  <!-- JS base do layout privado (sempre) -->
+  <script defer src="/sistema-visa/app/static/js/dashboard.js"></script>
+
+  <!-- Toast (global no ambiente privado) -->
+  <script defer src="/sistema-visa/app/static/js/toast.js"></script>
+
+  <!-- JS personalização da empresa -->
+  <script defer src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
 
   <!-- JS no HEAD (use somente se for estritamente necessário) -->
   <?php if (!empty($extra_head_js) && is_array($extra_head_js)): ?>
@@ -130,7 +142,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       </nav>
 
       <div class="sidebar__footer">
-        <button class="sidebar__logout" id="btnLogout" type="button">
+        <button class="sidebar__logout" id="btnLogout" type="button" data-tip="Sair">
           <i class="fa-solid fa-right-from-bracket"></i>
           <span>Sair</span>
         </button>
@@ -180,14 +192,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
     </div>
   </div>
 
-  <!-- JS base do layout privado (sempre) -->
-  <script src="/sistema-visa/app/static/js/dashboard.js"></script>
-
-  <!-- Toast (global no ambiente privado) -->
-  <script src="/sistema-visa/app/static/js/toast.js"></script>
-
-  <!-- JS personalização da empresa -->
-  <script src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
+  
 
   <!-- JS específico da página/módulo -->
   <?php if (!empty($extra_js) && is_array($extra_js)): ?>

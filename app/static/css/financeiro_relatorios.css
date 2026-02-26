@@ -23,7 +23,7 @@
 .fin-rep-card{
   border:1px solid var(--fin-border);
   border-radius:14px;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   padding:12px;
   cursor:pointer;
   user-select:none;
@@ -52,7 +52,7 @@
   height:44px;
   border-radius:14px;
   border:1px solid var(--fin-border);
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   display:flex;
   align-items:center;
   justify-content:center;
@@ -69,7 +69,7 @@
   height:40px;
   border-radius:14px;
   border:1px solid var(--fin-border);
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   cursor:pointer;
   display:flex;
   align-items:center;
@@ -133,7 +133,7 @@
   padding:12px;
   border:1px dashed var(--fin-border);
   border-radius:12px;
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   color: var(--fin-muted);
   font-weight:800;
   font-size:12px;

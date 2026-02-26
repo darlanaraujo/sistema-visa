@@ -201,8 +201,12 @@
 
 /* tabela */
 .fr-print__tablewrap{
-  padding:0 16px 12px 16px;
+  margin:0 16px 12px 16px;
   overflow:auto;
+  border: 1px solid var(--c-border-2) !important;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-surface) 92%, var(--c-bg)) !important;
+  box-shadow: var(--shadow-soft) !important;
 }
 
 .fr-print__t{
@@ -293,7 +297,12 @@
     padding: 0 16px 0 16px;
     max-width: none;
     width: 100%;
-    height: 260px;
+    /* height: 260px; */
+  }
+
+  #frPrintChart {
+    max-height: 260px !important;
+    width: 100%;
   }
 
   #frPrintChartSection #frPrintChartImg{
@@ -333,17 +342,120 @@
   .fr-print__chartwrap{
     width: 100% !important;
     max-width: 100% !important;
+    
   }
 
   .fr-print__chartwrap img,
   .fr-print__chartwrap canvas{
     width: 100% !important;
-    height: 100% !important;
+    height: 80% !important;
     max-width: 100% !important;
   }
 
   .ui-chart-card.is-wide .ui-chart-body{
     display: grid !important;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) !important;
+  }
+}
+
+/* =========================================================
+   PATCH — Tela (não print): relatório como “folha” dentro do modal
+========================================================= */
+
+@media screen{
+  #frModal .fr-print{
+    border-radius: 16px;
+    border: 0;
+    box-shadow:
+      var(--shadow-soft),
+      inset 0 0 0 1px var(--stroke-soft, color-mix(in srgb, var(--c-border) 70%, transparent));
+  }
+
+  /* dá um respiro/mesa em volta da folha */
+  #frModal .fin-modal__body{
+    background: color-mix(in srgb, var(--c-bg) 55%, var(--c-surface));
+  }
+}
+
+/* =========================================================
+   MODAL (screen): mesa + folha + elevações internas
+   - Escopado: só quando fr-print estiver dentro de .fin-modal
+   - Não interfere no print
+========================================================= */
+
+@media screen{
+  /* Mesa: o body do modal vira “superfície” diferente */
+  .fin-modal .fin-modal__body{
+    background: color-mix(in srgb, var(--c-bg) 55%, var(--c-surface)) !important;
+  }
+
+  /* Folha: fr-print com contorno e sombra */
+  .fin-modal .fr-print{
+    border-radius: 16px;
+    border: 1px solid var(--c-border-2) !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+
+  /* ações do modal com “barra” sutil */
+  .fin-modal .fin-modal__actions{
+    padding-top: 10px;
+    border-top: 1px solid color-mix(in srgb, var(--c-border) 70%, transparent);
+  }
+
+  /* KPI / chart / resumo / tabela com leve elevação (sem vazar) */
+  .fin-modal .fr-kpi,
+  .fin-modal .fr-print__chartwrap,
+  .fin-modal .fr-print__chartsummary,
+  .fin-modal .fr-print__tablewrap{
+    border: 1px solid var(--c-border-2) !important;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--c-surface) 92%, var(--c-bg)) !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+
+  /* padding melhor pros blocos que antes não eram “card” */
+  .fin-modal .fr-print__chartwrap{
+    padding: 12px 12px !important;
+  }
+  .fin-modal .fr-print__tablewrap{
+    margin: 12px 16px 12px 16px; /* parecido com seu exemplo */
+    padding: 12px !important;
+  }
+
+  /* =========================================================
+    Layout: gráfico alinhado verticalmente com o resumo (desktop)
+  ========================================================= */
+
+  @media screen and (min-width: 861px){
+    /* se existir esse wrapper, força alinhamento perfeito */
+    .fr-print__chartgrid{
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr) !important;
+      gap: 12px !important;
+      align-items: stretch !important;
+    }
+
+    /* ambos viram “cards” e esticam */
+    .fr-print__chartwrap,
+    .fr-print__chartsummary{
+      height: 100%;
+      align-self: stretch;
+    }
+
+    /* dá uma altura consistente ao bloco do gráfico */
+    .fr-print__chartwrap{
+      min-height: 260px;
+      /* border: 1px solid var(--c-border-2) !important;
+      border-radius: 12px; */
+    }
+  }
+}
+
+@media screen{
+  .fin-modal .fr-print__t{
+    border: 1px solid var(--c-border-2);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--c-surface);
   }
 }

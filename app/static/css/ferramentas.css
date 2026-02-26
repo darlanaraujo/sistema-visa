@@ -12,7 +12,7 @@
 .ft-card{
   border:1px solid var(--fin-border);
   border-radius:14px;
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   overflow:hidden;
 }
 
@@ -48,7 +48,7 @@
   display:flex;
   flex-direction:column;
   gap:10px;
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
   height: 100%;
 }
 
@@ -57,7 +57,7 @@
   padding:12px;
   border-radius:14px;
   border:1px solid var(--fin-border);
-  background: var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   display:flex;
   align-items:center;
   text-align: left;

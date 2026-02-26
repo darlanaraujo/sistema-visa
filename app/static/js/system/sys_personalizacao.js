@@ -124,18 +124,35 @@
   function applyColorVars(themeObj) {
     if (!themeObj || typeof themeObj !== "object") return;
 
+    // ✅ NOVO: preset do acento (data-accent)
+    const preset = String(themeObj.accentPreset || themeObj.accent_preset || "").trim().toLowerCase();
+
     const primary = String(themeObj.primary || "").trim();
     const accent  = String(themeObj.accent || "").trim();
     const danger  = String(themeObj.danger || "").trim();
     const success = String(themeObj.success || "").trim();
 
-    const accentToUse = isHexColor(accent) ? accent : (isHexColor(primary) ? primary : "");
+    const hasCustom = isHexColor(accent) || isHexColor(primary);
+    const customHex = isHexColor(accent) ? accent : (isHexColor(primary) ? primary : "");
 
-    if (accentToUse) {
-      document.documentElement.style.setProperty("--c-accent", accentToUse);
-      document.documentElement.style.setProperty("--fin-blue", accentToUse);
-      document.documentElement.style.setProperty("--accent", accentToUse);
+    if (hasCustom && customHex) {
+      // custom tem prioridade: remove preset e aplica variável
+      document.documentElement.removeAttribute("data-accent");
+
+      document.documentElement.style.setProperty("--c-accent", customHex);
+      document.documentElement.style.setProperty("--fin-blue", customHex);
+      document.documentElement.style.setProperty("--accent", customHex);
+    } else if (preset) {
+      // preset: seta data-accent e remove overrides
+      document.documentElement.setAttribute("data-accent", preset);
+
+      document.documentElement.style.removeProperty("--c-accent");
+      document.documentElement.style.removeProperty("--fin-blue");
+      document.documentElement.style.removeProperty("--accent");
     } else {
+      // nada: volta ao default do CSS
+      document.documentElement.removeAttribute("data-accent");
+
       document.documentElement.style.removeProperty("--c-accent");
       document.documentElement.style.removeProperty("--fin-blue");
       document.documentElement.style.removeProperty("--accent");
@@ -267,9 +284,13 @@
 
     if (!prefs) {
       applyTheme("light");
+
+      // remove custom accent and preset
+      document.documentElement.removeAttribute("data-accent");
       document.documentElement.style.removeProperty("--c-accent");
       document.documentElement.style.removeProperty("--fin-blue");
       document.documentElement.style.removeProperty("--accent");
+
       document.documentElement.style.removeProperty("--c-danger");
       document.documentElement.style.removeProperty("--c-success");
 

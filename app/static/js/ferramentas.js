@@ -79,6 +79,10 @@
 
       // Tema (novo formato)
       sysThemeMode: el("ftSysThemeMode"),
+
+      // ✅ NOVO: preset do acento
+      sysAccentPreset: el("ftSysAccentPreset"),
+
       sysColorAccent: el("ftSysColorAccent"),
       sysColorAccentHex: el("ftSysColorAccentHex"),
       sysColorDanger: el("ftSysColorDanger"),
@@ -279,6 +283,16 @@
       success: "#2f6b4f",
     };
 
+    // ✅ PRESETS do acento (UI)
+    const ACCENT_PRESETS = {
+      visa: "#a42d2d",
+      blue: "#2563eb",
+      green: "#16a34a",
+      purple: "#7c3aed",
+      orange: "#f97316",
+      slate: "#334155",
+    };
+
     function syncColorPair(colorEl, hexEl, fallback) {
       if (!colorEl || !hexEl) return;
       const v = ensureHex(colorEl.value, fallback);
@@ -286,6 +300,12 @@
         colorEl.value = v;
         hexEl.value = v;
       }
+    }
+
+    function setAccentCustomEnabled(on) {
+      const isOn = Boolean(on);
+      if (els.sysColorAccent) els.sysColorAccent.disabled = !isOn;
+      if (els.sysColorAccentHex) els.sysColorAccentHex.disabled = !isOn;
     }
 
     function fillSysForm(p) {
@@ -311,12 +331,34 @@
       const mode = normalizeThemeMode(cur?.theme?.mode || "light");
       if (els.sysThemeMode) els.sysThemeMode.value = mode;
 
-      const accent  = ensureHex(cur?.theme?.accent, DEFAULT_THEME.accent);
-      const danger  = ensureHex(cur?.theme?.danger, DEFAULT_THEME.danger);
-      const success = ensureHex(cur?.theme?.success, DEFAULT_THEME.success);
+      // ✅ preset do acento + custom
+      const savedAccentPreset = String(cur?.theme?.accentPreset || "").trim().toLowerCase();
+      const savedCustomAccent = String(cur?.theme?.accent || "").trim();
+      const hasCustomAccent = isHexColor(savedCustomAccent);
 
-      if (els.sysColorAccent) els.sysColorAccent.value = accent;
-      if (els.sysColorAccentHex) els.sysColorAccentHex.value = accent;
+      // fallback seguro: se preset inválido, vira visa
+      const safePreset = ACCENT_PRESETS[savedAccentPreset] ? savedAccentPreset : "visa";
+
+      if (els.sysAccentPreset) {
+        els.sysAccentPreset.value = hasCustomAccent ? "custom" : safePreset;
+      }
+
+      // define o valor mostrado no picker/hex:
+      // - se custom: mostra o custom salvo
+      // - se preset: mostra a cor do preset (como preview)
+      const accentPreview = hasCustomAccent
+        ? ensureHex(savedCustomAccent, DEFAULT_THEME.accent)
+        : (ACCENT_PRESETS[safePreset] || DEFAULT_THEME.accent);
+
+      if (els.sysColorAccent) els.sysColorAccent.value = accentPreview;
+      if (els.sysColorAccentHex) els.sysColorAccentHex.value = accentPreview;
+
+      // trava/destrava custom
+      setAccentCustomEnabled(hasCustomAccent);
+
+      // danger/success continuam como estão (hex livre)
+      const danger = ensureHex(cur?.theme?.danger, DEFAULT_THEME.danger);
+      const success = ensureHex(cur?.theme?.success, DEFAULT_THEME.success);
 
       if (els.sysColorDanger) els.sysColorDanger.value = danger;
       if (els.sysColorDangerHex) els.sysColorDangerHex.value = danger;
@@ -636,12 +678,37 @@
       hexEl.addEventListener("input", () => {
         const v = ensureHex(hexEl.value, "");
         if (v) colorEl.value = v;
+
+        // ✅ se digitou um HEX válido no accent, vira custom automaticamente
+        if (hexEl === els.sysColorAccentHex && els.sysAccentPreset && isHexColor(v)) {
+          els.sysAccentPreset.value = "custom";
+          setAccentCustomEnabled(true);
+        }
       });
     }
 
     bindColorPair(els.sysColorAccent, els.sysColorAccentHex, DEFAULT_THEME.accent);
     bindColorPair(els.sysColorDanger, els.sysColorDangerHex, DEFAULT_THEME.danger);
     bindColorPair(els.sysColorSuccess, els.sysColorSuccessHex, DEFAULT_THEME.success);
+
+    // ✅ preset -> atualiza preview e trava/destrava custom
+    els.sysAccentPreset?.addEventListener("change", () => {
+      const v = String(els.sysAccentPreset.value || "visa").toLowerCase();
+      const isCustom = v === "custom";
+
+      setAccentCustomEnabled(isCustom);
+
+      if (!isCustom) {
+        const hex = ACCENT_PRESETS[v] || ACCENT_PRESETS.visa || DEFAULT_THEME.accent;
+        if (els.sysColorAccent) els.sysColorAccent.value = hex;
+        if (els.sysColorAccentHex) els.sysColorAccentHex.value = hex;
+      } else {
+        // se entrou em custom e o campo está vazio, coloca um default
+        const cur = ensureHex(els.sysColorAccentHex?.value || els.sysColorAccent?.value, DEFAULT_THEME.accent);
+        if (els.sysColorAccent) els.sysColorAccent.value = cur;
+        if (els.sysColorAccentHex) els.sysColorAccentHex.value = cur;
+      }
+    });
 
     // uploads
     els.sysLogoFile?.addEventListener("change", async () => {
@@ -673,8 +740,13 @@
 
     // reset cores (volta pro padrão do tema)
     els.sysColorsReset?.addEventListener("click", () => {
-      if (els.sysColorAccent) els.sysColorAccent.value = DEFAULT_THEME.accent;
-      if (els.sysColorAccentHex) els.sysColorAccentHex.value = DEFAULT_THEME.accent;
+      // ✅ volta pro Visa (preset) e zera custom
+      if (els.sysAccentPreset) els.sysAccentPreset.value = "visa";
+      setAccentCustomEnabled(false);
+
+      const hexVisa = ACCENT_PRESETS.visa || DEFAULT_THEME.accent;
+      if (els.sysColorAccent) els.sysColorAccent.value = hexVisa;
+      if (els.sysColorAccentHex) els.sysColorAccentHex.value = hexVisa;
 
       if (els.sysColorDanger) els.sysColorDanger.value = DEFAULT_THEME.danger;
       if (els.sysColorDangerHex) els.sysColorDangerHex.value = DEFAULT_THEME.danger;
@@ -708,7 +780,26 @@
 
       const themeMode = normalizeThemeMode(els.sysThemeMode?.value || "light");
 
-      const accent  = ensureHex(els.sysColorAccentHex?.value || els.sysColorAccent?.value, DEFAULT_THEME.accent);
+      // ✅ acento: preset OU custom
+      const presetSel = String(els.sysAccentPreset?.value || "visa").toLowerCase();
+
+      let accentPreset = "";
+      let accent = "";
+
+      if (presetSel === "custom") {
+        // custom salva HEX
+        accent = ensureHex(
+          els.sysColorAccentHex?.value || els.sysColorAccent?.value,
+          DEFAULT_THEME.accent
+        );
+        accentPreset = "";
+      } else {
+        // preset salva o nome e limpa o HEX (para não sobrescrever data-accent)
+        accentPreset = ACCENT_PRESETS[presetSel] ? presetSel : "visa";
+        accent = "";
+      }
+
+      // danger/success continuam hex livre
       const danger  = ensureHex(els.sysColorDangerHex?.value || els.sysColorDanger?.value, DEFAULT_THEME.danger);
       const success = ensureHex(els.sysColorSuccessHex?.value || els.sysColorSuccess?.value, DEFAULT_THEME.success);
 
@@ -741,7 +832,8 @@
         },
         theme: {
           mode: themeMode,
-          accent,
+          accentPreset, // ✅ novo
+          accent,       // ✅ custom HEX (ou vazio se preset)
           danger,
           success,
         },

@@ -338,33 +338,50 @@ $groups = [
                 Alterar cores pode afetar o padrão visual do sistema.
               </div>
 
+
               <div class="fin-form__row">
                 <div class="fin-field">
-                  <label>Cor primária (accent)</label>
-                  <div class="ft-colorline">
-                    <input id="ftSysColorAccent" type="color" value="#a42d2d" />
-                    <input id="ftSysColorAccentHex" type="text" placeholder="#a42d2d" />
-                  </div>
+                  <label for="ftSysAccentPreset">Cor do sistema (preset)</label>
+                  <select id="ftSysAccentPreset">
+                    <option value="visa">Visa (padrão)</option>
+                    <option value="blue">Azul</option>
+                    <option value="green">Verde</option>
+                    <option value="purple">Roxo</option>
+                    <option value="orange">Laranja</option>
+                    <option value="slate">Grafite</option>
+                    <option value="custom">Personalizada</option>
+                  </select>
                 </div>
 
                 <div class="fin-field">
-                  <label>Cor perigo</label>
+                  <label>Cor personalizada (HEX)</label>
                   <div class="ft-colorline">
-                    <input id="ftSysColorDanger" type="color" value="#a42d2d" />
-                    <input id="ftSysColorDangerHex" type="text" placeholder="#a42d2d" />
+                    <input id="ftSysColorAccent" type="color" value="#a42d2d" />
+                    <input id="ftSysColorAccentHex" type="text" placeholder="#a42d2d" />
                   </div>
                 </div>
               </div>
 
               <div class="fin-form__row">
                 <div class="fin-field">
-                  <label>Cor sucesso</label>
+                  <label>Cor de Pagamentos</label>
+                  <div class="ft-colorline">
+                    <input id="ftSysColorDanger" type="color" value="#a42d2d" />
+                    <input id="ftSysColorDangerHex" type="text" placeholder="#a42d2d" />
+                  </div>
+                </div>
+
+                <div class="fin-field">
+                  <label>Cor de Recebiveis</label>
                   <div class="ft-colorline">
                     <input id="ftSysColorSuccess" type="color" value="#2f6b4f" />
                     <input id="ftSysColorSuccessHex" type="text" placeholder="#2f6b4f" />
                   </div>
                 </div>
 
+              </div>
+
+              <div class="fin-form__row">
                 <div class="fin-field">
                   <label for="ftSysCurrency">Moeda</label>
                   <select id="ftSysCurrency">
@@ -373,9 +390,7 @@ $groups = [
                     <option value="EUR">EUR (€)</option>
                   </select>
                 </div>
-              </div>
 
-              <div class="fin-form__row">
                 <div class="fin-field">
                   <label for="ftSysTimezone">Fuso (display)</label>
                   <input id="ftSysTimezone" type="text" placeholder="Ex: America/Sao_Paulo" />

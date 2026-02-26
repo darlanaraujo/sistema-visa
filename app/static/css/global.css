@@ -17,7 +17,10 @@ body {
   min-height: 100%;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--c-text);
-  background: var(--c-bg);
+
+  /* ✅ Backdrop “mesa” (full width). Cards/painéis continuam em --c-surface/panel-bg */
+  background: var(--c-backdrop-grad, var(--c-backdrop, var(--c-bg)));
+
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -27,7 +30,10 @@ a {
   color: var(--c-accent);
   text-decoration: none;
 }
-a:hover { text-decoration: underline; }
+
+/* ✅ remove underline global */
+a:hover { text-decoration: none; }
+
 a:focus-visible{
   outline: 3px solid color-mix(in srgb, var(--c-accent) 28%, transparent);
   outline-offset: 2px;
@@ -102,7 +108,7 @@ button{
 .ui-chart-card{
   border: 1px solid var(--c-border);
   border-radius: 14px;
-  background: var(--c-surface);
+  background: var(--surface-card, var(--c-surface));
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -192,7 +198,7 @@ button{
   border: 1px solid var(--c-border);
   border-radius: 12px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--c-surface) 70%, var(--c-bg));
+  /* background: color-mix(in srgb, var(--c-surface) 70%, var(--c-bg)); */
 }
 
 .ui-chart-row{
@@ -240,6 +246,26 @@ button{
   font-size: 12px;
   text-align: center;
   padding: 10px 0;
+}
+
+/* global.css */
+
+/* Card do gráfico: precisa ter lift próprio */
+.ui-chart-card{
+  border: 1px solid var(--dash-stroke-soft, var(--c-border));
+  border-radius: 14px;
+  box-shadow: var(--dash-elev-1, var(--shadow-soft));
+  transition:
+    transform 160ms var(--dash-ease, cubic-bezier(.2,.8,.2,1)),
+    box-shadow 180ms var(--dash-ease, cubic-bezier(.2,.8,.2,1)),
+    border-color 160ms var(--dash-ease, cubic-bezier(.2,.8,.2,1));
+}
+
+/* Hover isolado do card */
+.ui-chart-card:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--dash-elev-2, var(--shadow-soft-2));
+  border-color: color-mix(in srgb, var(--c-accent) 24%, var(--dash-stroke-soft, var(--c-border)));
 }
 
 @media (max-width: 560px){

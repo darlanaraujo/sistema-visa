@@ -6,9 +6,10 @@
    - Padronizar camadas (panel/head/inner/foot), zebra e hover
    ========================================================= */
 
-
 :root{
-  --dash-bg: var(--c-bg);
+  /* ✅ Mesa (backdrop): tenta usar gradiente do tema; fallback para sólido */
+  --dash-bg: var(--c-backdrop-grad, var(--c-backdrop, var(--c-bg)));
+
   --dash-surface: var(--c-surface);
   --dash-surface-2: var(--c-surface-2);
 
@@ -40,15 +41,23 @@
   --dash-shadow-soft: var(--shadow-soft);
   --dash-shadow-soft-2: var(--shadow-soft-2);
 
-  /* edge toggle */
-  --dash-edge-bg: color-mix(in srgb, var(--c-text) 92%, #000);
-  --dash-edge-bg-hover: color-mix(in srgb, var(--c-text) 85%, #000);
-  --dash-edge-ico: #fff;
+  /* ✅ Profundidade premium (se não existir no tema, cai no shadow atual) */
+  --dash-elev-1: var(--elev-1, var(--dash-shadow-soft));
+  --dash-elev-2: var(--elev-2, var(--dash-shadow-soft-2));
+  --dash-stroke-soft: var(--stroke-soft, var(--dash-border));
+
+  /* motion (fallback se theme.css não tiver) */
+  --dash-ease: var(--ease-standard, cubic-bezier(.2,.8,.2,1));
+  --dash-fast: var(--motion-fast, 140ms);
+  --dash-md:   var(--motion-md, 260ms); /* ✅ um pouco mais suave */
 }
 
 /* BASE */
 
 .private-layout{
+  /* ✅ largura lógica do sidebar (JS atualiza em tempo real, evita “descompasso”) */
+  --sv-sidebar-w: 260px;
+
   min-height: 100vh;
   display: flex;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -75,6 +84,13 @@
   min-height: 0;
   overflow: auto;
   padding: 22px;
+}
+
+/* ✅ quando submenu estiver colapsado, “limpa” a mesa (não fica por cima) */
+@media (min-width: 981px){
+  .private-layout.is-subsidebar-open.is-subsidebar-collapsed .main{
+    padding: 22px 100px; /* conforme sua sugestão */
+  }
 }
 
 /* TOPBAR */
@@ -137,7 +153,7 @@
 
 .private-footer__inner a:hover{ text-decoration: underline; }
 
-/* SIDEBAR */
+/* SIDEBAR — premium */
 
 .sidebar{
   width: 260px;
@@ -146,8 +162,35 @@
   flex-direction: column;
   padding: 18px 14px;
   z-index: 50;
+  position: relative;
 
-  background: var(--dash-sidebar-bg);
+  /* ✅ NOVA cor do sidebar (com “tinta” do tema via --dash-accent) */
+  background:
+    radial-gradient(860px 520px at 18% -12%, color-mix(in srgb, var(--dash-accent) 18%, transparent), transparent 60%),
+    radial-gradient(720px 520px at 120% 12%, color-mix(in srgb, var(--dash-accent) 22%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.80), rgba(0, 0, 0, 0.86));
+  backdrop-filter: blur(5px) saturate(115%);
+  -webkit-backdrop-filter: blur(5px) saturate(115%);
+
+  /* premium */
+  box-shadow: var(--dash-elev-1);
+  border-right: 1px solid rgba(255,255,255,0.06);
+
+  transition:
+    width var(--dash-md) var(--dash-ease),
+    padding var(--dash-md) var(--dash-ease);
+}
+
+/* overlay visual (não interfere em clique) — agora “puxa” do tema */
+.sidebar::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(900px 560px at 20% -12%, color-mix(in srgb, var(--dash-accent) 16%, transparent), transparent 60%),
+    radial-gradient(720px 520px at 110% 12%, rgba(255,255,255,0.06), transparent 62%);
+  opacity:.55;
 }
 
 .sidebar__brand{
@@ -161,12 +204,16 @@
 
 .sidebar__logo-wrap{
   width: 100%;
-  background: var(--dash-bg);
+  background: var(--c-bg);
   padding: 10px;
   border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.22),
+    inset 0 0 0 1px rgba(0,0,0,0.06);
 }
 
 .sidebar__logo{
@@ -187,42 +234,83 @@
   align-items: center;
   gap: 10px;
   padding: 12px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--dash-sidebar-text);
   text-decoration: none;
+
+  border: 1px solid transparent;
+  transition:
+    background var(--dash-fast) var(--dash-ease),
+    border-color var(--dash-fast) var(--dash-ease),
+    transform var(--dash-fast) var(--dash-ease);
 }
 
 .sidebar__item i{
   width: 20px;
   text-align: center;
+  opacity: .98;
 }
 
-.sidebar__item:hover{ background: var(--dash-sidebar-hover); }
+/* ✅ hover neutro (não puxa vermelho do tema) */
+.sidebar__item:hover{
+  background: #50505040; /* sua referência */
+  border-color: rgba(255,255,255,0.08);
+  transform: translateY(-1px);
+}
+
+.sidebar__item:active{ transform: translateY(0px); }
 
 .sidebar__item.active{
-  background: var(--dash-sidebar-active-bg);
-  outline: 1px solid var(--dash-sidebar-active-outline);
+  background: rgba(255,255,255,0.08);
+  outline: 1px solid rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.10);
+
+  box-shadow:
+    0 10px 18px rgba(0,0,0,0.20),
+    inset 0 0 0 1px rgba(255,255,255,0.06);
 }
 
+/* “marca” discreta no active */
+.sidebar__item.active::before{
+  content:"";
+  width: 6px;
+  height: 18px;
+  border-radius: 999px;
+  margin-right: 2px;
+  background: color-mix(in srgb, var(--dash-accent) 60%, transparent);
+}
+
+/* footer */
 .sidebar__footer{
-  margin-top: 0;
+  margin-top: auto;
   padding: 6px 4px 4px;
 }
 
 .sidebar__logout{
   width: 100%;
-  border: 0;
-  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
   padding: 12px 12px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
+
+  transition:
+    background var(--dash-fast) var(--dash-ease),
+    border-color var(--dash-fast) var(--dash-ease),
+    transform var(--dash-fast) var(--dash-ease);
 }
 
-.sidebar__logout:hover{ background: rgba(255,255,255,0.12); }
+.sidebar__logout:hover{
+  background: #50505040;
+  border-color: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+}
+
+.sidebar__logout:active{ transform: translateY(0px); }
 
 /* COLLAPSE */
 
@@ -232,9 +320,7 @@
 }
 
 .sidebar.is-collapsed .sidebar__item span,
-.sidebar.is-collapsed .sidebar__logout span{
-  display: none;
-}
+.sidebar.is-collapsed .sidebar__logout span{ display: none; }
 
 .sidebar.is-collapsed .sidebar__brand{ justify-content: center; }
 .sidebar.is-collapsed .sidebar__logo-wrap{ width: auto; }
@@ -244,11 +330,13 @@
   height: 38px;
 }
 
+.sidebar.is-collapsed .sidebar__nav{ padding: 6px 2px; }
 .sidebar.is-collapsed .sidebar__item{
   justify-content: center;
   padding: 12px 10px;
+  border-radius: 14px;
 }
-
+.sidebar.is-collapsed .sidebar__item i{ width: 24px; }
 .sidebar.is-collapsed .sidebar__logout{ justify-content: center; }
 
 /* OVERLAY + MOBILE DRAWER */
@@ -277,14 +365,12 @@
     left: 0;
     height: 100vh;
     transform: translateX(-110%);
-    transition: transform 200ms ease;
+    transition: transform 220ms ease;
     width: 260px;
     z-index: 60;
   }
 
-  .private-layout.is-sidebar-open .sidebar{
-    transform: translateX(0);
-  }
+  .private-layout.is-sidebar-open .sidebar{ transform: translateX(0); }
 
   .private-layout.is-sidebar-open .sidebar-overlay{
     opacity: 1;
@@ -297,9 +383,10 @@
   }
 
   .sidebar__item,
-  .sidebar__logout{
-    justify-content: flex-start;
-  }
+  .sidebar__logout{ justify-content: flex-start; }
+
+  .sidebar__item:hover,
+  .sidebar__logout:hover{ transform: none; }
 }
 
 /* EDGE TOGGLE */
@@ -315,36 +402,48 @@
     width: 32px;
     height: 32px;
     border-radius: 999px;
-    border: 0;
-    background: var(--dash-edge-bg);
-    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(255,255,255,0.10);
+
+    /* ✅ NOVA cor do toggle (como você pediu) */
+    background:
+      radial-gradient(860px 520px at 18% -12%, rgba(120,150,255,0.10), transparent 60%),
+      radial-gradient(720px 520px at 120% 12%, rgba(80,110,255,0.07), transparent 62%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.53), rgba(0, 0, 0, 0.11));
+    backdrop-filter: blur(7px) saturate(115%);
+    -webkit-backdrop-filter: blur(7px) saturate(115%);
+
+    box-shadow: var(--dash-shadow-soft);
+
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 60;
-    transition: background 140ms ease, transform 120ms ease, box-shadow 140ms ease;
+
+    transition:
+      background var(--dash-fast) var(--dash-ease),
+      transform 120ms ease,
+      box-shadow var(--dash-fast) var(--dash-ease),
+      left var(--dash-md) var(--dash-ease);
+  }
+
+  /* ✅ hover mais sofisticado (não “preto chapado”) */
+  .sidebar-edge-toggle:hover{
+    background:
+      radial-gradient(860px 520px at 18% -12%, rgba(120,150,255,0.14), transparent 60%),
+      radial-gradient(720px 520px at 120% 12%, rgba(80,110,255,0.10), transparent 62%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.08));
+    box-shadow: var(--dash-shadow-soft-2);
   }
 
   .sidebar-edge-toggle i{
-    color: var(--dash-edge-ico);
+    color: #fff;
     transition: transform 160ms ease;
   }
 
-  .sidebar-edge-toggle:hover{
-    background: var(--dash-edge-bg-hover);
-    box-shadow: var(--shadow-soft-2);
-  }
+  .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{ transform: translateX(-3px); }
+  .sidebar.is-collapsed ~ .sidebar-edge-toggle:hover i{ transform: translateX(3px); }
 
-  .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{
-    transform: translateX(-3px);
-  }
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle:hover i{
-    transform: translateX(3px);
-  }
-
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle{
-    left: calc(96px - 14px);
-  }
+  .sidebar.is-collapsed ~ .sidebar-edge-toggle{ left: calc(96px - 14px); }
 
   .sidebar-edge-toggle.is-nudge-left i{ transform: translateX(-3px); }
   .sidebar-edge-toggle.is-nudge-right i{ transform: translateX(3px); }
@@ -381,9 +480,7 @@
   transition: transform 140ms ease, opacity 140ms ease;
 }
 
-.topbar__menu::before{
-  box-shadow: 0 -6px 0 var(--dash-text), 0 6px 0 var(--dash-text);
-}
+.topbar__menu::before{ box-shadow: 0 -6px 0 var(--dash-text), 0 6px 0 var(--dash-text); }
 .topbar__menu::after{ opacity: 0; }
 
 .topbar__menu:hover::before{
@@ -399,39 +496,32 @@
   .topbar__menu{ display: none !important; }
 }
 
-
 /* =========================================================
    PADRÃO DE SEÇÃO (camadas)
-   - usado no dashboard principal
-   - usado em lotes / relatórios placeholders
    ========================================================= */
+/* (mantém seu CSS existente sem alterações abaixo) */
 
-.dash2__header h1{
-  margin: 0 0 6px 0;
-  font-size: 22px;
-  color: var(--dash-text);
-}
-
-.dash2__header p{
-  margin: 0 0 18px 0;
-  color: var(--dash-muted);
-}
-
-.dash2__sections{
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+.dash2__header h1{ margin: 0 0 6px 0; font-size: 22px; color: var(--dash-text); }
+.dash2__header p{ margin: 0 0 18px 0; color: var(--dash-muted); }
+.dash2__sections{ display: flex; flex-direction: column; gap: 14px; }
 
 .dash2__section{
-  background: var(--dash-panel-bg);
+  background: var(--surface-card, var(--dash-panel-bg));
   border: 1px solid var(--dash-border);
   border-radius: 14px;
   padding: 16px;
   position: relative;
+  box-shadow: var(--dash-elev-1);
+  border-color: var(--dash-stroke-soft);
+  transition: transform 160ms var(--dash-ease), box-shadow 180ms var(--dash-ease), border-color 160ms var(--dash-ease);
 }
 
-/* marca lateral */
+.dash2__section:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--dash-elev-2);
+  border-color: color-mix(in srgb, var(--dash-accent) 24%, var(--dash-stroke-soft));
+}
+
 .dash2__section::before{
   content: "";
   position: absolute;
@@ -443,7 +533,6 @@
   background: color-mix(in srgb, var(--dash-accent) 42%, transparent);
 }
 
-/* topo da seção */
 .dash2__section-head{
   display: flex;
   align-items: center;
@@ -475,7 +564,6 @@
 }
 .dash2__link:hover{ background: var(--dash-hover-soft); }
 
-/* miolo */
 .dash2__box{
   background: var(--dash-panel-inner-bg);
   border: 1px solid var(--dash-border);
@@ -490,11 +578,7 @@
   margin-bottom: 10px;
 }
 
-.dash2__hint{
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--dash-muted);
-}
+.dash2__hint{ margin-top: 10px; font-size: 12px; color: var(--dash-muted); }
 
 /* ===========================
    LOTES: DESKTOP “TABELA” + MOBILE KV
@@ -515,11 +599,13 @@
   border-radius: 12px;
   overflow: hidden;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  box-shadow: var(--dash-elev-1);
+  border-color: var(--dash-stroke-soft);
 }
 
 .lote-card:hover{
   transform: translateY(-1px);
-  box-shadow: var(--dash-shadow-soft);
+  box-shadow: var(--dash-elev-2);
   border-color: color-mix(in srgb, var(--dash-accent) 35%, var(--dash-border));
 }
 
@@ -772,8 +858,10 @@
 }
 
 .rep-card{
-  background: var(--dash-panel-inner-bg);
+  background: var(--surface-card, var(--dash-panel-inner-bg));
   border: 1px solid var(--dash-border);
+  box-shadow: var(--dash-elev-1);
+  border-color: var(--dash-stroke-soft);
   border-radius: 12px;
   padding: 12px;
   cursor: pointer;
@@ -785,7 +873,7 @@
 
 .rep-card:hover{
   transform: translateY(-1px);
-  box-shadow: var(--dash-shadow-soft-2);
+  box-shadow: var(--dash-elev-2);
   border-color: color-mix(in srgb, var(--dash-accent) 35%, var(--dash-border));
 }
 
@@ -845,10 +933,19 @@
 }
 
 .module-card{
-  background: var(--dash-panel-bg);
+  background: var(--surface-card, var(--dash-panel-bg));
   border: 1px solid var(--dash-border);
   border-radius: 14px;
   padding: 14px;
+  box-shadow: var(--dash-elev-1);
+  border-color: var(--dash-stroke-soft);
+  transition: transform 160ms var(--dash-ease), box-shadow 180ms var(--dash-ease), border-color 160ms var(--dash-ease);
+}
+
+.module-card:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--dash-elev-2);
+  border-color: color-mix(in srgb, var(--dash-accent) 22%, var(--dash-stroke-soft));
 }
 
 .module-card__title{
@@ -870,5 +967,67 @@
   color: var(--dash-muted);
 }
 
-/* ✅ degradê aprovado */
-  /* background: linear-gradient(180deg, #000000 0%, #2e2e2e 100%); */
+/* acessibilidade / motion */
+@media (prefers-reduced-motion: reduce){
+  .sidebar,
+  .sidebar__item,
+  .sidebar__logout{
+    transition: none !important;
+  }
+}
+
+/* =========================================================
+   ADDON — TOOLTIP PREMIUM + SUBSIDEBAR
+   ========================================================= */
+
+/* TOOLTIP (mesma classe usada pelo JS: .sv-sidebar-tip) */
+.sv-sidebar-tip{
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-6px) scale(0.98);
+  transition: opacity 160ms var(--dash-ease), transform 180ms var(--dash-ease);
+}
+.sv-sidebar-tip.is-show{ opacity: 1; transform: translateX(0) scale(1); }
+
+.sv-sidebar-tip__card{
+  position: relative;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(16,16,18,0.88);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.94);
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: .01em;
+  backdrop-filter: blur(10px) saturate(1.12);
+  -webkit-backdrop-filter: blur(10px) saturate(1.12);
+  box-shadow:
+    0 18px 34px rgba(0,0,0,0.30),
+    inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.sv-sidebar-tip__arrow{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  background: rgba(16,16,18,0.88);
+  border-left: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,0.26));
+}
+
+/* acessibilidade / motion */
+@media (prefers-reduced-motion: reduce){
+  .sidebar,
+  .sidebar__item,
+  .sidebar__logout{
+    transition: none !important;
+  }
+}

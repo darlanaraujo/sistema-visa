@@ -35,6 +35,13 @@
 
   --fin-pill-bg:  color-mix(in srgb, var(--fin-blue) 10%, var(--fin-surface));
   --fin-pill-bd:  color-mix(in srgb, var(--fin-blue) 18%, var(--fin-border));
+
+   /* Depth tokens */
+  --fin-elev-1: var(--elev-1, var(--shadow-soft));
+  --fin-elev-2: var(--elev-2, var(--shadow-soft-2));
+
+  /* Hairline (mais sutil que border) */
+  --fin-stroke-soft: var(--stroke-soft, color-mix(in srgb, var(--fin-border) 70%, var(--n-0)));
 }
 
 *, *::before, *::after{ box-sizing:border-box; }
@@ -74,10 +81,19 @@ html, body{
 /* NAV INTERNA */
 
 .fin-nav-wrap{
-  background:var(--fin-panel-bg);
-  border:1px solid var(--fin-border);
+  /* background:var(--fin-panel-bg); */
+  /* border:1px solid var(--fin-border); */
   border-radius:14px;
   overflow:hidden;
+  box-shadow: var(--fin-elev-1);
+  border-color: var(--fin-stroke-soft);
+  transition: transform 160ms var(--ease-standard), box-shadow 180ms var(--ease-standard), border-color 160ms var(--ease-standard);
+}
+
+.fin-nav-wrap:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--fin-elev-2);
+  border-color: color-mix(in srgb, var(--fin-blue) 22%, var(--fin-stroke-soft));
 }
 
 .fin-nav-summary{
@@ -91,7 +107,7 @@ html, body{
   cursor:pointer;
   user-select:none;
   font-size:13px;
-  background: var(--fin-panel-head-bg);
+  background: var(--surface-card, var(--fin-panel-head-bg));
   border-bottom: 1px solid var(--fin-border);
 }
 
@@ -102,7 +118,7 @@ html, body{
   flex-wrap:wrap;
   gap:8px;
   padding:10px;
-  background:var(--fin-panel-bg);
+  background: var(--surface-card, var(--fin-panel-bg));
   justify-content:center;
 }
 
@@ -166,13 +182,31 @@ html, body{
 
 /* PAINÉIS / CARDS */
 
-.fin-card,
-.fin-panel{
+/* ✅ Card real (folha em cima da mesa) */
+.fin-card{
   background:var(--fin-panel-bg);
   border:1px solid var(--fin-border);
   border-radius:14px;
   padding:14px;
   overflow:hidden;
+  box-shadow: var(--fin-elev-1);
+  border-color: var(--fin-stroke-soft);
+  transition: transform 160ms var(--ease-standard), box-shadow 180ms var(--ease-standard), border-color 160ms var(--ease-standard);
+}
+
+.fin-card:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--fin-elev-2);
+  border-color: color-mix(in srgb, var(--fin-blue) 22%, var(--fin-stroke-soft));
+}
+
+/* ✅ Wrapper de seção (não deve “pintar branco” por cima da mesa) */
+.fin-panel{
+  background:transparent;
+  border:1px solid var(--fin-border);
+  border-radius:14px;
+  padding:14px;
+  overflow:visible;
 }
 
 .fin-panel__head{
@@ -218,6 +252,74 @@ html, body{
   background:var(--fin-pill-bg);
   border:1px solid var(--fin-pill-bd);
   white-space:nowrap;
+}
+
+/* =========================================================
+   PREMIUM OUTLINES (substitui borders grossas por hairline)
+   - Remove borda forte em wrappers grandes (nav, filtros, toolbar, tabela)
+   - Mantém profundidade e melhora separação visual
+========================================================= */
+
+/* 1) Remover borders “grosseiros” desses wrappers */
+.fin-nav-wrap,
+.fin-toolbar-panel,
+.fin-filters-wrap,
+.fin-table-wrap{
+  border: 0 !important; /* evita linha pesada */
+  box-shadow:
+    var(--fin-elev-1),
+    inset 0 0 0 1px var(--fin-stroke-soft); /* hairline premium */
+  transition:
+    transform 160ms var(--ease-standard),
+    box-shadow 180ms var(--ease-standard);
+}
+
+/* Hover: eleva e dá contorno sutil com acento */
+.fin-nav-wrap:hover,
+.fin-toolbar-panel:hover,
+.fin-filters-wrap:hover,
+.fin-table-wrap:hover{
+  transform: translateY(-1px);
+  box-shadow:
+    var(--fin-elev-2),
+    inset 0 0 0 1px color-mix(in srgb, var(--fin-blue) 22%, var(--fin-stroke-soft));
+}
+
+/* 2) Cards “papel” (fin-card) também com hairline (sem linha grossa) */
+.fin-card{
+  border: 0 !important;
+  box-shadow:
+    var(--fin-elev-1),
+    inset 0 0 0 1px var(--fin-stroke-soft);
+  transition:
+    transform 160ms var(--ease-standard),
+    box-shadow 180ms var(--ease-standard);
+}
+
+.fin-card:hover{
+  transform: translateY(-1px);
+  box-shadow:
+    var(--fin-elev-2),
+    inset 0 0 0 1px color-mix(in srgb, var(--fin-blue) 20%, var(--fin-stroke-soft));
+}
+
+/* 3) Elementos internos que ainda “pedem” border (ex: headers internos) */
+/* .fin-nav-summary,
+.fin-filters-summary,
+.fin-panel__head{
+  border-color: color-mix(in srgb, var(--fin-stroke-soft) 85%, var(--n-0));
+} */
+
+/* 4) Tabela: evita grid marcado demais */
+.fin-table thead th{
+  border-bottom-color: color-mix(in srgb, var(--fin-stroke-soft) 80%, var(--n-0));
+}
+.fin-table tbody td{
+  border-bottom-color: color-mix(in srgb, var(--fin-stroke-soft) 55%, transparent);
+}
+.fin-table th + th,
+.fin-table td + td{
+  border-left-color: color-mix(in srgb, var(--fin-stroke-soft) 55%, transparent);
 }
 
 @media (max-width:700px){
@@ -311,10 +413,12 @@ html, body{
 /* KPI / TOOLBAR */
 
 .fin-toolbar-panel{
-  background:var(--fin-panel-bg);
-  border:1px solid var(--fin-border);
+  /* background:var(--fin-panel-bg); */
+  /* border:1px solid var(--fin-border); */
   border-radius:14px;
   padding:12px;
+  box-shadow: var(--fin-elev-1);
+  border-color: var(--fin-stroke-soft);
 }
 
 .fin-toolbar{
@@ -335,7 +439,7 @@ html, body{
   padding:12px 14px;
   border:1px solid var(--fin-border);
   border-radius:14px;
-  background:var(--fin-panel-bg);
+  /* background:var(--fin-panel-bg); */
   min-width:0;
 }
 
@@ -452,11 +556,13 @@ html, body{
 /* FILTROS */
 
 .fin-filters-wrap{
-  background:var(--fin-panel-bg);
-  border:1px solid var(--fin-border);
+  background: var(--surface-card, var(--fin-panel-bg));
+  /* border:1px solid var(--fin-border); */
   border-radius:14px;
   overflow:hidden;
   max-width:100%;
+  box-shadow: var(--fin-elev-1);
+  border-color: var(--fin-stroke-soft);
 }
 
 .fin-filters-summary{
@@ -482,7 +588,7 @@ html, body{
   gap:10px;
   padding:12px;
   max-width:100%;
-  background: var(--fin-panel-inner-bg);
+  background: var(--surface-card, var(--fin-panel-inner-bg));
 }
 
 .fin-filter{
@@ -535,9 +641,11 @@ html, body{
   overflow-x:auto !important;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
-  border:1px solid var(--fin-border);
+  /* border:1px solid var(--fin-border); */
   border-radius:12px;
-  background:var(--fin-panel-bg);
+  /* background:var(--fin-panel-bg); */
+  box-shadow: var(--fin-elev-1);
+  border-color: var(--fin-stroke-soft);
   display:block;
   position:relative;
   min-width:0;
@@ -666,8 +774,10 @@ html, body{
   max-width:720px;
   background:var(--fin-panel-bg);
   border-radius:16px;
-  border:1px solid var(--fin-border);
+  /* border:1px solid var(--fin-border); */
   overflow:hidden;
+  box-shadow: var(--fin-elev-2);
+  border-color: var(--fin-stroke-soft);
   transform:translateY(18px);
   opacity:0;
   transition:transform 180ms ease, opacity 180ms ease;
@@ -739,7 +849,7 @@ html, body{
   border:1px solid color-mix(in srgb, var(--fin-border) 75%, var(--fin-border-2));
   padding:0 12px;
   outline:none;
-  background:var(--fin-surface);
+  /* background:var(--fin-surface); */
   font-size:13px;
   font-weight:800;
   max-width:100%;
@@ -757,4 +867,174 @@ html, body{
   justify-content:flex-end;
   gap:10px;
   margin-top:10px;
+}
+
+/* =========================================================
+   FIN — PREMIUM DEPTH (sem bordas feias)
+   - Eleva PAINÉIS/CARDS do Dashboard e Relatórios
+   - Remove borda de headers/summaries
+   - Modal com profundidade real
+========================================================= */
+
+/* 1) Headers/summaries SEM borda (você já pediu isso) */
+.fin-panel__head,
+.fin-nav-summary,
+.fin-filters-summary{
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* 2) Dashboard/Relatórios: painéis reais (papel sobre mesa)
+   OBS: não mexo no .fin-panel base pra não quebrar outras telas */
+.fin-panel.fin-dash-panel,
+.fin-panel.fin-rep-section,
+.fin-panel.fin-dash-panel.fin-dash-chart,
+.fin-panel.fin-dash-panel.fin-dash-agenda,
+.fin-panel.fin-dash-panel.fin-dash-shortcuts-panel{
+  background: var(--surface-card, var(--fin-panel-bg));
+  border: 0 !important;
+  overflow: hidden; /* garante recorte bonito */
+  box-shadow: var(--fin-elev-1);
+  transition: transform 160ms var(--ease-standard), box-shadow 180ms var(--ease-standard);
+}
+
+.fin-panel.fin-dash-panel:hover,
+.fin-panel.fin-rep-section:hover,
+.fin-panel.fin-dash-panel.fin-dash-chart:hover,
+.fin-panel.fin-dash-panel.fin-dash-agenda:hover,
+.fin-panel.fin-dash-panel.fin-dash-shortcuts-panel:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--fin-elev-2);
+}
+
+/* 3) Dashboard: "Listbox" (CP/CR) precisa parecer card também */
+.fin-dash-listbox{
+  background: var(--surface-card, var(--fin-panel-bg));
+  border: 0 !important;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--fin-elev-1);
+  transition: transform 160ms var(--ease-standard), box-shadow 180ms var(--ease-standard);
+}
+
+.fin-dash-listbox:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--fin-elev-2);
+}
+
+/* 4) Importante: se algum efeito estiver acontecendo NO CONTEÚDO,
+      neutraliza pra sombra ficar no card pai (como você quer) */
+.fin-dash-mini,
+.fin-dash-acc,
+.fin-pie-wrap,
+.ui-chart{
+  box-shadow: none !important;
+}
+
+/* 5) Ajuste: conteúdo interno não pode “pintar” borda pesada */
+.fin-table-wrap,
+.fin-filters-wrap,
+.fin-nav-wrap,
+.fin-toolbar-panel{
+  border: 0 !important;
+}
+
+/* Se você quiser manter esses blocos com aparência de card,
+   eles recebem sombra suave sem borda. (CP/CR vão ficar melhores.) */
+.fin-table-wrap,
+.fin-filters-wrap,
+.fin-nav-wrap,
+.fin-toolbar-panel{
+  box-shadow: var(--fin-elev-1);
+  transition: transform 160ms var(--ease-standard), box-shadow 180ms var(--ease-standard);
+}
+
+.fin-table-wrap:hover,
+.fin-filters-wrap:hover,
+.fin-nav-wrap:hover,
+.fin-toolbar-panel:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--fin-elev-2);
+}
+
+/* 6) MODAL: profundidade real (sem borda) */
+.fin-modal__card{
+  border: 0 !important;
+  box-shadow: var(--fin-elev-2) !important;
+}
+
+/* Head do modal também sem borda */
+.fin-modal__head{
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+/* =========================================================
+   PATCH — .fin-panel como “folha na mesa” (CP/CR e demais)
+   - Antes: wrapper transparente com borda
+   - Agora: card real com elevação (sem borda feia)
+========================================================= */
+
+.fin-panel{
+  background: var(--surface-card, var(--fin-panel-bg));
+  border: 0 !important;
+  border-radius: 14px;
+  overflow: hidden;
+
+  box-shadow:
+    var(--fin-elev-1),
+    inset 0 0 0 1px var(--fin-stroke-soft);
+
+  transition: transform 160ms var(--ease-standard), box-shadow 180ms var(--ease-standard);
+}
+
+.fin-panel:hover{
+  transform: translateY(-1px);
+  box-shadow:
+    var(--fin-elev-2),
+    inset 0 0 0 1px color-mix(in srgb, var(--fin-blue) 20%, var(--fin-stroke-soft));
+}
+
+/* head já está sem borda no seu padrão — aqui só garante recorte limpo */
+.fin-panel__head{
+  background: var(--fin-panel-head-bg) !important;
+  border: 0 !important;
+  border-radius: 12px;
+}
+
+/* =========================================================
+   PATCH — MODAL premium (backdrop “mesa” + blur sutil)
+========================================================= */
+
+.fin-modal{
+  background:
+    radial-gradient(1200px 700px at 50% 20%,
+      color-mix(in srgb, var(--c-text) 22%, transparent),
+      color-mix(in srgb, var(--c-text) 62%, transparent)
+    );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* card do modal já tem elev-2: reforça “peso” sem borda */
+.fin-modal__card{
+  border: 0 !important;
+  box-shadow: var(--fin-elev-2) !important;
+}
+
+/* =========================================================
+   FIX — Backdrop do modal (tela inteira) + blur
+   (usa !important pra vencer sobrescritas)
+========================================================= */
+
+.fin-modal{
+  background:
+    radial-gradient(900px 520px at 50% 18%,
+      color-mix(in srgb, var(--c-text) 18%, transparent) 0%,
+      color-mix(in srgb, var(--c-text) 58%, transparent) 60%,
+      color-mix(in srgb, var(--c-text) 72%, transparent) 100%
+    ) !important;
+
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
