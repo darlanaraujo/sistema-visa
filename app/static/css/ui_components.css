@@ -1,0 +1,344 @@
+/* app/static/css/ui_components.css
+   Componentes globais (UI) do sistema:
+   - Tooltip premium (unificado: sidebar + topbar)
+   - Alertas (lista premium + modelo-regra em blocos)
+*/
+
+/* =========================================================
+   TOOLTIP PREMIUM (GLOBAL / UNIFICADO)
+   - Padrão: ao lado (direita) com seta na esquerda
+   - Modo topbar: abaixo com seta no topo (apontando pra cima)
+========================================================= */
+.sv-sidebar-tip{
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+
+  /* default (direita) */
+  transform: translateX(-6px) scale(0.98);
+  transition: opacity 160ms var(--sv-ease), transform 180ms var(--sv-ease);
+}
+
+.sv-sidebar-tip.is-show{
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+/* Modo "abaixo" (topbar): o left vira o centro do alvo */
+.sv-sidebar-tip.is-below{
+  transform: translate(-50%, -6px) scale(0.98);
+}
+.sv-sidebar-tip.is-below.is-show{
+  transform: translate(-50%, 0) scale(1);
+}
+
+.sv-sidebar-tip__card{
+  position: relative;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(16,16,18,0.88);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.94);
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: .01em;
+  backdrop-filter: blur(10px) saturate(1.12);
+  -webkit-backdrop-filter: blur(10px) saturate(1.12);
+  box-shadow:
+    0 18px 34px rgba(0,0,0,0.30),
+    inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.sv-sidebar-tip__arrow{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+
+  /* default: seta na esquerda */
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+
+  background: rgba(16,16,18,0.88);
+  border-left: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,0.26));
+}
+
+/* modo abaixo: seta em cima (apontando pra cima) */
+.sv-sidebar-tip.is-below .sv-sidebar-tip__arrow{
+  left: 50%;
+  top: -5px;
+  transform: translateX(-50%) rotate(45deg);
+
+  border-left: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 0;
+}
+
+/* =========================================================
+   ALERTAS — LISTA PREMIUM (fallback antigo)
+========================================================= */
+.sv-alerts{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sv-alert{
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--sv-border) 70%, transparent);
+  background: color-mix(in srgb, var(--c-surface, #fff) 72%, transparent);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+  overflow: hidden;
+  transition:
+    transform var(--sv-fast) var(--sv-ease),
+    box-shadow var(--sv-fast) var(--sv-ease),
+    border-color var(--sv-fast) var(--sv-ease);
+}
+
+.sv-alert:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.14);
+}
+
+.sv-alert__row{
+  display: flex;
+  gap: 10px;
+  padding: 12px 12px;
+  align-items: flex-start;
+}
+
+.sv-alert__dot{
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--sv-accent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--sv-accent) 14%, transparent);
+  flex: 0 0 auto;
+}
+
+.sv-alert__title{
+  font-weight: 950;
+  font-size: 13px;
+  color: var(--sv-text);
+  margin-bottom: 4px;
+}
+
+.sv-alert__msg{
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--sv-muted);
+  line-height: 1.35;
+}
+
+/* Variações por severidade */
+.sv-alert--info .sv-alert__dot{ background: color-mix(in srgb, var(--sv-accent) 85%, #3b82f6); }
+.sv-alert--warning .sv-alert__dot{ background: color-mix(in srgb, #f59e0b 80%, var(--sv-accent)); }
+.sv-alert--danger .sv-alert__dot{ background: color-mix(in srgb, #ef4444 82%, var(--sv-accent)); }
+.sv-alert--success .sv-alert__dot{ background: color-mix(in srgb, #22c55e 82%, var(--sv-accent)); }
+
+/* Dark: deixa menos transparente e mais legível */
+html[data-theme="dark"] .sv-alert{
+  background: color-mix(in srgb, rgba(18,18,20,0.88) 86%, transparent);
+  border-color: color-mix(in srgb, rgba(255,255,255,0.14) 70%, transparent);
+  box-shadow: 0 18px 34px rgba(0,0,0,0.30);
+}
+
+/* =========================================================
+   ALERTS — MODELO-REGRA (BLOCOS CP/CR) no popover
+========================================================= */
+.sv-alertblocks{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sv-alertblock{
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--sv-border) 70%, transparent);
+  background: color-mix(in srgb, var(--c-surface, #fff) 78%, transparent);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.10);
+  overflow: hidden;
+}
+
+html[data-theme="dark"] .sv-alertblock{
+  background: rgba(18,18,20,0.70);
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 18px 34px rgba(0,0,0,0.36);
+}
+
+.sv-alertblock__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--sv-border) 70%, transparent);
+  background: color-mix(in srgb, var(--sv-border) 10%, transparent);
+}
+
+html[data-theme="dark"] .sv-alertblock__head{
+  background: rgba(255,255,255,0.05);
+  border-bottom-color: rgba(255,255,255,0.10);
+}
+
+.sv-alertblock__title{
+  font-weight: 950;
+  font-size: 13px;
+  color: var(--sv-text);
+}
+
+.sv-alertblock__cta{
+  font-weight: 950;
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--sv-accent);
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sv-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sv-accent) 16%, transparent);
+  transition: transform var(--sv-fast) var(--sv-ease), background var(--sv-fast) var(--sv-ease);
+}
+.sv-alertblock__cta:hover{ transform: translateY(-1px); }
+.sv-alertblock__cta:active{ transform: translateY(0) scale(0.98); }
+
+.sv-alertblock__meta{
+  padding: 10px 12px 10px;
+}
+
+.sv-alertblock__pills{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sv-alertpill{
+  min-width: 34px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 950;
+  font-size: 12px;
+  border: 1px solid transparent;
+  box-shadow: 0 10px 18px rgba(0,0,0,0.10);
+}
+
+.sv-alertpill--success{
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  border-color: color-mix(in srgb, #22c55e 34%, transparent);
+  color: color-mix(in srgb, #22c55e 80%, var(--sv-text));
+}
+.sv-alertpill--info{
+  background: color-mix(in srgb, #3b82f6 16%, transparent);
+  border-color: color-mix(in srgb, #3b82f6 30%, transparent);
+  color: color-mix(in srgb, #3b82f6 80%, var(--sv-text));
+}
+.sv-alertpill--warning{
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  border-color: color-mix(in srgb, #f59e0b 34%, transparent);
+  color: color-mix(in srgb, #f59e0b 86%, var(--sv-text));
+}
+.sv-alertpill--danger{
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+  border-color: color-mix(in srgb, #ef4444 34%, transparent);
+  color: color-mix(in srgb, #ef4444 86%, var(--sv-text));
+}
+
+html[data-theme="dark"] .sv-alertpill{
+  box-shadow: 0 16px 26px rgba(0,0,0,0.34);
+}
+
+.sv-alertblock__legend{
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--sv-muted);
+}
+.sv-legend{ text-align: center; opacity: .92; }
+
+.sv-alertblock__list{
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Itens dentro do bloco */
+.sv-alertitem{
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 10px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid color-mix(in srgb, var(--sv-border) 70%, transparent);
+  background: color-mix(in srgb, var(--c-surface, #fff) 74%, transparent);
+  transition: transform var(--sv-fast) var(--sv-ease), box-shadow var(--sv-fast) var(--sv-ease);
+}
+
+html[data-theme="dark"] .sv-alertitem{
+  background: rgba(18,18,20,0.70);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.sv-alertitem:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(0,0,0,0.12);
+}
+
+.sv-alertitem__dot{
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  background: var(--sv-accent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--sv-accent) 12%, transparent);
+}
+
+.sv-alertitem__t{
+  font-weight: 950;
+  font-size: 12.5px;
+  color: var(--sv-text);
+  margin-bottom: 2px;
+}
+
+.sv-alertitem__m{
+  font-weight: 750;
+  font-size: 12px;
+  color: var(--sv-muted);
+  line-height: 1.3;
+}
+
+/* Dot por severidade */
+.sv-alertitem--info .sv-alertitem__dot{ background: color-mix(in srgb, #3b82f6 82%, var(--sv-accent)); }
+.sv-alertitem--warning .sv-alertitem__dot{ background: color-mix(in srgb, #f59e0b 82%, var(--sv-accent)); }
+.sv-alertitem--danger .sv-alertitem__dot{ background: color-mix(in srgb, #ef4444 82%, var(--sv-accent)); }
+.sv-alertitem--success .sv-alertitem__dot{ background: color-mix(in srgb, #22c55e 82%, var(--sv-accent)); }
+
+/* =========================================================
+   REDUCED MOTION (somente componentes)
+========================================================= */
+@media (prefers-reduced-motion: reduce){
+  .sv-sidebar-tip,
+  .sv-alert,
+  .sv-alertitem,
+  .sv-alertblock__cta{
+    transition: none !important;
+  }
+}

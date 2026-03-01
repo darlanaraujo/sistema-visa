@@ -172,11 +172,14 @@
   // ✅ FIX: NÃO inclui #sidebarLogo aqui. O sidebarLogo é controlado somente pelo estado (colapsado/expandido)
   function applyLogoToTargets(src) {
     if (!src) return;
+
     const targets = [
       ...document.querySelectorAll(".fin-kpi-logo img"),
       ...document.querySelectorAll('img[data-brand="logo"]'),
       ...document.querySelectorAll("#brandLogo"),
+      ...document.querySelectorAll("#topbarLogo") // ✅ NOVO
     ];
+
     targets.forEach((img) => {
       try { img.setAttribute("src", src); } catch (_) {}
     });
@@ -238,6 +241,13 @@
       // dashboard.js usa isso para trocar logo<->favicon quando colapsa
       try { sidebarImg.dataset.logo = finalLogo || ""; } catch (_) {}
       try { sidebarImg.dataset.favicon = finalFav || ""; } catch (_) {}
+
+      // ✅ Atualiza topbar logo dataset também
+      const topbarImg = document.getElementById("topbarLogo");
+      if (topbarImg) {
+        try { topbarImg.dataset.logo = finalLogo || ""; } catch (_) {}
+        try { topbarImg.dataset.favicon = finalFav || ""; } catch (_) {}
+      }
 
       // src do sidebar depende do estado
       try {

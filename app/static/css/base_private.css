@@ -1,0 +1,861 @@
+/* app/static/css/base_private.css */
+/* =========================================================
+   LAYOUT PRIVADO (GLOBAL)
+   - Sidebar + Topbar + Footer + Tooltip + Overlay + Toggle
+   - Tokens vêm de theme.css/global.css
+   - Este arquivo evita que dashboard.css vire “monstro”
+   ========================================================= */
+
+:root{
+  /* mesa/backdrop */
+  --sv-bg: var(--c-backdrop-grad, var(--c-backdrop, var(--c-bg)));
+
+  /* texto */
+  --sv-text:  var(--c-text);
+  --sv-muted: var(--c-muted);
+
+  /* bordas */
+  --sv-border:   var(--c-border);
+  --sv-border-2: var(--c-border-2);
+
+  /* accent */
+  --sv-accent: var(--c-accent);
+
+  /* sombras */
+  --sv-shadow-1: var(--shadow-soft);
+  --sv-shadow-2: var(--shadow-soft-2);
+  --sv-elev-1: var(--elev-1, var(--sv-shadow-1));
+  --sv-elev-2: var(--elev-2, var(--sv-shadow-2));
+
+  /* motion */
+  --sv-ease: var(--ease-standard, cubic-bezier(.2,.8,.2,1));
+  --sv-fast: var(--motion-fast, 140ms);
+  --sv-md:   var(--motion-md, 260ms);
+
+  /* layout */
+  --sv-sidebar-w: 260px;
+
+  /* topbar: vidro claro premium */
+  --sv-topbar-bg:
+    radial-gradient(860px 520px at 15% -25%, color-mix(in srgb, var(--sv-accent) 14%, transparent), transparent 62%),
+    radial-gradient(700px 520px at 120% 10%, rgba(255,255,255,0.34), transparent 66%),
+    linear-gradient(180deg,
+      rgba(255,255,255,0.42),
+      rgba(255,255,255,0.28)
+    );
+
+  --sv-topbar-border: color-mix(in srgb, var(--sv-border) 62%, transparent);
+
+  /* Definição de cor para background alertas */
+  --sv-popover-bg: rgba(255,255,255,0.92);
+
+  /* footer: vidro neutro */
+  --sv-footer-bg: rgba(255,255,255,0.18);
+}
+
+/* =========================
+   BASE
+========================= */
+
+.private-layout{
+  min-height: 100vh;
+  display: flex;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--sv-bg);
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Scroll fica no container do conteúdo (para blur do topo funcionar) */
+.private-content{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  padding-left: 0;
+
+  overflow: auto;
+  position: relative;
+}
+
+/* Main não rola — só espaçamento interno + reserva do rodapé fixo */
+.main{
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+  padding: 22px;
+}
+
+/* =========================
+   TOPBAR (VIDRO CLARO)
+========================= */
+
+.topbar{
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 0 18px;
+
+  background: var(--sv-topbar-bg);
+  border-bottom: 1px solid var(--sv-topbar-border);
+
+  backdrop-filter: blur(14px) saturate(1.12);
+  -webkit-backdrop-filter: blur(14px) saturate(1.12);
+
+  box-shadow: 0 12px 28px rgba(0,0,0,0.06);
+
+  position: sticky;
+  top: 0;
+  z-index: 80;
+}
+
+.topbar__divider{
+  width: 1px;
+  height: 22px;
+  background: color-mix(in srgb, var(--sv-border) 85%, transparent);
+  margin: 0 6px;
+}
+
+/* logo “solta” */
+.topbar__logo{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  max-width: 210px;
+}
+.topbar__logo img{
+  height: 30px;
+  width: auto;
+  max-width: 210px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.08));
+}
+
+.topbar__title{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: var(--sv-text);
+  min-width: 0;
+}
+.topbar__title i{
+  color: var(--sv-accent);
+  opacity: .95;
+}
+.topbar__title span{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile: mostrar título (a favicon libera espaço) */
+@media (max-width: 980px){
+  .topbar__title{ display: flex; }
+}
+
+/* Quando estiver em modo favicon (class no <html>) */
+.sv-topbar--favicon .topbar__logo{
+  max-width: 44px;
+}
+.sv-topbar--favicon .topbar__logo img{
+  height: 26px;
+  max-width: 44px;
+}
+
+.topbar__right{
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative; /* ancora popover */
+}
+
+.topbar__actions{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* botões do topo */
+.topbar__icon-btn{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  /* border: 1px solid color-mix(in srgb, var(--sv-border) 70%, transparent); */
+  background: color-mix(in srgb, #fff 72%, transparent);
+  color: var(--sv-accent);
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow:
+    0 10px 18px rgba(0,0,0,0.06),
+    inset 0 0 0 1px rgba(255,255,255,0.35);
+
+  transition:
+    transform var(--sv-fast) var(--sv-ease),
+    background var(--sv-fast) var(--sv-ease),
+    border-color var(--sv-fast) var(--sv-ease),
+    box-shadow var(--sv-fast) var(--sv-ease);
+}
+
+.topbar__icon-btn:hover{
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--sv-accent) 20%, var(--sv-border));
+  background:
+    radial-gradient(860px 520px at 18% -12%, color-mix(in srgb, var(--sv-accent) 10%, transparent), transparent 60%),
+    color-mix(in srgb, #fff 78%, transparent);
+  box-shadow: 0 16px 26px rgba(0,0,0,0.10);
+}
+
+.topbar__icon-btn:active{
+  transform: translateY(0px) scale(0.98);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.08);
+}
+
+.topbar__icon-btn.is-ghost{
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--sv-text);
+}
+.topbar__icon-btn.is-ghost:hover{
+  background: color-mix(in srgb, var(--sv-border) 18%, transparent);
+  border-color: color-mix(in srgb, var(--sv-border) 60%, transparent);
+  box-shadow: none;
+}
+
+.topbar__icon-btn.is-alert{ position: relative; }
+
+.topbar__badge{
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  background: color-mix(in srgb, var(--sv-accent) 75%, #ff3b3b);
+  border: 1px solid rgba(255,255,255,0.20);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.20);
+}
+
+/* popover */
+.topbar-popover{
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 380px;
+  max-width: min(420px, calc(100vw - 24px));
+  z-index: 80;
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.98);
+  transition: opacity 160ms var(--sv-ease), transform 180ms var(--sv-ease);
+}
+.topbar-popover.is-open{
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.topbar-popover__card{
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--sv-border) 70%, transparent);
+  background: var(--sv-popover-bg);
+  backdrop-filter: blur(5px) saturate(1.12);
+  -webkit-backdrop-filter: blur(5px) saturate(1.12);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.14);
+  overflow: hidden;
+}
+
+.topbar-popover__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--sv-border) 70%, transparent);
+  background: color-mix(in srgb, var(--sv-border) 12%, transparent);
+}
+
+.topbar-popover__title{
+  font-weight: 950;
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--sv-text);
+}
+
+.topbar-popover__body{
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.topbar-popover__empty{
+  color: var(--sv-muted);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 14px 10px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--sv-border) 70%, transparent);
+  background: color-mix(in srgb, var(--sv-border) 10%, transparent);
+}
+
+/* hambúrguer */
+.topbar__menu{
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  border: 0;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 120ms ease, transform 120ms ease;
+}
+.topbar__menu:hover{ background: color-mix(in srgb, var(--sv-border) 18%, transparent); }
+.topbar__menu:active{ transform: scale(0.98); }
+
+.topbar__menu::before,
+.topbar__menu::after{
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 2px;
+  background: var(--sv-text);
+  border-radius: 999px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+.topbar__menu::before{ box-shadow: 0 -6px 0 var(--sv-text), 0 6px 0 var(--sv-text); }
+.topbar__menu::after{ opacity: 0; }
+
+.topbar__menu:hover::before{
+  box-shadow: none;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.topbar__menu:hover::after{
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+@media (min-width: 981px){
+  .topbar__menu{ display: none !important; }
+}
+
+/* =========================
+   FOOTER (VIDRO FIXO)
+========================= */
+
+.private-footer{
+  flex-shrink: 0;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  background: var(--sv-footer-bg);
+  backdrop-filter: blur(12px) saturate(1.06);
+  -webkit-backdrop-filter: blur(12px) saturate(1.06);
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 75;
+}
+
+/* Como existe sidebar, alinhar footer com a área do conteúdo no desktop */
+@media (min-width: 981px){
+  .private-footer{
+    left: var(--sv-sidebar-w);
+  }
+}
+
+.private-footer__inner{
+  padding: 12px 22px;
+  color: var(--sv-muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.private-footer__inner a{
+  color: var(--sv-accent);
+  text-decoration: none;
+  font-weight: 900;
+}
+.private-footer__inner a:hover{ text-decoration: underline; }
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar{
+  width: 260px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 14px;
+  z-index: 50;
+  position: relative;
+
+  background:
+    radial-gradient(860px 520px at 18% -12%, color-mix(in srgb, var(--sv-accent) 18%, transparent), transparent 60%),
+    radial-gradient(720px 520px at 120% 12%, color-mix(in srgb, var(--sv-accent) 22%, transparent), transparent 62%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.80), rgba(0, 0, 0, 0.86));
+  backdrop-filter: blur(5px) saturate(115%);
+  -webkit-backdrop-filter: blur(5px) saturate(115%);
+
+  box-shadow: var(--sv-elev-1);
+  border-right: 1px solid rgba(255,255,255,0.06);
+
+  transition:
+    width var(--sv-md) var(--sv-ease),
+    padding var(--sv-md) var(--sv-ease);
+}
+
+.sidebar::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(900px 560px at 20% -12%, color-mix(in srgb, var(--sv-accent) 16%, transparent), transparent 60%),
+    radial-gradient(720px 520px at 110% 12%, rgba(255,255,255,0.06), transparent 62%);
+  opacity:.55;
+}
+
+.sidebar__brand{
+  padding: 8px 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar__logo-wrap{
+  width: 100%;
+  background: var(--c-bg);
+  padding: 10px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.22),
+    inset 0 0 0 1px rgba(0,0,0,0.06);
+}
+
+.sidebar__logo{
+  width: 100%;
+  height: 54px;
+  object-fit: contain;
+}
+
+.sidebar__nav{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 4px;
+}
+
+.sidebar__item{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  color: var(--sidebar-text, rgba(255,255,255,0.92));
+  text-decoration: none;
+
+  border: 1px solid transparent;
+  transition:
+    background var(--sv-fast) var(--sv-ease),
+    border-color var(--sv-fast) var(--sv-ease),
+    transform var(--sv-fast) var(--sv-ease);
+}
+
+.sidebar__item i{
+  width: 20px;
+  text-align: center;
+  opacity: .98;
+}
+
+.sidebar__item:hover{
+  background: #50505040;
+  border-color: rgba(255,255,255,0.08);
+  transform: translateY(-1px);
+}
+.sidebar__item:active{ transform: translateY(0px); }
+
+.sidebar__item.active{
+  background: rgba(255,255,255,0.08);
+  outline: 1px solid rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.10);
+  box-shadow:
+    0 10px 18px rgba(0,0,0,0.20),
+    inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.sidebar__item.active::before{
+  content:"";
+  width: 6px;
+  height: 18px;
+  border-radius: 999px;
+  margin-right: 2px;
+  background: color-mix(in srgb, var(--sv-accent) 60%, transparent);
+}
+
+/* footer sidebar */
+.sidebar__footer{
+  margin-top: auto;
+  padding: 6px 4px 4px;
+}
+
+.sidebar__logout{
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px 12px;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  transition:
+    background var(--sv-fast) var(--sv-ease),
+    border-color var(--sv-fast) var(--sv-ease),
+    transform var(--sv-fast) var(--sv-ease);
+}
+
+.sidebar__logout:hover{
+  background: #50505040;
+  border-color: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+}
+.sidebar__logout:active{ transform: translateY(0px); }
+
+/* collapse */
+.sidebar.is-collapsed{
+  width: 96px;
+  padding: 18px 10px;
+}
+
+.sidebar.is-collapsed .sidebar__item span,
+.sidebar.is-collapsed .sidebar__logout span{ display: none; }
+
+.sidebar.is-collapsed .sidebar__brand{ justify-content: center; }
+.sidebar.is-collapsed .sidebar__logo-wrap{ width: auto; }
+
+.sidebar.is-collapsed .sidebar__logo{
+  width: 38px;
+  height: 38px;
+}
+
+.sidebar.is-collapsed .sidebar__nav{ padding: 6px 2px; }
+.sidebar.is-collapsed .sidebar__item{
+  justify-content: center;
+  padding: 12px 10px;
+  border-radius: 14px;
+}
+.sidebar.is-collapsed .sidebar__item i{ width: 24px; }
+.sidebar.is-collapsed .sidebar__logout{ justify-content: center; }
+
+/* overlay + mobile drawer */
+.sidebar-overlay{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  background: color-mix(in srgb, #000 45%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  z-index: 40;
+}
+
+@media (max-width: 980px){
+  .sidebar{
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-110%);
+    transition: transform 220ms ease;
+    width: 260px;
+    z-index: 60;
+  }
+
+  .private-layout.is-sidebar-open .sidebar{ transform: translateX(0); }
+
+  .private-layout.is-sidebar-open .sidebar-overlay{
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .private-layout.is-sidebar-open .topbar{
+    margin-left: 260px;
+    width: calc(100% - 260px);
+  }
+
+  .sidebar__item,
+  .sidebar__logout{ justify-content: flex-start; }
+
+  .sidebar__item:hover,
+  .sidebar__logout:hover{ transform: none; }
+}
+
+/* edge toggle */
+.sidebar-edge-toggle{ display: none; }
+
+@media (min-width: 981px){
+  .sidebar-edge-toggle{
+    display: inline-flex;
+    position: fixed;
+    top: 22px;
+    left: calc(260px - 14px);
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.10);
+
+    background:
+      radial-gradient(860px 520px at 18% -12%, rgba(120,150,255,0.10), transparent 60%),
+      radial-gradient(720px 520px at 120% 12%, rgba(80,110,255,0.07), transparent 62%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.53), rgba(0, 0, 0, 0.11));
+    backdrop-filter: blur(7px) saturate(115%);
+    -webkit-backdrop-filter: blur(7px) saturate(115%);
+
+    box-shadow: var(--sv-shadow-1);
+
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 120; /* acima da topbar sticky */
+
+    transition:
+      background var(--sv-fast) var(--sv-ease),
+      transform 120ms ease,
+      box-shadow var(--sv-fast) var(--sv-ease),
+      left var(--sv-md) var(--sv-ease);
+  }
+
+  .sidebar-edge-toggle:hover{
+    background:
+      radial-gradient(860px 520px at 18% -12%, rgba(120,150,255,0.14), transparent 60%),
+      radial-gradient(720px 520px at 120% 12%, rgba(80,110,255,0.10), transparent 62%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.08));
+    box-shadow: var(--sv-shadow-2);
+  }
+
+  .sidebar-edge-toggle i{
+    color: #fff;
+    transition: transform 160ms ease;
+  }
+
+  .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{ transform: translateX(-3px); }
+  .sidebar.is-collapsed ~ .sidebar-edge-toggle:hover i{ transform: translateX(3px); }
+
+  .sidebar.is-collapsed ~ .sidebar-edge-toggle{ left: calc(96px - 14px); }
+
+  .sidebar-edge-toggle.is-nudge-left i{ transform: translateX(-3px); }
+  .sidebar-edge-toggle.is-nudge-right i{ transform: translateX(3px); }
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .sidebar,
+  .sidebar__item,
+  .sidebar__logout,
+  .topbar__icon-btn,
+  .topbar-popover{
+    transition: none !important;
+  }
+}
+
+/* RESOLVE A POSIÇÃO DO FOOTER E COLOCA UM ESPAÇO
+  NO BOTTOM DA ÚLTIMA SEÇÃO DE CADA MODULO PARA
+  QUE O CONTEUDO FICA ACIMA DO FOOTER */
+
+.private-layout{
+  display: flex;
+  min-height: 100vh;
+}
+
+.private-content{
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.main{
+  flex: 1;
+  overflow: auto;
+}
+
+.private-footer{
+  position: relative; /* não fixed */
+  left: 0;
+}
+
+/* =========================================================
+   ETAPA 4.2 — DARK MODE (TOPBAR/FOOTER/BUTTONS/POPOVER)
+   - Não altera o visual do light (mantém como está)
+   - Ajusta dark para ficar coerente com o sistema
+========================================================= */
+
+/* ---------- Footer: fix anti-scroll horizontal ----------
+   Observação: você corrigiu com left:0 (correto).
+   Mantemos left:0 sempre e alinhamos conteúdo com padding no desktop
+-------------------------------------------------------- */
+.private-footer{
+  left: 0 !important;           /* evita deslocamento e scroll horizontal */
+  right: 0 !important;
+  width: 100% !important;
+}
+
+/* No desktop, como existe sidebar fixa, alinhar o conteúdo do footer */
+@media (min-width: 981px){
+  .private-footer__inner{
+    padding-left: calc(22px + var(--sv-sidebar-w));
+    padding-right: 22px;
+    /* text-align: left; */
+  }
+}
+
+/* ---------- Botões do topo: remover borda “preta” ----------
+   (não repetir em outros componentes)
+----------------------------------------------------------- */
+.topbar__icon-btn{
+  border-color: transparent !important; /* remove linha preta */
+}
+
+/* Mantém um contorno suave só no hover (sem borda preta) */
+.topbar__icon-btn:hover{
+  border-color: transparent !important;
+}
+
+/* ---------- Popover: limites e legibilidade ----------
+   - Já existe max-height: 320px, mas no mobile pode faltar.
+------------------------------------------------------ */
+.topbar-popover{
+  max-height: min(70vh, 520px);
+}
+
+.topbar-popover__body{
+  max-height: min(60vh, 420px);
+  overflow: auto;
+}
+
+/* =========================================================
+   DARK THEME OVERRIDES
+========================================================= */
+html[data-theme="dark"]{
+  /* TOPBAR: vidro escuro premium */
+  --sv-topbar-bg:
+    radial-gradient(860px 520px at 18% -20%, color-mix(in srgb, var(--sv-accent) 14%, transparent), transparent 62%),
+    radial-gradient(700px 520px at 120% 10%, rgba(255,255,255,0.06), transparent 66%),
+    linear-gradient(180deg,
+      rgba(18,18,20,0.56),
+      rgba(12,12,14,0.38)
+    );
+
+  --sv-topbar-border: rgba(255,255,255,0.10);
+
+  --sv-popover-bg: rgba(14,14,16,0.86);
+
+  /* FOOTER: vidro escuro mais neutro (sem “degradê chamativo”) */
+  --sv-footer-bg: rgba(14,14,16,0.42);
+}
+
+/* Topbar/Divider/Título em dark */
+html[data-theme="dark"] .topbar{
+  background: var(--sv-topbar-bg);
+  border-bottom: 1px solid var(--sv-topbar-border);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.35);
+}
+
+html[data-theme="dark"] .topbar__divider{
+  background: rgba(255,255,255,0.12);
+}
+
+html[data-theme="dark"] .topbar__title{
+  color: rgba(255,255,255,0.92);
+}
+
+html[data-theme="dark"] .topbar__title i{
+  color: var(--sv-accent);
+  opacity: .98;
+}
+
+/* Botões do topo em dark (sem borda preta, com feedback bom) */
+html[data-theme="dark"] .topbar__icon-btn{
+  background: rgba(255,255,255,0.06);
+  color: var(--sv-accent);
+  box-shadow:
+    0 14px 26px rgba(0,0,0,0.35),
+    inset 0 0 0 1px rgba(255,255,255,0.10);
+}
+
+html[data-theme="dark"] .topbar__icon-btn:hover{
+  background:
+    radial-gradient(860px 520px at 18% -12%, color-mix(in srgb, var(--sv-accent) 12%, transparent), transparent 60%),
+    rgba(255,255,255,0.09);
+  box-shadow: 0 18px 34px rgba(0,0,0,0.44);
+}
+
+html[data-theme="dark"] .topbar__icon-btn:active{
+  box-shadow: 0 12px 22px rgba(0,0,0,0.38);
+}
+
+html[data-theme="dark"] .topbar__icon-btn.is-ghost{
+  color: rgba(255,255,255,0.86);
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .topbar__icon-btn.is-ghost:hover{
+  background: rgba(255,255,255,0.08);
+  box-shadow: none;
+}
+
+/* Footer em dark */
+html[data-theme="dark"] .private-footer{
+  background: var(--sv-footer-bg);
+  border-top: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 -12px 28px rgba(0,0,0,0.24);
+}
+
+html[data-theme="dark"] .private-footer__inner{
+  color: rgba(255,255,255,0.66);
+}
+
+html[data-theme="dark"] .private-footer__inner a{
+  color: color-mix(in srgb, var(--sv-accent) 85%, #fff);
+}

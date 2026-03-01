@@ -1,525 +1,54 @@
 /* app/static/css/dashboard.css */
-
 /* =========================================================
-   DASHBOARD / LAYOUT PRIVADO
-   - Consumir tokens do theme.css
-   - Padronizar camadas (panel/head/inner/foot), zebra e hover
+   DASHBOARD / CONTEÚDO (NÃO É LAYOUT GLOBAL)
+   - Layout global agora está em: layout_private.css
    ========================================================= */
 
 :root{
-  /* ✅ Mesa (backdrop): tenta usar gradiente do tema; fallback para sólido */
-  --dash-bg: var(--c-backdrop-grad, var(--c-backdrop, var(--c-bg)));
-
-  --dash-surface: var(--c-surface);
-  --dash-surface-2: var(--c-surface-2);
-
-  --dash-panel-bg:       var(--panel-bg, var(--dash-surface));
-  --dash-panel-head-bg:  var(--panel-head-bg, color-mix(in srgb, var(--n-150) 70%, var(--n-0)));
-  --dash-panel-foot-bg:  var(--panel-foot-bg, color-mix(in srgb, var(--n-150) 62%, var(--n-0)));
-  --dash-panel-inner-bg: var(--panel-inner-bg, color-mix(in srgb, var(--n-150) 40%, var(--n-0)));
-
-  --dash-table-head-bg: var(--table-head-bg, color-mix(in srgb, var(--n-150) 78%, var(--n-0)));
-  --dash-row-a:         var(--table-row-a, color-mix(in srgb, var(--n-150) 28%, var(--n-0)));
-  --dash-row-b:         var(--table-row-b, color-mix(in srgb, var(--n-150) 14%, var(--n-0)));
-
+  /* helpers de conteúdo */
   --dash-text:  var(--c-text);
   --dash-muted: var(--c-muted);
-
-  --dash-border:   var(--c-border);
-  --dash-border-2: var(--c-border-2);
-
+  --dash-border: var(--c-border);
   --dash-accent: var(--c-accent);
-
-  --dash-hover-soft: var(--hover-soft, color-mix(in srgb, var(--dash-border) 55%, var(--n-0)));
-
-  --dash-sidebar-bg:            var(--sidebar-bg);
-  --dash-sidebar-text:          var(--sidebar-text);
-  --dash-sidebar-hover:         var(--sidebar-item-hover);
-  --dash-sidebar-active-bg:     var(--sidebar-active-bg);
-  --dash-sidebar-active-outline:var(--sidebar-active-outline);
 
   --dash-shadow-soft: var(--shadow-soft);
   --dash-shadow-soft-2: var(--shadow-soft-2);
-
-  /* ✅ Profundidade premium (se não existir no tema, cai no shadow atual) */
   --dash-elev-1: var(--elev-1, var(--dash-shadow-soft));
   --dash-elev-2: var(--elev-2, var(--dash-shadow-soft-2));
-  --dash-stroke-soft: var(--stroke-soft, var(--dash-border));
 
-  /* motion (fallback se theme.css não tiver) */
   --dash-ease: var(--ease-standard, cubic-bezier(.2,.8,.2,1));
-  --dash-fast: var(--motion-fast, 140ms);
-  --dash-md:   var(--motion-md, 260ms); /* ✅ um pouco mais suave */
-}
 
-/* BASE */
-
-.private-layout{
-  /* ✅ largura lógica do sidebar (JS atualiza em tempo real, evita “descompasso”) */
-  --sv-sidebar-w: 260px;
-
-  min-height: 100vh;
-  display: flex;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--dash-bg);
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-.private-content{
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  min-height: 0;
-  width: 100%;
-  max-width: 100vw;
-  min-width: 0;
-  padding-left: 0;
-}
-
-.main{
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 22px;
-}
-
-/* ✅ quando submenu estiver colapsado, “limpa” a mesa (não fica por cima) */
-@media (min-width: 981px){
-  .private-layout.is-subsidebar-open.is-subsidebar-collapsed .main{
-    padding: 22px 100px; /* conforme sua sugestão */
-  }
-}
-
-/* TOPBAR */
-
-.topbar{
-  height: 58px;
-  background: var(--topbar-bg);
-  border-bottom: 1px solid var(--topbar-border);
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 0 18px;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.topbar__divider{
-  width: 1px;
-  height: 22px;
-  background: var(--dash-border);
-  margin: 0 6px;
-}
-
-.topbar__title{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  color: var(--dash-text);
-  min-width: 0;
-}
-
-.topbar__title i{ color: var(--dash-accent); }
-
-.topbar__title span{
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Rodapé */
-.private-footer{
-  flex-shrink: 0;
-  border-top: 1px solid var(--dash-border);
-  background: var(--dash-surface);
-}
-
-.private-footer__inner{
-  padding: 12px 22px;
-  color: var(--dash-muted);
-  font-size: 12.5px;
-  text-align: center;
-}
-
-.private-footer__inner a{
-  color: var(--dash-accent);
-  text-decoration: none;
-  font-weight: 800;
-}
-
-.private-footer__inner a:hover{ text-decoration: underline; }
-
-/* SIDEBAR — premium */
-
-.sidebar{
-  width: 260px;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  padding: 18px 14px;
-  z-index: 50;
-  position: relative;
-
-  /* ✅ NOVA cor do sidebar (com “tinta” do tema via --dash-accent) */
-  background:
-    radial-gradient(860px 520px at 18% -12%, color-mix(in srgb, var(--dash-accent) 18%, transparent), transparent 60%),
-    radial-gradient(720px 520px at 120% 12%, color-mix(in srgb, var(--dash-accent) 22%, transparent), transparent 62%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.80), rgba(0, 0, 0, 0.86));
-  backdrop-filter: blur(5px) saturate(115%);
-  -webkit-backdrop-filter: blur(5px) saturate(115%);
-
-  /* premium */
-  box-shadow: var(--dash-elev-1);
-  border-right: 1px solid rgba(255,255,255,0.06);
-
-  transition:
-    width var(--dash-md) var(--dash-ease),
-    padding var(--dash-md) var(--dash-ease);
-}
-
-/* overlay visual (não interfere em clique) — agora “puxa” do tema */
-.sidebar::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:
-    radial-gradient(900px 560px at 20% -12%, color-mix(in srgb, var(--dash-accent) 16%, transparent), transparent 60%),
-    radial-gradient(720px 520px at 110% 12%, rgba(255,255,255,0.06), transparent 62%);
-  opacity:.55;
-}
-
-.sidebar__brand{
-  padding: 8px 10px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar__logo-wrap{
-  width: 100%;
-  background: var(--c-bg);
-  padding: 10px;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  box-shadow:
-    0 10px 22px rgba(0,0,0,0.22),
-    inset 0 0 0 1px rgba(0,0,0,0.06);
-}
-
-.sidebar__logo{
-  width: 100%;
-  height: 54px;
-  object-fit: contain;
-}
-
-.sidebar__nav{
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 6px 4px;
-}
-
-.sidebar__item{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 12px;
-  border-radius: 12px;
-  color: var(--dash-sidebar-text);
-  text-decoration: none;
-
-  border: 1px solid transparent;
-  transition:
-    background var(--dash-fast) var(--dash-ease),
-    border-color var(--dash-fast) var(--dash-ease),
-    transform var(--dash-fast) var(--dash-ease);
-}
-
-.sidebar__item i{
-  width: 20px;
-  text-align: center;
-  opacity: .98;
-}
-
-/* ✅ hover neutro (não puxa vermelho do tema) */
-.sidebar__item:hover{
-  background: #50505040; /* sua referência */
-  border-color: rgba(255,255,255,0.08);
-  transform: translateY(-1px);
-}
-
-.sidebar__item:active{ transform: translateY(0px); }
-
-.sidebar__item.active{
-  background: rgba(255,255,255,0.08);
-  outline: 1px solid rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.10);
-
-  box-shadow:
-    0 10px 18px rgba(0,0,0,0.20),
-    inset 0 0 0 1px rgba(255,255,255,0.06);
-}
-
-/* “marca” discreta no active */
-.sidebar__item.active::before{
-  content:"";
-  width: 6px;
-  height: 18px;
-  border-radius: 999px;
-  margin-right: 2px;
-  background: color-mix(in srgb, var(--dash-accent) 60%, transparent);
-}
-
-/* footer */
-.sidebar__footer{
-  margin-top: auto;
-  padding: 6px 4px 4px;
-}
-
-.sidebar__logout{
-  width: 100%;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 12px 12px;
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  transition:
-    background var(--dash-fast) var(--dash-ease),
-    border-color var(--dash-fast) var(--dash-ease),
-    transform var(--dash-fast) var(--dash-ease);
-}
-
-.sidebar__logout:hover{
-  background: #50505040;
-  border-color: rgba(255,255,255,0.12);
-  transform: translateY(-1px);
-}
-
-.sidebar__logout:active{ transform: translateY(0px); }
-
-/* COLLAPSE */
-
-.sidebar.is-collapsed{
-  width: 96px;
-  padding: 18px 10px;
-}
-
-.sidebar.is-collapsed .sidebar__item span,
-.sidebar.is-collapsed .sidebar__logout span{ display: none; }
-
-.sidebar.is-collapsed .sidebar__brand{ justify-content: center; }
-.sidebar.is-collapsed .sidebar__logo-wrap{ width: auto; }
-
-.sidebar.is-collapsed .sidebar__logo{
-  width: 38px;
-  height: 38px;
-}
-
-.sidebar.is-collapsed .sidebar__nav{ padding: 6px 2px; }
-.sidebar.is-collapsed .sidebar__item{
-  justify-content: center;
-  padding: 12px 10px;
-  border-radius: 14px;
-}
-.sidebar.is-collapsed .sidebar__item i{ width: 24px; }
-.sidebar.is-collapsed .sidebar__logout{ justify-content: center; }
-
-/* OVERLAY + MOBILE DRAWER */
-
-.sidebar-overlay{
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  max-width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden;
-  background: color-mix(in srgb, #000 45%, transparent);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 180ms ease;
-  z-index: 40;
-}
-
-@media (max-width: 980px){
-  .sidebar{
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    transform: translateX(-110%);
-    transition: transform 220ms ease;
-    width: 260px;
-    z-index: 60;
-  }
-
-  .private-layout.is-sidebar-open .sidebar{ transform: translateX(0); }
-
-  .private-layout.is-sidebar-open .sidebar-overlay{
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .private-layout.is-sidebar-open .topbar{
-    margin-left: 260px;
-    width: calc(100% - 260px);
-  }
-
-  .sidebar__item,
-  .sidebar__logout{ justify-content: flex-start; }
-
-  .sidebar__item:hover,
-  .sidebar__logout:hover{ transform: none; }
-}
-
-/* EDGE TOGGLE */
-
-.sidebar-edge-toggle{ display: none; }
-
-@media (min-width: 981px){
-  .sidebar-edge-toggle{
-    display: inline-flex;
-    position: fixed;
-    top: 22px;
-    left: calc(260px - 14px);
-    width: 32px;
-    height: 32px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.10);
-
-    /* ✅ NOVA cor do toggle (como você pediu) */
-    background:
-      radial-gradient(860px 520px at 18% -12%, rgba(120,150,255,0.10), transparent 60%),
-      radial-gradient(720px 520px at 120% 12%, rgba(80,110,255,0.07), transparent 62%),
-      linear-gradient(180deg, rgba(0, 0, 0, 0.53), rgba(0, 0, 0, 0.11));
-    backdrop-filter: blur(7px) saturate(115%);
-    -webkit-backdrop-filter: blur(7px) saturate(115%);
-
-    box-shadow: var(--dash-shadow-soft);
-
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 60;
-
-    transition:
-      background var(--dash-fast) var(--dash-ease),
-      transform 120ms ease,
-      box-shadow var(--dash-fast) var(--dash-ease),
-      left var(--dash-md) var(--dash-ease);
-  }
-
-  /* ✅ hover mais sofisticado (não “preto chapado”) */
-  .sidebar-edge-toggle:hover{
-    background:
-      radial-gradient(860px 520px at 18% -12%, rgba(120,150,255,0.14), transparent 60%),
-      radial-gradient(720px 520px at 120% 12%, rgba(80,110,255,0.10), transparent 62%),
-      linear-gradient(180deg, rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.08));
-    box-shadow: var(--dash-shadow-soft-2);
-  }
-
-  .sidebar-edge-toggle i{
-    color: #fff;
-    transition: transform 160ms ease;
-  }
-
-  .sidebar:not(.is-collapsed) ~ .sidebar-edge-toggle:hover i{ transform: translateX(-3px); }
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle:hover i{ transform: translateX(3px); }
-
-  .sidebar.is-collapsed ~ .sidebar-edge-toggle{ left: calc(96px - 14px); }
-
-  .sidebar-edge-toggle.is-nudge-left i{ transform: translateX(-3px); }
-  .sidebar-edge-toggle.is-nudge-right i{ transform: translateX(3px); }
-}
-
-/* HAMBÚRGUER / X */
-
-.topbar__menu{
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: transparent;
-  cursor: pointer;
-  border: 0;
-  position: relative;
-  flex-shrink: 0;
-  transition: background 120ms ease, transform 120ms ease;
-}
-
-.topbar__menu:hover{ background: var(--dash-hover-soft); }
-.topbar__menu:active{ transform: scale(0.98); }
-
-.topbar__menu::before,
-.topbar__menu::after{
-  content: "";
-  position: absolute;
-  width: 18px;
-  height: 2px;
-  background: var(--dash-text);
-  border-radius: 999px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  transition: transform 140ms ease, opacity 140ms ease;
-}
-
-.topbar__menu::before{ box-shadow: 0 -6px 0 var(--dash-text), 0 6px 0 var(--dash-text); }
-.topbar__menu::after{ opacity: 0; }
-
-.topbar__menu:hover::before{
-  box-shadow: none;
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-.topbar__menu:hover::after{
-  opacity: 1;
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-@media (min-width: 981px){
-  .topbar__menu{ display: none !important; }
+    /* Fallbacks — usados apenas pelo bloco TEMPORÁRIO abaixo
+     (evita quebra por variáveis antigas removidas do layout global) */
+  --dash-panel-bg:       var(--surface-card, transparent);
+  --dash-panel-inner-bg: color-mix(in srgb, var(--dash-border) 10%, transparent);
+  --dash-table-head-bg:  color-mix(in srgb, var(--dash-border) 14%, transparent);
+  --dash-row-a:          color-mix(in srgb, var(--dash-border) 8%, transparent);
+  --dash-row-b:          color-mix(in srgb, var(--dash-border) 4%, transparent);
 }
 
 /* =========================================================
-   PADRÃO DE SEÇÃO (camadas)
+   PADRÃO DE SEÇÃO (camadas) — usado por conteúdo
    ========================================================= */
-/* (mantém seu CSS existente sem alterações abaixo) */
 
 .dash2__header h1{ margin: 0 0 6px 0; font-size: 22px; color: var(--dash-text); }
 .dash2__header p{ margin: 0 0 18px 0; color: var(--dash-muted); }
 .dash2__sections{ display: flex; flex-direction: column; gap: 14px; }
 
 .dash2__section{
-  background: var(--surface-card, var(--dash-panel-bg));
+  background: var(--surface-card, transparent);
   border: 1px solid var(--dash-border);
   border-radius: 14px;
   padding: 16px;
   position: relative;
   box-shadow: var(--dash-elev-1);
-  border-color: var(--dash-stroke-soft);
   transition: transform 160ms var(--dash-ease), box-shadow 180ms var(--dash-ease), border-color 160ms var(--dash-ease);
 }
 
 .dash2__section:hover{
   transform: translateY(-1px);
   box-shadow: var(--dash-elev-2);
-  border-color: color-mix(in srgb, var(--dash-accent) 24%, var(--dash-stroke-soft));
+  border-color: color-mix(in srgb, var(--dash-accent) 24%, var(--dash-border));
 }
 
 .dash2__section::before{
@@ -538,7 +67,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: var(--dash-panel-head-bg);
+  background: color-mix(in srgb, var(--dash-border) 14%, transparent);
   border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 10px 12px;
@@ -562,10 +91,10 @@
   padding: 8px 10px;
   border-radius: 10px;
 }
-.dash2__link:hover{ background: var(--dash-hover-soft); }
+.dash2__link:hover{ background: color-mix(in srgb, var(--dash-border) 18%, transparent); }
 
 .dash2__box{
-  background: var(--dash-panel-inner-bg);
+  background: color-mix(in srgb, var(--dash-border) 10%, transparent);
   border: 1px solid var(--dash-border);
   border-radius: 12px;
   padding: 12px;
@@ -574,11 +103,28 @@
 .dash2__box-title{
   font-size: 13px;
   font-weight: 900;
-  color: var(--n-800);
+  color: var(--dash-text);
   margin-bottom: 10px;
 }
 
 .dash2__hint{ margin-top: 10px; font-size: 12px; color: var(--dash-muted); }
+
+/* =========================================================
+   Acessibilidade / Motion
+   ========================================================= */
+@media (prefers-reduced-motion: reduce){
+  .dash2__section,
+  .dash2__link{
+    transition: none !important;
+  }
+}
+
+
+/* ===========================
+   DAQUI PARA BAIXO O CÓDIGO É TEMPORARIO.
+   QUANDO O DASHBOARD FOR REFEITO TUDO ISSO
+   PRECISA SER AJUSTADO OU APAGADO
+   =========================== */
 
 /* ===========================
    LOTES: DESKTOP “TABELA” + MOBILE KV
@@ -600,7 +146,7 @@
   overflow: hidden;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
   box-shadow: var(--dash-elev-1);
-  border-color: var(--dash-stroke-soft);
+  /* border-color: var(--dash-stroke-soft); */
 }
 
 .lote-card:hover{
@@ -672,6 +218,9 @@
   font-weight: 800;
   color: var(--dash-text);
 }
+
+
+
 
 /* ===========================
    FINANCEIRO (PLACEHOLDER DO DASH PRINCIPAL)
@@ -840,194 +389,3 @@
   margin-right: 8px;
 }
 
-/* ===========================
-   RELATÓRIOS (PLACEHOLDER)
-   =========================== */
-
-.rep-grid{
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-@media (max-width: 1200px){
-  .rep-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 980px){
-  .rep-grid{ grid-template-columns: 1fr; }
-}
-
-.rep-card{
-  background: var(--surface-card, var(--dash-panel-inner-bg));
-  border: 1px solid var(--dash-border);
-  box-shadow: var(--dash-elev-1);
-  border-color: var(--dash-stroke-soft);
-  border-radius: 12px;
-  padding: 12px;
-  cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
-.rep-card:hover{
-  transform: translateY(-1px);
-  box-shadow: var(--dash-elev-2);
-  border-color: color-mix(in srgb, var(--dash-accent) 35%, var(--dash-border));
-}
-
-.rep-card__icon{
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--dash-panel-head-bg);
-  margin-bottom: 10px;
-}
-
-.rep-card__icon i{ color: var(--dash-accent); }
-
-.rep-card__title{
-  font-weight: 900;
-  color: var(--dash-text);
-  margin-bottom: 4px;
-}
-
-.rep-card__desc{
-  font-size: 12px;
-  color: var(--dash-muted);
-}
-
-.rep-card__cta{
-  margin-top: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 900;
-  font-size: 12px;
-  color: var(--dash-accent);
-}
-
-/* ===========================
-   PÁGINAS DE MÓDULO (PLACEHOLDER)
-   =========================== */
-
-.module-page{
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.module-head h1{
-  margin: 0 0 6px 0;
-  font-size: 22px;
-  color: var(--dash-text);
-}
-
-.module-head p{
-  margin: 0;
-  color: var(--dash-muted);
-}
-
-.module-card{
-  background: var(--surface-card, var(--dash-panel-bg));
-  border: 1px solid var(--dash-border);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: var(--dash-elev-1);
-  border-color: var(--dash-stroke-soft);
-  transition: transform 160ms var(--dash-ease), box-shadow 180ms var(--dash-ease), border-color 160ms var(--dash-ease);
-}
-
-.module-card:hover{
-  transform: translateY(-1px);
-  box-shadow: var(--dash-elev-2);
-  border-color: color-mix(in srgb, var(--dash-accent) 22%, var(--dash-stroke-soft));
-}
-
-.module-card__title{
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--n-800);
-  margin-bottom: 6px;
-}
-
-.module-card__value{
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--dash-text);
-}
-
-.module-card__hint{
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--dash-muted);
-}
-
-/* acessibilidade / motion */
-@media (prefers-reduced-motion: reduce){
-  .sidebar,
-  .sidebar__item,
-  .sidebar__logout{
-    transition: none !important;
-  }
-}
-
-/* =========================================================
-   ADDON — TOOLTIP PREMIUM + SUBSIDEBAR
-   ========================================================= */
-
-/* TOOLTIP (mesma classe usada pelo JS: .sv-sidebar-tip) */
-.sv-sidebar-tip{
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-6px) scale(0.98);
-  transition: opacity 160ms var(--dash-ease), transform 180ms var(--dash-ease);
-}
-.sv-sidebar-tip.is-show{ opacity: 1; transform: translateX(0) scale(1); }
-
-.sv-sidebar-tip__card{
-  position: relative;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(16,16,18,0.88);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.94);
-  font-weight: 900;
-  font-size: 12px;
-  letter-spacing: .01em;
-  backdrop-filter: blur(10px) saturate(1.12);
-  -webkit-backdrop-filter: blur(10px) saturate(1.12);
-  box-shadow:
-    0 18px 34px rgba(0,0,0,0.30),
-    inset 0 0 0 1px rgba(255,255,255,0.06);
-}
-
-.sv-sidebar-tip__arrow{
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  left: -5px;
-  top: 50%;
-  transform: translateY(-50%) rotate(45deg);
-  background: rgba(16,16,18,0.88);
-  border-left: 1px solid rgba(255,255,255,0.12);
-  border-bottom: 1px solid rgba(255,255,255,0.12);
-  filter: drop-shadow(0 10px 22px rgba(0,0,0,0.26));
-}
-
-/* acessibilidade / motion */
-@media (prefers-reduced-motion: reduce){
-  .sidebar,
-  .sidebar__item,
-  .sidebar__logout{
-    transition: none !important;
-  }
-}

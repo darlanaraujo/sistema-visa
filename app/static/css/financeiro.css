@@ -992,7 +992,7 @@ html, body{
   transform: translateY(-1px);
   box-shadow:
     var(--fin-elev-2),
-    inset 0 0 0 1px color-mix(in srgb, var(--fin-blue) 20%, var(--fin-stroke-soft));
+    inset 0 0 0 color-mix(in srgb, var(--fin-blue) 20%, var(--fin-stroke-soft));
 }
 
 /* head já está sem borda no seu padrão — aqui só garante recorte limpo */

@@ -64,10 +64,15 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- CSS base (ordem obrigatória) -->
   <link rel="stylesheet" href="/sistema-visa/app/static/css/theme.css">
   <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/dashboard.css">
+
+  <!-- ✅ Layout privado (Sidebar/Topo/Rodapé/Tooltip) -->
+  <link rel="stylesheet" href="/sistema-visa/app/static/css/base_private.css">
 
   <!-- Toast (global no ambiente privado) -->
   <link rel="stylesheet" href="/sistema-visa/app/static/css/toast.css">
+ 
+  <!-- Componentes (global no ambiente privado) -->
+  <link rel="stylesheet" href="/sistema-visa/app/static/css/ui_components.css">
 
   <!-- CSS específico da página/módulo -->
   <?php if (!empty($extra_css) && is_array($extra_css)): ?>
@@ -76,11 +81,14 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
     <?php endforeach; ?>
   <?php endif; ?>
 
-  <!-- JS base do layout privado (sempre) -->
-  <script defer src="/sistema-visa/app/static/js/dashboard.js"></script>
+  <!-- ✅ JS base do layout privado (sempre) -->
+  <script defer src="/sistema-visa/app/static/js/base_private.js"></script>
 
   <!-- Toast (global no ambiente privado) -->
   <script defer src="/sistema-visa/app/static/js/toast.js"></script>
+  
+  <!-- Componentes (global no ambiente privado) -->
+  <script defer src="/sistema-visa/app/static/js/ui_components.js"></script>
 
   <!-- JS personalização da empresa -->
   <script defer src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
@@ -134,7 +142,6 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
           <span>Relatórios</span>
         </a>
 
-        <!-- (Parte 1 Ferramentas) -->
         <a class="sidebar__item" href="/sistema-visa/app/templates/ferramentas.php" data-nav="ferramentas">
           <i class="fa-solid fa-screwdriver-wrench"></i>
           <span>Ferramentas</span>
@@ -159,6 +166,19 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       <header class="topbar">
         <button class="topbar__menu" id="btnToggleSidebar" type="button" aria-label="Abrir menu"></button>
 
+        <!-- ✅ Logo no topo (antes do divisor, sem texto e sem container “enfeitado”) -->
+        <div class="topbar__logo" aria-label="Logo do sistema">
+          <img
+            id="topbarLogo"
+            src="/sistema-visa/app/static/img/logo.png"
+            data-logo="/sistema-visa/app/static/img/logo.png"
+            data-favicon="/sistema-visa/app/static/img/favicon.png"
+            data-logo-default="/sistema-visa/app/static/img/logo.png"
+            data-favicon-default="/sistema-visa/app/static/img/favicon.png"
+            alt="<?= h($corp['system_name'] ?? 'Sistema Visa Remoções') ?>"
+          >
+        </div>
+
         <div class="topbar__divider" aria-hidden="true"></div>
 
         <div class="topbar__title">
@@ -166,7 +186,32 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
           <span><?= h($page_title) ?></span>
         </div>
 
-        <div class="topbar__right"></div>
+        <div class="topbar__right">
+          <div class="topbar__actions" aria-label="Ações do topo">
+            <button class="topbar__icon-btn" id="btnThemeToggle" type="button" aria-label="Alternar tema" title="Alternar tema">
+              <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
+            </button>
+
+            <button class="topbar__icon-btn is-alert" id="btnAlerts" type="button" aria-label="Alertas" title="Alertas">
+              <i class="fa-solid fa-bell"></i>
+              <span class="topbar__badge" id="alertsBadge" aria-hidden="true" style="display:none;">0</span>
+            </button>
+          </div>
+
+          <div class="topbar-popover" id="alertsPopover" aria-hidden="true">
+            <div class="topbar-popover__card">
+              <div class="topbar-popover__head">
+                <div class="topbar-popover__title">Alertas</div>
+                <button class="topbar__icon-btn is-ghost" id="btnAlertsClose" type="button" aria-label="Fechar alertas" title="Fechar">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <div class="topbar-popover__body" id="alertsBody">
+                <div class="topbar-popover__empty">Sem alertas no momento.</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
 
       <!-- Área rolável (interna) -->
@@ -180,6 +225,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
         ?>
       </main>
 
+
       <!-- Rodapé -->
       <footer class="private-footer">
         <div class="private-footer__inner">
@@ -191,8 +237,6 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       </footer>
     </div>
   </div>
-
-  
 
   <!-- JS específico da página/módulo -->
   <?php if (!empty($extra_js) && is_array($extra_js)): ?>

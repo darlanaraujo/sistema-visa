@@ -291,6 +291,69 @@ button{
   }
 }
 
+/* =========================================================
+   UI BASE — Module Page (reutilizável em todos os módulos)
+   - Padrão para placeholders e telas reais
+   ========================================================= */
+
+.module-page{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.module-head h1{
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  color: var(--c-text);
+}
+.module-head p{
+  margin: 0;
+  color: var(--c-muted);
+  font-weight: 600;
+}
+
+/* Card base (transparente por padrão, seguindo seu novo conceito) */
+.module-card{
+  border: 1px solid color-mix(in srgb, var(--c-border) 70%, transparent);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+  background: transparent;
+
+  transition:
+    transform 160ms cubic-bezier(.2,.8,.2,1),
+    box-shadow 180ms cubic-bezier(.2,.8,.2,1),
+    border-color 160ms cubic-bezier(.2,.8,.2,1);
+}
+
+.module-card:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft-2);
+  border-color: color-mix(in srgb, var(--c-accent) 22%, var(--c-border));
+}
+
+.module-card__title{
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  color: color-mix(in srgb, var(--c-text) 72%, transparent);
+  margin-bottom: 6px;
+}
+
+.module-card__value{
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--c-text);
+}
+
+.module-card__hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--c-muted);
+  font-weight: 600;
+}
+
 :root[data-theme="dark"] .is-overdue,
 :root[data-theme="dark"] tr.is-overdue,
 :root[data-theme="dark"] .fin-row--overdue{

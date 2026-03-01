@@ -337,9 +337,6 @@ details[open] .fin-dash-acc__sum i{ transform: rotate(180deg); }
   color: var(--fin-blue);
 }
 
-.fin-dash-shortcut.is-pay i{ color: var(--fin-danger); }
-/* .fin-dash-shortcut.is-rec i{ color: var(--fin-success); } */
-
 .fin-dash-shortcut:hover{
   background: var(--fin-hover-bg);
 }

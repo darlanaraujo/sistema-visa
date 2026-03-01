@@ -1,6 +1,5 @@
 /* =========================================================
-   LOGIN — usa tokens do theme.css
-   Mantém estética atual, mas preparada para rebrand
+   LOGIN BACKDROP — reage ao accent e ao tema (light/dark)
    ========================================================= */
 
 .login-page{
@@ -11,57 +10,74 @@
   justify-content: center;
   padding: 28px 16px;
 
+  /* ------------------------------
+     LOGIN BACKDROP (SEMPRE DARK)
+     topo = glow do accent
+     base = deep color + preto
+  -------------------------------- */
+
+  /* “deep” do accent: puxa para um tom bem fechado */
+  --login-deep: color-mix(in srgb, var(--c-accent) 22%, #000);
+
+  /* glow mais vivo (você pediu menos transparência) */
+  --login-glow-1: color-mix(in srgb, var(--c-accent) 30%, transparent);
+  --login-glow-2: color-mix(in srgb, var(--c-accent) 18%, transparent);
+
   background:
     radial-gradient(
       1200px 600px at 20% 10%,
-      rgb(var(--grad-login-accent-rgb) / var(--grad-login-opacity-strong)) 0%,
+      var(--login-glow-1) 0%,
       transparent 60%
     ),
     radial-gradient(
       900px 500px at 80% 20%,
-      rgb(var(--grad-login-hot-rgb) / var(--grad-login-opacity-soft)) 0%,
+      var(--login-glow-2) 0%,
       transparent 55%
     ),
     linear-gradient(
       180deg,
-      var(--grad-login-deep) 0%,
-      color-mix(in srgb, var(--grad-login-deep) 35%, #000) 100%
+      /* topo escuro com “tinta” do sistema */
+      color-mix(in srgb, var(--login-deep) 92%, #000) 0%,
+      /* fundo preto vivo */
+      color-mix(in srgb, #000 70%, #000) 100%
     );
 }
 
-.login-card {
+.login-card{
   width: 100%;
   max-width: 420px;
   background: var(--c-surface);
   border-radius: 18px;
   padding: 26px 22px;
   box-shadow: var(--shadow-soft-2);
+  border: 1px solid color-mix(in srgb, var(--c-border) 75%, transparent);
 }
 
-.logo-wrap {
+/* logo */
+.logo-wrap{
   display: flex;
   justify-content: center;
   margin-bottom: 12px;
 }
 
-/* Ajuste obrigatório */
-.login-container .logo {
+/* Ajuste obrigatório (mantido) */
+.login-container .logo{
   max-width: 220px;
 }
 
-#sidebarLogo {
+#sidebarLogo{
   max-width: 220px;
   height: auto;
 }
 
-.login-separator {
+.login-separator{
   width: 100%;
   height: 1px;
   background: var(--c-border);
   margin: 14px 0 16px 0;
 }
 
-.title {
+.title{
   text-align: center;
   margin: 0 0 18px 0;
   font-size: 17px;
@@ -69,15 +85,15 @@
   color: var(--c-muted);
 }
 
-.field {
+.field{
   margin-bottom: 14px;
 }
 
-.input-icon {
+.input-icon{
   position: relative;
 }
 
-.input-icon i {
+.input-icon i{
   position: absolute;
   left: 14px;
   top: 50%;
@@ -85,25 +101,29 @@
   color: var(--c-muted);
 }
 
-.input-icon input {
+.input-icon input{
   padding-left: 44px;
 }
 
-.btn-primary {
+/* botão */
+.btn-primary{
   background: var(--btn-bg);
   color: var(--btn-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border: 1px solid var(--btn-border);
+
+  /* ✅ sem “linha preta” */
+  border: 0;
 }
 
-.btn-primary:hover {
+.btn-primary:hover{
   filter: brightness(0.95);
 }
 
-.alert-error {
+/* erro */
+.alert-error{
   background: color-mix(in srgb, var(--c-danger) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--c-danger) 35%, transparent);
   color: color-mix(in srgb, var(--c-danger) 85%, #000);
@@ -114,13 +134,24 @@
   font-size: 14px;
 }
 
-.login-footer {
+.login-footer{
   margin-top: 16px;
   font-size: 13px;
   text-align: center;
+  color: var(--c-muted);
 }
 
-.login-footer a {
-  color: color-mix(in srgb, var(--c-accent) 65%, #93c5fd);
-  font-weight: 700;
+.login-footer a{
+  color: var(--c-accent);
+  font-weight: 800;
+  text-decoration: none;
+}
+.login-footer a:hover{
+  text-decoration: underline;
+}
+
+/* Dark: leve ganho de contraste */
+html[data-theme="dark"] .login-card{
+  background: color-mix(in srgb, var(--c-surface) 85%, #000);
+  border-color: color-mix(in srgb, var(--c-border) 55%, transparent);
 }
