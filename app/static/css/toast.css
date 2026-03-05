@@ -15,11 +15,11 @@
   padding: 12px 14px;
   border-radius: 14px;
 
-  border: 1px solid var(--c-border, #e7ebf3);
+  border: 1px solid var(--toast-border, var(--c-border, #e7ebf3));
 
-  /* base neutra (escura elegante) */
-  background: color-mix(in srgb, var(--c-text, #0b1220) 92%, #000);
-  color: #fff;
+  /* base neutra */
+  background: var(--toast-bg, color-mix(in srgb, var(--c-text, #0b1220) 92%, #000));
+  color: var(--toast-text, #fff);
 
   font-weight: 900;
   font-size: 12px;
@@ -29,8 +29,9 @@
 
   /* animação (sem mexer em display) */
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 160ms ease, transform 160ms ease;
+  /* Padrão global: toast na margem direita entra/sai pela direita */
+  transform: translateX(26px);
+  transition: opacity 260ms cubic-bezier(.2,.8,.2,1), transform 260ms cubic-bezier(.2,.8,.2,1);
 
   /* não bloquear cliques */
   pointer-events: none;
@@ -41,23 +42,39 @@
 
 .sys-toast.is-on{
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
+}
+
+.sys-toast.is-closing{
+  opacity: 0;
+  transform: translateX(26px);
 }
 
 /* estados */
-.sys-toast.is-success{
-  background: color-mix(in srgb, var(--c-success, #2f6b4f) 88%, #000);
-  border-color: color-mix(in srgb, var(--c-success, #2f6b4f) 22%, var(--c-border, #e7ebf3));
+.sys-toast.is-neutral{
+  background: var(--toast-bg, color-mix(in srgb, var(--c-text, #0b1220) 92%, #000));
+  border-color: var(--toast-border, var(--c-border, #e7ebf3));
 }
 
-.sys-toast.is-danger{
-  background: color-mix(in srgb, var(--c-danger, #a42d2d) 88%, #000);
-  border-color: color-mix(in srgb, var(--c-danger, #a42d2d) 22%, var(--c-border, #e7ebf3));
+.sys-toast.is-info{
+  background: var(--toast-info-bg, color-mix(in srgb, var(--c-accent, #2563eb) 88%, #000));
+  border-color: var(--toast-info-border, color-mix(in srgb, var(--c-accent, #2563eb) 30%, var(--c-border, #e7ebf3)));
+}
+
+.sys-toast.is-success{
+  background: var(--toast-success-bg, color-mix(in srgb, var(--c-success, #2f6b4f) 88%, #000));
+  border-color: var(--toast-success-border, color-mix(in srgb, var(--c-success, #2f6b4f) 30%, var(--c-border, #e7ebf3)));
+}
+
+.sys-toast.is-danger,
+.sys-toast.is-error{
+  background: var(--toast-error-bg, color-mix(in srgb, var(--c-danger, #a42d2d) 88%, #000));
+  border-color: var(--toast-error-border, color-mix(in srgb, var(--c-danger, #a42d2d) 30%, var(--c-border, #e7ebf3)));
 }
 
 .sys-toast.is-warning{
-  background: color-mix(in srgb, var(--c-warning, #b07a1a) 90%, #000);
-  border-color: color-mix(in srgb, var(--c-warning, #b07a1a) 22%, var(--c-border, #e7ebf3));
+  background: var(--toast-warning-bg, color-mix(in srgb, var(--c-warning, #b07a1a) 90%, #000));
+  border-color: var(--toast-warning-border, color-mix(in srgb, var(--c-warning, #b07a1a) 30%, var(--c-border, #e7ebf3)));
 }
 
 /* acessibilidade */

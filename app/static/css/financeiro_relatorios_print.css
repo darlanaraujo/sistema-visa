@@ -76,6 +76,10 @@
   display:flex;
   gap:8px;
   align-items:center;
+  background: color-mix(in srgb, var(--c-text) 4%, var(--c-surface));
+  border: 1px solid var(--c-border-2);
+  border-radius: 12px;
+  margin: 0 16px 8px 16px;
 }
 
 /* KPIs */
@@ -105,6 +109,11 @@
   margin-top:4px;
   color: var(--c-text);
 }
+.fr-kpi.is-in .fr-kpi__v{ color: #166534; }
+.fr-kpi.is-out .fr-kpi__v{ color: #b91c1c; }
+.fr-kpi.is-balance-pos .fr-kpi__v{ color: #166534; }
+.fr-kpi.is-balance-neg .fr-kpi__v{ color: #b91c1c; }
+.fr-kpi.is-balance-neutral .fr-kpi__v{ color: var(--c-text); }
 
 /* Gráfico */
 .fr-print__chartwrap{
@@ -149,8 +158,22 @@
   color: color-mix(in srgb, var(--c-text) 65%, transparent);
   margin: 0 0 8px 0;
 }
+.fr-print__sumtitle{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c-text) 65%, transparent);
+  margin: 0 0 8px 0;
+}
 
 .fr-print__chartsumgrid{
+  border: 1px solid var(--c-border-2);
+  border-radius: 12px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--c-surface) 96%, var(--c-bg));
+}
+.fr-print__sumgrid{
   border: 1px solid var(--c-border-2);
   border-radius: 12px;
   overflow: hidden;
@@ -186,6 +209,11 @@
   border-left:1px solid var(--c-border-2);
   white-space:nowrap;
 }
+.fr-print__sumrow.is-in .fr-print__sumval{ color: #166534; }
+.fr-print__sumrow.is-out .fr-print__sumval{ color: #b91c1c; }
+.fr-print__sumrow.is-balance-pos .fr-print__sumval{ color: #166534; }
+.fr-print__sumrow.is-balance-neg .fr-print__sumval{ color: #b91c1c; }
+.fr-print__sumrow.is-balance-neutral .fr-print__sumval{ color: var(--c-text); }
 
 .fr-print__chartsumpct{
   font-size:12px;
@@ -218,14 +246,17 @@
 .fr-print__t th, .fr-print__t td{
   padding:10px 10px;
   border-bottom:1px solid var(--c-border-2);
+  font-weight: 500;
 }
 
 .fr-print__t th{
-  text-align:left;
+  text-align:center;
   font-size:11px;
   text-transform:uppercase;
   letter-spacing:.04em;
   color: color-mix(in srgb, var(--c-text) 65%, transparent);
+  font-weight: 800;
+  background: color-mix(in srgb, var(--c-text) 4%, var(--c-surface));
 }
 
 .fr-print__t td.t-right{ text-align:right; }
@@ -251,6 +282,11 @@
   border-top:2px solid color-mix(in srgb, var(--c-text) 18%, transparent);
   background: color-mix(in srgb, var(--c-text) 3%, transparent);
 }
+.fr-print__t tr.is-total td.is-in{ color: #166534; }
+.fr-print__t tr.is-total td.is-out{ color: #b91c1c; }
+.fr-print__t tr.is-total td.is-balance-pos{ color: #166534; }
+.fr-print__t tr.is-total td.is-balance-neg{ color: #b91c1c; }
+.fr-print__t tr.is-total td.is-balance-neutral{ color: var(--c-text); }
 
 /* modal */
 #frModal .fin-modal__card{ max-height: calc(100vh - 60px); }
@@ -332,6 +368,10 @@
 
 /* PRINT: manter gráfico + dados lado a lado */
 @media print{
+  .fr-print__tablewrap{
+    box-shadow: none !important;
+  }
+
   .fr-print__chartgrid{
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr) !important;

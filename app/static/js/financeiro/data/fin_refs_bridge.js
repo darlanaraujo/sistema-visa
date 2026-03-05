@@ -1,19 +1,19 @@
 // app/static/js/financeiro/data/fin_refs_bridge.js
 // Ponte: Ferramentas (tools_ns_) -> FinStore refs (fin_ref_*)
+// Agora via SysStore (não localStorage direto)
 (function () {
+  if (!window.SysStore) return;
+
   const FS = window.FinStore;
   if (!FS || !FS.KEYS) return;
 
   const STORAGE_PREFIX = "tools_ns_";
   const VERSION = "v1";
 
-  // Mapa: namespace do Ferramentas -> key do FinStore
   const MAP = {
     "financeiro.imoveis": FS.KEYS.imoveis,
     "financeiro.categorias": FS.KEYS.categorias,
     "financeiro.formas": FS.KEYS.formas,
-
-    // se você decidir criar depois no Ferramentas:
     // "financeiro.clientes": FS.KEYS.clientes,
   };
 
@@ -21,45 +21,66 @@
     return `${STORAGE_PREFIX}${ns}_${VERSION}`;
   }
 
-  function safeParse(raw, fb) {
-    try { return JSON.parse(raw); } catch (_) { return fb; }
-  }
-
   function normalizeName(s) {
     return String(s ?? "").trim().replace(/\s+/g, " ");
+  }
+
+  function isActive(item) {
+    // compat: modelos antigos usam "ativo", novos usam "active"
+    return Boolean(item?.active ?? item?.ativo);
+  }
+
+  function emitFinChange(key) {
+    try {
+      window.dispatchEvent(new CustomEvent(FS.EVT, { detail: { key, at: Date.now() } }));
+    } catch (_) {}
   }
 
   function exportNsToFinRef(ns) {
     const finKey = MAP[ns];
     if (!finKey) return;
 
-    let list = [];
-    try {
-      const raw = localStorage.getItem(storageKey(ns));
-      const arr = raw ? safeParse(raw, []) : [];
-      if (Array.isArray(arr)) list = arr;
-    } catch (_) {}
+    // ✅ lê do SysStore (fonte única)
+    const arr = SysStore.get(storageKey(ns));
+    const list = Array.isArray(arr) ? arr : [];
 
-    // refs no FinStore devem ser simples e limpas:
-    // aqui eu recomendo guardar SOMENTE ativos, porque select não deve listar desativados
     const onlyActive = list
-      .filter((x) => Boolean(x?.active))
+      .filter((x) => isActive(x))
       .map((x) => normalizeName(x?.name))
       .filter(Boolean);
 
-    try {
-      localStorage.setItem(finKey, JSON.stringify(onlyActive));
-    } catch (_) {}
+    // Evita apagar refs existentes quando Ferramentas ainda não possui dados.
+    if (!onlyActive.length) return;
 
-    // dispara evento do store (mesma aba)
-    try {
-      window.dispatchEvent(new CustomEvent(FS.EVT, { detail: { key: finKey, at: Date.now() } }));
-    } catch (_) {}
+    // ✅ grava no SysStore também (FinStore lê via SysStore)
+    SysStore.set(finKey, onlyActive);
+
+    // evento para atualizar selects na mesma aba
+    emitFinChange(finKey);
   }
 
-  // API pública para Ferramentas chamar após salvar/excluir/toggle
+  function exportAll() {
+    Object.keys(MAP).forEach(exportNsToFinRef);
+  }
+
+  function nsFromStorageKey(rawKey) {
+    const key = String(rawKey || "").trim();
+    if (!key.startsWith(STORAGE_PREFIX) || !key.endsWith(`_${VERSION}`)) return "";
+    return key.slice(STORAGE_PREFIX.length, -(VERSION.length + 1));
+  }
+
+  window.addEventListener("sys:changed", (e) => {
+    const key = e?.detail?.key || "";
+    const ns = nsFromStorageKey(key);
+    if (!ns || !MAP[ns]) return;
+    exportNsToFinRef(ns);
+  });
+
   window.FinRefsBridge = {
     exportNsToFinRef,
-    exportAll: () => Object.keys(MAP).forEach(exportNsToFinRef),
+    exportAll,
   };
+
+  // Garante sync no carregamento da página
+  exportAll();
 })();

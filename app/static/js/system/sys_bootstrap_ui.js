@@ -1,21 +1,23 @@
 // app/static/js/system/sys_bootstrap_ui.js
 // Bootstrap visual de primeiro paint para páginas privadas.
+// Exceção controlada de governança:
+// - Este arquivo roda no <head> ANTES do restante para evitar flash.
+// - Por isso lê localStorage diretamente apenas para estado mínimo de paint.
+// - Persistência oficial continua no SysStore/BaseStore.
 
 (function () {
   var SYS_PREFS_KEY = "tools_sys_prefs_v2";
   var SIDEBAR_COLLAPSE_KEY = "sv_sidebar_collapsed";
 
-  function lsGet(key) {
+  function lsGetRaw(key) {
+    // Leitura mínima pré-paint (não escrever aqui).
     try { return localStorage.getItem(key); } catch (_) { return null; }
   }
 
-  function safeJsonParse(raw, fallback) {
-    try {
-      var v = JSON.parse(raw);
-      return v && typeof v === "object" ? v : fallback;
-    } catch (_) {
-      return fallback;
-    }
+  function lsGet(key) {
+    var raw = lsGetRaw(key);
+    if (raw == null) return null;
+    try { return JSON.parse(raw); } catch (_) { return raw; }
   }
 
   function isHex(v) {
@@ -56,7 +58,13 @@
   }
 
   function readState() {
-    var prefs = safeJsonParse(lsGet(SYS_PREFS_KEY), {}) || {};
+    var prev = window.__SYS_BOOTSTRAP__;
+    var prevPrefs = (prev && prev.prefs && typeof prev.prefs === "object") ? prev.prefs : null;
+
+    // Prioriza estado já bootstrapado; localStorage é fallback mínimo de pré-paint.
+    var prefs = prevPrefs || lsGet(SYS_PREFS_KEY);
+    if (!prefs || typeof prefs !== "object") prefs = {};
+
     var theme = prefs.theme || {};
     var brand = prefs.brand || {};
 
@@ -66,7 +74,13 @@
     var success = String(theme.success || "").trim();
 
     var accentToUse = isHex(accent) ? accent : (isHex(primary) ? primary : "");
-    var sidebarCollapsedSaved = lsGet(SIDEBAR_COLLAPSE_KEY) === "1";
+    var sidebarRaw = (prev && typeof prev.sidebarCollapsedSaved !== "undefined")
+      ? (prev.sidebarCollapsedSaved ? 1 : 0)
+      : lsGet(SIDEBAR_COLLAPSE_KEY);
+    var sidebarCollapsedSaved =
+      sidebarRaw === true ||
+      sidebarRaw === 1 ||
+      String(sidebarRaw || "") === "1";
     var isMobile = isMobileViewport();
 
     return {
@@ -117,7 +131,9 @@
   }
 
   function applySidebarLogoState(state) {
-    var img = document.getElementById("sidebarLogo");
+    // Etapa 6: pode não existir #sidebarLogo (usuário ocupa a área da marca na sidebar).
+    // Fallback para #topbarLogo garante branding aplicado sem quebrar bootstrap.
+    var img = document.getElementById("sidebarLogo") || document.getElementById("topbarLogo");
     if (!img) return false;
 
     var logo =
@@ -136,7 +152,12 @@
     try { img.dataset.logo = logo || ""; } catch (_) {}
     try { img.dataset.favicon = fav || ""; } catch (_) {}
 
-    if (state.sidebarShouldCollapse && fav) img.setAttribute("src", fav);
+    var isTopbarFallback = img.id === "topbarLogo";
+
+    if (isTopbarFallback && state.isMobile) {
+      if (fav) img.setAttribute("src", fav);
+      else if (logo) img.setAttribute("src", logo);
+    } else if (state.sidebarShouldCollapse && fav) img.setAttribute("src", fav);
     else if (logo) img.setAttribute("src", logo);
 
     return true;
@@ -163,7 +184,7 @@
     var obs = new MutationObserver(function () {
       applyAllPresent(state);
       var hasSidebar = Boolean(document.getElementById("sidebar"));
-      var hasLogo = Boolean(document.getElementById("sidebarLogo"));
+      var hasLogo = Boolean(document.getElementById("sidebarLogo")) || Boolean(document.getElementById("topbarLogo"));
       var hasEdgeIcon = Boolean(document.getElementById("edgeToggleIcon"));
       if (hasSidebar && hasLogo && hasEdgeIcon) obs.disconnect();
     });

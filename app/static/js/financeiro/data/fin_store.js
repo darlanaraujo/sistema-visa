@@ -1,81 +1,40 @@
 // app/static/js/financeiro/data/fin_store.js
-// Camada de dados do módulo Financeiro (LocalStorage).
-// Objetivo: centralizar CRUD, normalização, ordenação e eventos.
-// NÃO altera layout. Apenas fornece API para as páginas.
-// Futuro: trocar a implementação interna por chamadas ao BD mantendo a mesma API.
+// Camada de domínio do módulo Financeiro.
+// NÃO conhece localStorage.
+// Usa SysStore como infraestrutura.
+// Se o driver mudar para BD, este arquivo NÃO muda.
 
 (function () {
-  // ---------- Keys ----------
-  const KEYS = {
-    // módulos (já existentes)
-    cpRows: "fin_cp_rows_v1",
-    crRows: "fin_cr_rows_v1",
 
-    // referências (criadas na Etapa 1.2)
+  if (!window.SysStore) {
+    console.error("SysStore não carregado antes do FinStore.");
+    return;
+  }
+
+  const KEYS = {
+    cpRows: "fin_cp_rows_v1",
+    cpTemplates: "fin_cp_templates_v1",
+    crRows: "fin_cr_rows_v1",
+    reportsFav: "fin_reports_favorites_v1",
     imoveis: "fin_ref_imoveis_v1",
     categorias: "fin_ref_categorias_v1",
     formas: "fin_ref_formas_v1",
     clientes: "fin_ref_clientes_v1",
-
-    // meta
     version: "fin_store_version_v1",
   };
 
-  // ---------- Tools (Ferramentas) ----------
-  // Ferramentas grava em: tools_ns_<namespace>_v1
-  const TOOLS = {
-    prefix: "tools_ns_",
-    version: "v1",
-  };
+  const EVT = "fin:change";
 
-  function toolsKey(ns) {
-    return `${TOOLS.prefix}${ns}_${TOOLS.version}`;
-  }
+  // ========================
+  // Utils
+  // ========================
 
-  // ---------- Utils ----------
   function now() {
     return Date.now();
   }
 
   function normalizeStr(s) {
-    return String(s ?? "")
-      .trim()
-      .replace(/\s+/g, " ");
-  }
-
-  function safeParse(json, fallback) {
-    try {
-      return JSON.parse(json);
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  function lsGetRaw(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function lsSetRaw(key, val) {
-    try {
-      localStorage.setItem(key, String(val));
-    } catch (_) {}
-  }
-
-  function lsGetArr(key) {
-    const raw = lsGetRaw(key);
-    if (!raw) return [];
-    const arr = safeParse(raw, []);
-    return Array.isArray(arr) ? arr : [];
-  }
-
-  function lsSetArr(key, arr) {
-    try {
-      localStorage.setItem(key, JSON.stringify(Array.isArray(arr) ? arr : []));
-    } catch (_) {}
+    return String(s ?? "").trim().replace(/\s+/g, " ");
   }
 
   function uid(prefix = "ID") {
@@ -100,8 +59,6 @@
   }
 
   function sortByPriority(list, getText) {
-    if (!Array.isArray(list)) return list;
-
     list.sort((a, b) => {
       const ao = a?.status === "open";
       const bo = b?.status === "open";
@@ -126,7 +83,79 @@
     return list;
   }
 
-  // ---------- Normalizers ----------
+  function normalizeRefName(item) {
+    if (typeof item === "string") return normalizeStr(item);
+    if (!item || typeof item !== "object") return "";
+
+    const active = (item.active !== false) && (item.ativo !== false);
+    if (!active) return "";
+
+    return normalizeStr(item.name ?? item.nome ?? "");
+  }
+
+  function getRefNames(key) {
+    const arr = getArr(key);
+    const out = [];
+    const seen = new Set();
+
+    arr.forEach((item) => {
+      const name = normalizeRefName(item);
+      const sig = name.toLowerCase();
+      if (!name || seen.has(sig)) return;
+      seen.add(sig);
+      out.push(name);
+    });
+
+    return out.sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+  }
+
+  // ========================
+  // Infra wrappers
+  // ========================
+
+  function getArr(key) {
+    const arr = SysStore.get(key);
+    return Array.isArray(arr) ? arr : [];
+  }
+
+  function setArr(key, arr) {
+    SysStore.set(key, Array.isArray(arr) ? arr : []);
+    emitChange(key);
+  }
+
+  function getById(key, id) {
+    return getArr(key).find((x) => String(x?.id) === String(id)) || null;
+  }
+
+  function upsert(key, entity, normalizer) {
+    const arr = getArr(key);
+    const item = normalizer(entity);
+    item.updatedAt = now();
+
+    const idx = arr.findIndex((x) => String(x?.id) === String(item.id));
+    if (idx >= 0) arr[idx] = item;
+    else arr.unshift(item);
+
+    setArr(key, arr);
+    return item;
+  }
+
+  function remove(key, id) {
+    let arr = getArr(key);
+    const before = arr.length;
+    arr = arr.filter((x) => String(x?.id) !== String(id));
+    setArr(key, arr);
+    return arr.length !== before;
+  }
+
+  function emitChange(key) {
+    window.dispatchEvent(new CustomEvent(EVT, { detail: { key, at: now() } }));
+  }
+
+  // ========================
+  // Normalizers
+  // ========================
+
   function normalizeCP(r) {
     return {
       id: String(r?.id || uid("CP")),
@@ -137,7 +166,6 @@
       data: String(r?.data || ""),
       fixa: Boolean(r?.fixa),
       status: r?.status === "done" ? "done" : "open",
-
       templateId: r?.templateId || null,
       instanceMonth: r?.instanceMonth || (String(r?.data || "").slice(0, 7) || ""),
       createdAt: Number(r?.createdAt || now()),
@@ -146,6 +174,16 @@
   }
 
   function normalizeCR(r) {
+    const totalParcelasRaw = Number(r?.totalParcelas || 1);
+    const totalParcelas = Number.isFinite(totalParcelasRaw)
+      ? Math.min(12, Math.max(1, Math.trunc(totalParcelasRaw)))
+      : 1;
+
+    const parcelaAtualRaw = Number(r?.parcelaAtual || 1);
+    const parcelaAtual = Number.isFinite(parcelaAtualRaw)
+      ? Math.min(totalParcelas, Math.max(1, Math.trunc(parcelaAtualRaw)))
+      : 1;
+
     return {
       id: String(r?.id || uid("CR")),
       cliente: normalizeStr(r?.cliente),
@@ -154,138 +192,64 @@
       forma: normalizeStr(r?.forma),
       processo: normalizeStr(r?.processo),
       obs: normalizeStr(r?.obs),
+      totalParcelas,
+      parcelaAtual,
+      grupoParcelaId: normalizeStr(r?.grupoParcelaId),
       status: r?.status === "done" ? "done" : "open",
       createdAt: Number(r?.createdAt || now()),
       updatedAt: Number(r?.updatedAt || now()),
     };
   }
 
-  // ---------- CRUD base ----------
-  function list(key) {
-    return lsGetArr(key);
-  }
+  // ========================
+  // API pública
+  // ========================
 
-  function getById(key, id) {
-    const arr = lsGetArr(key);
-    return arr.find((x) => String(x?.id) === String(id)) || null;
-  }
-
-  function upsert(key, entity, normalizer) {
-    const arr = lsGetArr(key);
-    const item = normalizer ? normalizer(entity) : entity;
-
-    item.updatedAt = now();
-
-    const idx = arr.findIndex((x) => String(x?.id) === String(item.id));
-    if (idx >= 0) arr[idx] = item;
-    else arr.unshift(item);
-
-    lsSetArr(key, arr);
-    emitChange(key);
-    return item;
-  }
-
-  function remove(key, id) {
-    let arr = lsGetArr(key);
-    const before = arr.length;
-    arr = arr.filter((x) => String(x?.id) !== String(id));
-    lsSetArr(key, arr);
-    if (arr.length !== before) emitChange(key);
-    return arr.length !== before;
-  }
-
-  // ---------- Events ----------
-  const EVT = "fin:change";
-
-  function emitChange(key) {
-    try {
-      window.dispatchEvent(new CustomEvent(EVT, { detail: { key, at: now() } }));
-    } catch (_) {}
-  }
-
-  // ---------- Tools reader ----------
-  function toolsList(ns) {
-    const key = toolsKey(ns);
-    const arr = lsGetArr(key);
-
-    // normaliza formato vindo do Ferramentas
-    const out = (Array.isArray(arr) ? arr : []).map((x) => ({
-      id: String(x?.id ?? ""),
-      name: normalizeStr(x?.name ?? ""),
-      active: Boolean(x?.active ?? true),
-      createdAt: Number(x?.createdAt || 0),
-      updatedAt: Number(x?.updatedAt || 0),
-    }));
-
-    // ordena por nome (pt-BR)
-    out.sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
-    return out;
-  }
-
-  function toolsActiveNames(ns) {
-    return toolsList(ns)
-      .filter((x) => x.active && x.name)
-      .map((x) => x.name);
-  }
-
-  // ---------- Public API ----------
   const Store = {
     KEYS,
     EVT,
 
-    // util
-    now,
-    uid,
-    normalizeStr,
-    dateKey,
-    isOverdue,
-    sortByPriority,
-
-    // refs (legado do financeiro)
-    refs: {
-      listImoveis: () => list(KEYS.imoveis),
-      listCategorias: () => list(KEYS.categorias),
-      listFormas: () => list(KEYS.formas),
-      listClientes: () => list(KEYS.clientes),
-    },
-
-    // tools (Ferramentas)
-    tools: {
-      listNs: (ns) => toolsList(ns),
-      activeNames: (ns) => toolsActiveNames(ns),
-
-      // atalhos do seu fluxo atual
-      getImoveis: () => toolsActiveNames("financeiro.imoveis"),
-      getCategorias: () => toolsActiveNames("financeiro.categorias"),
-      getFormas: () => toolsActiveNames("financeiro.formas"),
-    },
-
-    // contas a pagar
     cp: {
-      list: () => list(KEYS.cpRows).map(normalizeCP),
-      rawList: () => list(KEYS.cpRows),
+      list: () => getArr(KEYS.cpRows).map(normalizeCP),
+      getRows: () => getArr(KEYS.cpRows).map(normalizeCP),
+      rowsGet: () => getArr(KEYS.cpRows).map(normalizeCP),
+      setRows: (rows) => setArr(KEYS.cpRows, (Array.isArray(rows) ? rows : []).map(normalizeCP)),
+      rowsSet: (rows) => setArr(KEYS.cpRows, (Array.isArray(rows) ? rows : []).map(normalizeCP)),
       getById: (id) => getById(KEYS.cpRows, id),
       upsert: (row) => upsert(KEYS.cpRows, row, normalizeCP),
       remove: (id) => remove(KEYS.cpRows, id),
-      normalize: normalizeCP,
       sort: (arr) => sortByPriority(arr, (x) => x?.conta),
+      getTemplates: () => getArr(KEYS.cpTemplates),
+      templatesGet: () => getArr(KEYS.cpTemplates),
+      setTemplates: (rows) => setArr(KEYS.cpTemplates, Array.isArray(rows) ? rows : []),
+      templatesSet: (rows) => setArr(KEYS.cpTemplates, Array.isArray(rows) ? rows : []),
     },
 
-    // contas a receber
     cr: {
-      list: () => list(KEYS.crRows).map(normalizeCR),
-      rawList: () => list(KEYS.crRows),
+      list: () => getArr(KEYS.crRows).map(normalizeCR),
+      getRows: () => getArr(KEYS.crRows).map(normalizeCR),
+      rowsGet: () => getArr(KEYS.crRows).map(normalizeCR),
+      setRows: (rows) => setArr(KEYS.crRows, (Array.isArray(rows) ? rows : []).map(normalizeCR)),
+      rowsSet: (rows) => setArr(KEYS.crRows, (Array.isArray(rows) ? rows : []).map(normalizeCR)),
       getById: (id) => getById(KEYS.crRows, id),
       upsert: (row) => upsert(KEYS.crRows, row, normalizeCR),
       remove: (id) => remove(KEYS.crRows, id),
-      normalize: normalizeCR,
       sort: (arr) => sortByPriority(arr, (x) => x?.cliente),
+    },
+
+    reports: {
+      getFavorites: () => getArr(KEYS.reportsFav),
+      setFavorites: (rows) => setArr(KEYS.reportsFav, Array.isArray(rows) ? rows : []),
+    },
+
+    tools: {
+      getImoveis: () => getRefNames(KEYS.imoveis),
+      getCategorias: () => getRefNames(KEYS.categorias),
+      getFormas: () => getRefNames(KEYS.formas),
+      getClientes: () => getRefNames(KEYS.clientes),
     },
   };
 
   window.FinStore = window.FinStore || Store;
 
-  if (!lsGetRaw(KEYS.version)) {
-    lsSetRaw(KEYS.version, "1");
-  }
 })();

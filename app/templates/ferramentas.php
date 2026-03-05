@@ -12,7 +12,8 @@ $extra_css = [
 ];
 
 $extra_js = [
-  '/sistema-visa/app/static/js/ferramentas.js',
+  '/sistema-visa/app/static/js/ferramentas/data/fer_store.js',
+  '/sistema-visa/app/static/js/ferramentas/ferramentas.js',
   '/sistema-visa/app/static/js/system/sys_company_panel.js'
 ];
 

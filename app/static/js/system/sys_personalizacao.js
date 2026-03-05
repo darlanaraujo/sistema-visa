@@ -1,25 +1,23 @@
 // app/static/js/system/sys_personalizacao.js
-// Fonte da verdade: localStorage["tools_sys_prefs_v2"]
+// Fonte da verdade: BaseStore.prefs (camada data -> SysStore)
+// Em páginas sem BaseStore (ex.: públicas/login), aplica apenas defaults.
 // Aplica: tema, cores (variáveis), logo e favicon (inclui <img> favicon em relatórios/prints)
 
 (function () {
-  const SYS_PREFS_KEY = "tools_sys_prefs_v2";
-
-  function lsGet(key) {
-    try { return localStorage.getItem(key); } catch (_) { return null; }
-  }
-
-  function safeJsonParse(raw, fallback) {
-    try {
-      const v = JSON.parse(raw);
-      return v && typeof v === "object" ? v : fallback;
-    } catch (_) {
-      return fallback;
-    }
-  }
-
   function getPrefs() {
-    return safeJsonParse(lsGet(SYS_PREFS_KEY), null) || null;
+    // Caminho oficial: BaseStore (UI não toca persistência diretamente).
+    try {
+      if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === "function") {
+        const prefs = window.BaseStore.prefs.get();
+        return prefs && typeof prefs === "object" ? prefs : null;
+      }
+    } catch (_) {}
+    // Público/login: usa estado já bootstrapado sem tocar persistência aqui.
+    try {
+      const prefs = window.__SYS_BOOTSTRAP__?.prefs;
+      return prefs && typeof prefs === "object" ? prefs : null;
+    } catch (_) {}
+    return null;
   }
 
   function isHexColor(v) {
@@ -109,6 +107,14 @@
     }
   }
 
+  function isMobileViewport() {
+    try {
+      return Boolean(window.matchMedia && window.matchMedia("(max-width: 980px)").matches);
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ---------------------------------------------------------
   // APPLY: theme + colors
   // ---------------------------------------------------------
@@ -176,13 +182,24 @@
     const targets = [
       ...document.querySelectorAll(".fin-kpi-logo img"),
       ...document.querySelectorAll('img[data-brand="logo"]'),
-      ...document.querySelectorAll("#brandLogo"),
-      ...document.querySelectorAll("#topbarLogo") // ✅ NOVO
+      ...document.querySelectorAll("#brandLogo")
     ];
 
     targets.forEach((img) => {
       try { img.setAttribute("src", src); } catch (_) {}
     });
+  }
+
+  // Topbar tem regra própria:
+  // - mobile: favicon
+  // - desktop: logo
+  function applyTopbarBrand(logoSrc, favSrc) {
+    const topbarImg = document.getElementById("topbarLogo");
+    if (!topbarImg) return;
+    const mobile = isMobileViewport();
+    const chosen = (mobile && favSrc) ? favSrc : (logoSrc || "");
+    if (!chosen) return;
+    try { topbarImg.setAttribute("src", chosen); } catch (_) {}
   }
 
   function applyFaviconToTargets(src) {
@@ -249,18 +266,26 @@
         try { topbarImg.dataset.favicon = finalFav || ""; } catch (_) {}
       }
 
-      // src do sidebar depende do estado
+      // src do alvo principal:
+      // - Se o alvo for o topbar (fallback da Etapa 6), mobile deve SEMPRE usar favicon.
+      // - Se existir sidebarLogo real, mantém regra de colapsado/expandido.
       try {
-        if (isSidebarCollapsed()) {
+        const isTopbarFallback = sidebarImg.id === "topbarLogo";
+        if (isTopbarFallback && isMobileViewport()) {
           if (finalFav) sidebarImg.setAttribute("src", finalFav);
         } else {
-          if (finalLogo) sidebarImg.setAttribute("src", finalLogo);
+          if (isSidebarCollapsed()) {
+            if (finalFav) sidebarImg.setAttribute("src", finalFav);
+          } else {
+            if (finalLogo) sidebarImg.setAttribute("src", finalLogo);
+          }
         }
       } catch (_) {}
     }
 
     // resto do sistema (logo) — sem mexer no sidebarLogo
     if (finalLogo) applyLogoToTargets(finalLogo);
+    applyTopbarBrand(finalLogo, finalFav);
 
     // favicon (aba + imgs)
     if (finalFav) applyFaviconToTargets(finalFav);
@@ -293,25 +318,7 @@
     const prefs = getPrefs();
 
     if (!prefs) {
-      applyTheme("light");
-
-      // remove custom accent and preset
-      document.documentElement.removeAttribute("data-accent");
-      document.documentElement.style.removeProperty("--c-accent");
-      document.documentElement.style.removeProperty("--fin-blue");
-      document.documentElement.style.removeProperty("--accent");
-
-      document.documentElement.style.removeProperty("--c-danger");
-      document.documentElement.style.removeProperty("--c-success");
-
-      // ✅ re-aplica defaults corretos SEM contaminar favicon pelo head
-      const defLogo = getDefaultLogoUrl();
-      const defFav  = getDefaultFaviconUrl();
-
-      applyLogoAndFavicon({ logoDataUrl: "", faviconDataUrl: "" }); // garante sidebar state + link/icon
-      if (defLogo) applyLogoToTargets(defLogo);
-      if (defFav) applyFaviconToTargets(defFav);
-
+      // Sem prefs disponíveis, preserva estado já renderizado (server/bootstrap).
       return;
     }
 
@@ -324,10 +331,13 @@
   function init() {
     applyAll();
 
-    window.addEventListener("storage", (e) => {
-      if (e && e.key === SYS_PREFS_KEY) applyAll();
+    // Evento padrão da camada BaseStore
+    window.addEventListener("base:prefs:changed", () => applyAll());
+    window.addEventListener("base:changed", (e) => {
+      if (e?.detail?.kind === "prefs") applyAll();
     });
 
+    // Compatibilidade com eventos do Financeiro em versões antigas
     const evtName = (window.FinStore && window.FinStore.EVT) ? window.FinStore.EVT : "fin:change";
     window.addEventListener(evtName, (e) => {
       const key = e?.detail?.key || "";
@@ -335,6 +345,7 @@
     });
 
     window.addEventListener("sidebar:toggle", () => applyAll());
+    window.addEventListener("resize", () => applyAll());
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

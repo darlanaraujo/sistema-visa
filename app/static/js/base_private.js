@@ -24,10 +24,19 @@ function isMobile() {
   return window.matchMedia('(max-width: 980px)').matches;
 }
 
+function withBreakpointSwitching(flagOn) {
+  const layout = document.getElementById('privateLayout');
+  if (!layout) return;
+  layout.classList.toggle('is-breakpoint-switching', Boolean(flagOn));
+}
+
 function storageGet(key, fallback = null) {
   try {
-    const v = localStorage.getItem(key);
-    return v === null ? fallback : v;
+    if (window.BaseStore?.ui && typeof window.BaseStore.ui.getRaw === 'function') {
+      const v = window.BaseStore.ui.getRaw(key, fallback);
+      return v === null || typeof v === 'undefined' ? fallback : String(v);
+    }
+    return fallback;
   } catch (_) {
     return fallback;
   }
@@ -35,7 +44,9 @@ function storageGet(key, fallback = null) {
 
 function storageSet(key, value) {
   try {
-    localStorage.setItem(key, String(value));
+    if (window.BaseStore?.ui && typeof window.BaseStore.ui.setRaw === 'function') {
+      window.BaseStore.ui.setRaw(key, String(value));
+    }
   } catch (_) {}
 }
 
@@ -162,12 +173,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnEdgeToggle = document.getElementById('btnEdgeToggle');
   const edgeIcon = document.getElementById('edgeToggleIcon');
 
-  const sidebarLogo = document.getElementById('sidebarLogo');
+  const userCardSidebar = document.getElementById('userCardSidebar');
   const topbarLogo = document.getElementById('topbarLogo');
+  const userModal = document.getElementById('userModal');
+  const userModalOverlay = document.getElementById('userModalOverlay');
+  const userModalClose = document.getElementById('userModalClose');
+  const userModalCloseFoot = document.getElementById('userModalCloseFoot');
+  const userModalAvatar = document.getElementById('userModalAvatar');
+  const userModalName = document.getElementById('userModalName');
+  const userModalRole = document.getElementById('userModalRole');
+  const userModalFieldName = document.getElementById('userModalFieldName');
+  const userModalFieldRole = document.getElementById('userModalFieldRole');
+  const userModalFieldEmail = document.getElementById('userModalFieldEmail');
+  const userModalFieldPhone = document.getElementById('userModalFieldPhone');
+  const userModalFieldTheme = document.getElementById('userModalFieldTheme');
+  const userModalFieldAccent = document.getElementById('userModalFieldAccent');
+  const userModalFieldUpdatedAt = document.getElementById('userModalFieldUpdatedAt');
 
   const btnLogout = document.getElementById('btnLogout');
 
   const STORAGE_KEY = 'sv_sidebar_collapsed';
+  let _wasMobile = isMobile();
 
   function setLayoutSidebarWidthVar() {
     if (!layout || !sidebar) return;
@@ -183,24 +209,268 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setLogosByState() {
-    if (sidebarLogo && sidebar) {
-      const logo = sidebarLogo.dataset?.logo || sidebarLogo.getAttribute('data-logo');
-      const fav  = sidebarLogo.dataset?.favicon || sidebarLogo.getAttribute('data-favicon');
-      const collapsed = sidebar.classList.contains('is-collapsed');
-
-      if (isMobile()) {
-        if (logo) sidebarLogo.src = logo;
-      } else {
-        if (collapsed && fav) sidebarLogo.src = fav;
-        else if (logo) sidebarLogo.src = logo;
-      }
-    }
-
-    // topbar logo controlado por IIFE
+    // Topbar: no mobile usa favicon para liberar espaço do título/ações.
     if (topbarLogo) {
       const logo = topbarLogo.dataset?.logo || topbarLogo.getAttribute('data-logo') || topbarLogo.getAttribute('src');
-      if (logo && !topbarLogo.getAttribute('src')) topbarLogo.src = logo;
+      const fav  = topbarLogo.dataset?.favicon || topbarLogo.getAttribute('data-favicon') || '';
+      if (isMobile() && fav) {
+        topbarLogo.src = fav;
+        document.documentElement.classList.add('sv-topbar--favicon');
+      } else {
+        if (logo) topbarLogo.src = logo;
+        document.documentElement.classList.remove('sv-topbar--favicon');
+      }
     }
+  }
+
+  function getUserForUi() {
+    try {
+      const u = window.BaseStore?.user?.get?.();
+      if (u && typeof u === 'object') return u;
+    } catch (_) {}
+    return { name: 'Usuario', role: 'Administrador', avatar: { type: 'initials', initials: 'US', url: '' } };
+  }
+
+  // Resolve avatar por prioridade (contrato único da UI base):
+  // 1) user.avatar.url (ou alias avatarUrl/imageDataUrl)
+  // 2) arquivo por nome em /img/users
+  // 3) iniciais
+  // Este helper é exposto em window.BaseUserAvatar para reuso em outras telas.
+  const avatarUrlCache = new Map();
+  function slugifyName(name) {
+    return String(name || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function findAvatarUrlByName(userName) {
+    const raw = String(userName || '').trim();
+    const slug = slugifyName(raw);
+    const cacheKey = slug || raw.toLowerCase();
+    if (!cacheKey) return Promise.resolve('');
+    if (avatarUrlCache.has(cacheKey)) return Promise.resolve(String(avatarUrlCache.get(cacheKey) || ''));
+
+    // Suporta múltiplos padrões de nome de arquivo no diretório /img/users
+    // Ex.: "darlan-p-araujo.png", "darlan_p_araujo.png", "Darlan%20P.%20Araujo.png", "darlan-avatar.png"
+    const rawEncoded = encodeURIComponent(raw);
+    const rawUnderscore = slug.replace(/-/g, '_');
+    const firstName = slug.split('-')[0] || '';
+    const stems = [slug, rawUnderscore, rawEncoded, `${slug}-avatar`, `${firstName}-avatar`].filter(Boolean);
+    const exts = ['png', 'jpg', 'jpeg', 'webp'];
+    const candidates = [];
+    stems.forEach((stem) => {
+      exts.forEach((ext) => {
+        candidates.push(`/sistema-visa/app/static/img/users/${stem}.${ext}`);
+        candidates.push(`/sistema-visa/app/static/img/user/${stem}.${ext}`); // compat legado
+      });
+    });
+    const uniqueCandidates = Array.from(new Set(candidates));
+
+    return new Promise((resolve) => {
+      let idx = 0;
+      function tryNext() {
+        if (idx >= uniqueCandidates.length) {
+          avatarUrlCache.set(cacheKey, '');
+          resolve('');
+          return;
+        }
+        const url = uniqueCandidates[idx++];
+        const img = new Image();
+        img.onload = () => { avatarUrlCache.set(cacheKey, url); resolve(url); };
+        img.onerror = () => tryNext();
+        img.src = url;
+      }
+      tryNext();
+    });
+  }
+
+  function userInitials(user) {
+    const fromAvatar = String(user?.avatar?.initials || '').trim();
+    if (fromAvatar) return fromAvatar.slice(0, 2).toUpperCase();
+    const name = String(user?.name || '').trim();
+    if (!name) return 'US';
+    const parts = name.split(/\s+/).filter(Boolean);
+    const a = (parts[0] || '').slice(0, 1);
+    const b = (parts.length > 1 ? parts[parts.length - 1] : (parts[0] || '')).slice(0, 1);
+    const out = `${a}${b}`.toUpperCase();
+    return out || 'US';
+  }
+
+  function setAvatarContent(targetEl, user, resolvedUrl) {
+    if (!targetEl) return;
+    const url = String(resolvedUrl || '').trim();
+    if (url) {
+      targetEl.innerHTML = `<img src="${url}" alt="">`;
+      return;
+    }
+    targetEl.textContent = userInitials(user);
+  }
+
+  function resolveUserAvatarContract(user) {
+    const explicit = String(
+      user?.avatar?.url ||
+      user?.avatarUrl ||
+      user?.avatar?.imageDataUrl ||
+      ''
+    ).trim();
+    const initials = userInitials(user);
+
+    if (explicit) {
+      return Promise.resolve({ source: 'explicit', url: explicit, initials });
+    }
+
+    return findAvatarUrlByName(String(user?.name || '')).then((url) => {
+      if (url) return { source: 'local-file', url, initials };
+      return { source: 'initials', url: '', initials };
+    });
+  }
+
+  window.BaseUserAvatar = {
+    resolve: resolveUserAvatarContract,
+    initials: userInitials,
+  };
+
+  let userCardRenderSeq = 0;
+  function renderUserCards() {
+    const seq = ++userCardRenderSeq;
+    const user = getUserForUi();
+    const name = String(user.name || 'Usuario');
+    const role = String(user.role || 'Perfil');
+
+    if (userCardSidebar) {
+      const av = userCardSidebar.querySelector('.sidebar__user-avatar');
+      const nm = userCardSidebar.querySelector('.sidebar__user-name');
+      const rl = userCardSidebar.querySelector('.sidebar__user-role');
+      if (av) {
+        setAvatarContent(av, user, '');
+        resolveUserAvatarContract(user).then((avatar) => {
+          // Evita race condition: só aplica se este render ainda for o último.
+          if (seq !== userCardRenderSeq) return;
+          setAvatarContent(av, user, avatar?.url || '');
+        });
+      }
+      if (nm) nm.textContent = name;
+      if (rl) rl.textContent = role;
+      userCardSidebar.setAttribute('data-tip', name);
+      userCardSidebar.setAttribute('title', name);
+    }
+  }
+
+  function displayOrDash(value) {
+    const v = String(value ?? '').trim();
+    return v || '—';
+  }
+
+  function mapThemeModeLabel(modeRaw) {
+    const mode = String(modeRaw || '').toLowerCase().trim();
+    if (mode === 'dark') return 'Escuro';
+    if (mode === 'auto') return 'Automático';
+    return 'Claro';
+  }
+
+  function mapAccentLabel(accentRaw) {
+    const accent = String(accentRaw || '').toLowerCase().trim();
+    const map = {
+      visa: 'Visa',
+      blue: 'Azul',
+      green: 'Verde',
+      purple: 'Roxo',
+      orange: 'Laranja',
+      slate: 'Slate',
+      red: 'Vermelho',
+      amber: 'Âmbar',
+      teal: 'Teal',
+      custom: 'Personalizado',
+    };
+    if (!accent) return 'Padrão';
+    return map[accent] || accentRaw;
+  }
+
+  function formatUpdatedAt(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return '—';
+    try {
+      return new Date(n).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  function renderUserModalData() {
+    if (!userModal) return;
+
+    const user = getUserForUi();
+    const name = String(user?.name || 'Usuario');
+    const role = String(user?.role || 'Perfil');
+
+    if (userModalName) userModalName.textContent = name;
+    if (userModalRole) userModalRole.textContent = role;
+    if (userModalFieldName) userModalFieldName.textContent = displayOrDash(name);
+    if (userModalFieldRole) userModalFieldRole.textContent = displayOrDash(role);
+    if (userModalFieldEmail) userModalFieldEmail.textContent = displayOrDash(user?.email || '');
+    if (userModalFieldPhone) userModalFieldPhone.textContent = displayOrDash(user?.phone || '');
+
+    const userThemeMode = user?.theme?.mode || user?.prefs?.themeMode || 'light';
+    const userAccent = user?.theme?.accentPreset || user?.prefs?.accent || '';
+    if (userModalFieldTheme) userModalFieldTheme.textContent = mapThemeModeLabel(userThemeMode);
+    if (userModalFieldAccent) userModalFieldAccent.textContent = mapAccentLabel(userAccent);
+    if (userModalFieldUpdatedAt) userModalFieldUpdatedAt.textContent = formatUpdatedAt(user?.updatedAt);
+
+    if (userModalAvatar) {
+      setAvatarContent(userModalAvatar, user, '');
+      resolveUserAvatarContract(user).then((avatar) => {
+        setAvatarContent(userModalAvatar, user, avatar?.url || '');
+      });
+    }
+  }
+
+  /* ---------------------------
+     USER MODAL (Etapa 6 - Parte 2.3)
+     - Abre pelo UserCard
+     - Fecha por botão, overlay e ESC
+     - Acessibilidade: foco inicial no close e retorno ao gatilho
+  --------------------------- */
+  const USER_MODAL_CLOSE_MS = 340;
+  let userModalLastTrigger = null;
+
+  function isUserModalOpen() {
+    return Boolean(userModal && userModal.classList.contains('is-open'));
+  }
+
+  function openUserModal(triggerEl) {
+    if (!userModal) return;
+    userModalLastTrigger = triggerEl || document.activeElement || null;
+    renderUserModalData();
+    userModal.classList.remove('is-closing');
+    userModal.classList.add('is-open');
+    userModal.setAttribute('aria-hidden', 'false');
+
+    // Duplo RAF evita "pular" animação em primeiro frame.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        try { userModalClose?.focus(); } catch (_) {}
+      });
+    });
+  }
+
+  function closeUserModal() {
+    if (!userModal || !isUserModalOpen()) return;
+    userModal.classList.add('is-closing');
+
+    window.setTimeout(() => {
+      userModal.classList.remove('is-open', 'is-closing');
+      userModal.setAttribute('aria-hidden', 'true');
+      try { userModalLastTrigger?.focus?.(); } catch (_) {}
+      userModalLastTrigger = null;
+    }, USER_MODAL_CLOSE_MS);
   }
 
   function nudgeEdgeByState() {
@@ -241,6 +511,55 @@ document.addEventListener('DOMContentLoaded', () => {
     nudgeEdgeByState();
 
     try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
+  }
+
+  /* ---------------------------
+     SIDEBAR AUTO-COLLAPSE (desktop)
+     - Reinicia o contador quando há interação.
+     - Pausa enquanto há hover/foco dentro do sidebar.
+  --------------------------- */
+  const SIDEBAR_AUTO_COLLAPSE_MS = 30 * 1000;
+  let sidebarAutoCollapseTimer = null;
+  let sidebarInteractionLock = false;
+
+  function clearSidebarAutoCollapse() {
+    if (sidebarAutoCollapseTimer) {
+      window.clearTimeout(sidebarAutoCollapseTimer);
+      sidebarAutoCollapseTimer = null;
+    }
+  }
+
+  function collapseSidebarByTimer() {
+    if (!sidebar || isMobile()) return;
+    if (sidebarInteractionLock) return;
+    if (sidebar.classList.contains('is-collapsed')) return;
+
+    sidebar.classList.add('is-collapsed');
+    setLayoutSidebarWidthVar();
+    setEdgeIconByState();
+    setLogosByState();
+    try { window.BaseStore?.ui?.setSidebarCollapsed?.(true); } catch (_) {}
+    try { window.dispatchEvent(new CustomEvent('sidebar:toggle')); } catch (_) {}
+  }
+
+  function restartSidebarAutoCollapse() {
+    clearSidebarAutoCollapse();
+    if (!sidebar || isMobile()) return;
+    if (sidebarInteractionLock) return;
+    if (sidebar.classList.contains('is-collapsed')) return;
+
+    sidebarAutoCollapseTimer = window.setTimeout(() => {
+      collapseSidebarByTimer();
+    }, SIDEBAR_AUTO_COLLAPSE_MS);
+  }
+
+  function setSidebarInteractionLock(active) {
+    sidebarInteractionLock = Boolean(active);
+    if (sidebarInteractionLock) {
+      clearSidebarAutoCollapse();
+      return;
+    }
+    restartSidebarAutoCollapse();
   }
 
   function openMobileSidebar() {
@@ -338,14 +657,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getPrefs() {
-    try { return safeJsonParse(localStorage.getItem(SYS_PREFS_KEY), null) || null; }
+    try {
+      if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === 'function') {
+        const obj = window.BaseStore.prefs.get();
+        return obj && typeof obj === 'object' ? obj : null;
+      }
+      return null;
+    }
     catch (_) { return null; }
   }
 
   function setPrefs(nextPrefs) {
     try {
-      localStorage.setItem(SYS_PREFS_KEY, JSON.stringify(nextPrefs));
-      return true;
+      if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.set === 'function') {
+        return Boolean(window.BaseStore.prefs.set(nextPrefs));
+      }
+      return false;
     } catch (_) {
       return false;
     }
@@ -593,6 +920,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnEdgeToggle.addEventListener('click', () => {
       if (isMobile()) return;
       toggleDesktopCollapse();
+      // Salva preferência atual e reinicia contador quando expandir manualmente.
+      try { window.BaseStore?.ui?.setSidebarCollapsed?.(sidebar.classList.contains('is-collapsed')); } catch (_) {}
+      if (sidebar.classList.contains('is-collapsed')) clearSidebarAutoCollapse();
+      else restartSidebarAutoCollapse();
     });
   }
 
@@ -602,6 +933,22 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebar.addEventListener('click', (e) => {
       const link = e.target.closest('a.sidebar__item');
       if (link && isMobile()) closeMobileSidebar();
+    });
+
+    // Interação no sidebar pausa/reinicia auto-colapso.
+    sidebar.addEventListener('mouseenter', () => setSidebarInteractionLock(true));
+    sidebar.addEventListener('mouseleave', () => setSidebarInteractionLock(false));
+
+    sidebar.addEventListener('focusin', () => setSidebarInteractionLock(true));
+    sidebar.addEventListener('focusout', () => {
+      window.setTimeout(() => {
+        const hasFocusInside = Boolean(document.activeElement && sidebar.contains(document.activeElement));
+        if (!hasFocusInside) setSidebarInteractionLock(false);
+      }, 0);
+    });
+
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel', 'scroll'].forEach((evt) => {
+      sidebar.addEventListener(evt, () => restartSidebarAutoCollapse(), { passive: true });
     });
   }
 
@@ -622,9 +969,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (userCardSidebar) {
+    userCardSidebar.addEventListener('click', () => {
+      openUserModal(userCardSidebar);
+    });
+  }
+
+  if (userModalOverlay) userModalOverlay.addEventListener('click', () => closeUserModal());
+  if (userModalClose) userModalClose.addEventListener('click', () => closeUserModal());
+  if (userModalCloseFoot) userModalCloseFoot.addEventListener('click', () => closeUserModal());
+
   window.addEventListener('resize', () => {
+    const mobileNow = isMobile();
+    const switched = mobileNow !== _wasMobile;
+    _wasMobile = mobileNow;
+
+    // Evita flash visual no momento exato da troca de breakpoint.
+    if (switched) {
+      withBreakpointSwitching(true);
+      window.setTimeout(() => withBreakpointSwitching(false), 220);
+    }
+
     if (isMobile()) {
+      clearSidebarAutoCollapse();
       if (sidebar) sidebar.classList.remove('is-collapsed');
+      layout?.classList?.remove('is-sidebar-open');
       setLayoutSidebarWidthVar();
       setEdgeIconByState();
       setLogosByState();
@@ -634,6 +1003,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeMobileSidebar();
     applyDesktopSidebarStateFromStorage();
+    renderUserCards();
+    restartSidebarAutoCollapse();
+  });
+
+  window.addEventListener('base:user:changed', () => {
+    renderUserCards();
+    renderUserModalData();
+  });
+
+  window.addEventListener('base:prefs:changed', () => {
+    // Re-render para refletir tema/acento na ficha quando houver atualização de prefs.
+    renderUserModalData();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (!isUserModalOpen()) return;
+    e.preventDefault();
+    closeUserModal();
   });
 
   /* ---------------------------
@@ -644,59 +1032,12 @@ document.addEventListener('DOMContentLoaded', () => {
   setLayoutSidebarWidthVar();
   setEdgeIconByState();
   setLogosByState();
+  renderUserCards();
+  renderUserModalData();
+  restartSidebarAutoCollapse();
 
   document.documentElement.classList.remove('sv-sidebar-collapsed');
 
   // Inicializa tooltip unificado (sidebar + topbar)
   scheduleInitUIComponents(sidebar);
 });
-
-// ---------------------------------------------------------
-// Topbar: mobile usa FAVICON (abre espaço pro título)
-// Desktop usa LOGO
-// ---------------------------------------------------------
-(function () {
-  'use strict';
-
-  function isMobile() {
-    return window.matchMedia('(max-width: 980px)').matches;
-  }
-
-  function getAttrOrDataset(el, key) {
-    const ds = el?.dataset?.[key];
-    if (ds) return ds;
-    const attr = el?.getAttribute?.(`data-${key}`);
-    return attr || '';
-  }
-
-  function setTopbarLogoMode() {
-    const img = document.getElementById('topbarLogo');
-    if (!img) return;
-
-    const logo = getAttrOrDataset(img, 'logo') || img.getAttribute('src') || '';
-    const fav  = getAttrOrDataset(img, 'favicon') || '';
-
-    const mobile = isMobile();
-
-    if (mobile && fav) {
-      img.src = fav;
-      document.documentElement.classList.add('sv-topbar--favicon');
-    } else {
-      if (logo) img.src = logo;
-      document.documentElement.classList.remove('sv-topbar--favicon');
-    }
-  }
-
-  function scheduleReapply() {
-    window.setTimeout(setTopbarLogoMode, 0);
-    window.setTimeout(setTopbarLogoMode, 80);
-    window.setTimeout(setTopbarLogoMode, 180);
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    setTopbarLogoMode();
-    window.addEventListener('resize', setTopbarLogoMode);
-    window.addEventListener('sidebar:toggle', scheduleReapply);
-    scheduleReapply();
-  });
-})();

@@ -47,8 +47,6 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="/sistema-visa/app/static/js/system/sys_bootstrap_ui.js"></script>
-
   <title><?= h($page_title) ?> • Sistema Visa</title>
 
   <link rel="icon" href="/sistema-visa/app/static/img/favicon.png">
@@ -81,14 +79,23 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
     <?php endforeach; ?>
   <?php endif; ?>
 
+  <!-- Personalização -->
+  <script src="/sistema-visa/app/static/js/system/sys_bootstrap_ui.js"></script>
+  
+  <!-- Componentes (global no ambiente privado) -->
+  <script defer src="/sistema-visa/app/static/js/ui_components.js"></script>
+
+  <!-- JS de conexão com BD (LocalStorage) -->
+  <script src="/sistema-visa/app/static/js/core/sys_store.js"></script>
+
+  <!-- Store global do ambiente privado -->
+  <script src="/sistema-visa/app/static/js/data/base_store.js"></script>
+
   <!-- ✅ JS base do layout privado (sempre) -->
   <script defer src="/sistema-visa/app/static/js/base_private.js"></script>
 
   <!-- Toast (global no ambiente privado) -->
   <script defer src="/sistema-visa/app/static/js/toast.js"></script>
-  
-  <!-- Componentes (global no ambiente privado) -->
-  <script defer src="/sistema-visa/app/static/js/ui_components.js"></script>
 
   <!-- JS personalização da empresa -->
   <script defer src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
@@ -96,7 +103,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- JS no HEAD (use somente se for estritamente necessário) -->
   <?php if (!empty($extra_head_js) && is_array($extra_head_js)): ?>
     <?php foreach ($extra_head_js as $js): ?>
-      <script src="<?= h($js) ?>"></script>
+      <script defer src="<?= h($js) ?>"></script>
     <?php endforeach; ?>
   <?php endif; ?>
 </head>
@@ -107,18 +114,14 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
 
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__brand">
-        <div class="sidebar__logo-wrap">
-          <img
-            id="sidebarLogo"
-            src="/sistema-visa/app/static/img/logo.png"
-            data-logo="/sistema-visa/app/static/img/logo.png"
-            data-favicon="/sistema-visa/app/static/img/favicon.png"
-            data-logo-default="/sistema-visa/app/static/img/logo.png"
-            data-favicon-default="/sistema-visa/app/static/img/favicon.png"
-            alt="Sistema Visa"
-            class="sidebar__logo"
-          >
-        </div>
+        <!-- Etapa 6: usuário ocupa a área da antiga marca na sidebar -->
+        <button class="sidebar__user-card sidebar__user-card--brand" id="userCardSidebar" type="button" aria-label="Abrir ficha do usuário">
+          <span class="sidebar__user-avatar" aria-hidden="true"></span>
+          <span class="sidebar__user-meta">
+            <span class="sidebar__user-name">Usuário</span>
+            <span class="sidebar__user-role">Perfil</span>
+          </span>
+        </button>
       </div>
 
       <nav class="sidebar__nav">
@@ -166,10 +169,11 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       <header class="topbar">
         <button class="topbar__menu" id="btnToggleSidebar" type="button" aria-label="Abrir menu"></button>
 
-        <!-- ✅ Logo no topo (antes do divisor, sem texto e sem container “enfeitado”) -->
+        <!-- Topbar mantém a logo; o user card ficará apenas na sidebar nesta parte -->
         <div class="topbar__logo" aria-label="Logo do sistema">
           <img
             id="topbarLogo"
+            data-brand="logo"
             src="/sistema-visa/app/static/img/logo.png"
             data-logo="/sistema-visa/app/static/img/logo.png"
             data-favicon="/sistema-visa/app/static/img/favicon.png"
@@ -244,5 +248,91 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       <script src="<?= h($js) ?>"></script>
     <?php endforeach; ?>
   <?php endif; ?>
+
+  <!-- Etapa 6 - Parte 2.1
+       Modal de ficha do usuário (somente estrutura).
+       Regras de abertura/fechamento e estilos entram nas próximas partes. -->
+  <div
+    class="user-modal"
+    id="userModal"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+    aria-labelledby="userModalTitle"
+  >
+    <div class="user-modal__overlay" id="userModalOverlay"></div>
+
+    <section class="user-modal__card" id="userModalBody">
+      <header class="user-modal__head">
+        <h2 class="user-modal__title" id="userModalTitle">Ficha do Usuário</h2>
+        <button
+          type="button"
+          class="user-modal__close"
+          id="userModalClose"
+          aria-label="Fechar ficha do usuário"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="user-modal__content">
+        <aside class="user-modal__avatar-col">
+          <div class="user-modal__avatar" id="userModalAvatar" aria-hidden="true">US</div>
+        </aside>
+
+        <div class="user-modal__info-col">
+          <div class="user-modal__identity">
+            <div class="user-modal__name" id="userModalName">Usuário</div>
+            <div class="user-modal__role" id="userModalRole">Perfil</div>
+          </div>
+
+          <dl class="user-modal__grid">
+            <div class="user-modal__row">
+              <dt>Nome</dt>
+              <dd id="userModalFieldName">—</dd>
+            </div>
+            <div class="user-modal__row">
+              <dt>Cargo/Função</dt>
+              <dd id="userModalFieldRole">—</dd>
+            </div>
+            <div class="user-modal__row">
+              <dt>Email</dt>
+              <dd id="userModalFieldEmail">—</dd>
+            </div>
+            <div class="user-modal__row">
+              <dt>Telefone</dt>
+              <dd id="userModalFieldPhone">—</dd>
+            </div>
+            <div class="user-modal__row">
+              <dt>Tema</dt>
+              <dd id="userModalFieldTheme">—</dd>
+            </div>
+            <div class="user-modal__row">
+              <dt>Acento</dt>
+              <dd id="userModalFieldAccent">—</dd>
+            </div>
+            <div class="user-modal__row">
+              <dt>Atualizado em</dt>
+              <dd id="userModalFieldUpdatedAt">—</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <footer class="user-modal__foot">
+        <button type="button" class="fin-btn fin-btn--ghost" id="userModalCloseFoot">Fechar</button>
+        <button
+          type="button"
+          class="fin-btn"
+          id="userModalEdit"
+          disabled
+          title="Disponível quando módulo de usuários for criado"
+          aria-disabled="true"
+        >
+          Editar
+        </button>
+      </footer>
+    </section>
+  </div>
 </body>
 </html>

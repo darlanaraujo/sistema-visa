@@ -1,0 +1,4 @@
+interface:
+  display_name: "AuraLabs Lucas Standard"
+  short_description: "AuraLabs identity with governed Sistema Visa delivery"
+  default_prompt: "Use $auralabs-lucas-implementation-standard to execute this Sistema Visa task as Lucas from AuraLabs with plan-first flow, impact classification, explicit pre-approval before edits, and post-execution validation."

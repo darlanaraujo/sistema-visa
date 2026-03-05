@@ -107,6 +107,18 @@
   --panel-inner-bg:  color-mix(in srgb, var(--n-150) 40%, var(--n-0));
   --panel-foot-bg:   color-mix(in srgb, var(--n-150) 62%, var(--n-0));
 
+  /* =========================================================
+     5.1) UX PADRÃO 2 (pontual/premium)
+     - Uso restrito a superfícies especiais (ex.: ficha de usuário).
+     - NÃO aplicar em componentes globais de módulos (botões CRUD/tabelas padrão).
+     ========================================================= */
+  --ux2-surface: color-mix(in srgb, var(--panel-bg) 86%, #fff);
+  --ux2-head:    color-mix(in srgb, var(--panel-head-bg) 74%, #fff);
+  --ux2-inner:   color-mix(in srgb, var(--panel-inner-bg) 76%, #fff);
+  --ux2-foot:    color-mix(in srgb, var(--panel-foot-bg) 74%, #fff);
+  --ux2-hover:   color-mix(in srgb, var(--hover-soft) 76%, #fff);
+  --ux2-avatar-bg: color-mix(in srgb, var(--c-accent) 34%, #fff);
+
   --hover-soft: color-mix(in srgb, var(--c-border) 55%, var(--n-0));
 
   --table-head-bg: color-mix(in srgb, var(--n-150) 78%, var(--n-0));
@@ -127,6 +139,26 @@
   --btn-ghost-bg: color-mix(in srgb, var(--n-150) 30%, var(--n-0));
   --btn-ghost-text: color-mix(in srgb, var(--c-text) 88%, #000);
   --btn-ghost-border: color-mix(in srgb, var(--c-border) 70%, var(--n-0));
+
+  /* =========================================================
+     6.1) TOAST SYSTEM (feedback global)
+     - Paleta padronizada para sucesso/aviso/erro/info/neutro
+     ========================================================= */
+  --toast-bg: color-mix(in srgb, var(--c-text) 92%, #000);
+  --toast-text: #ffffff;
+  --toast-border: color-mix(in srgb, var(--c-border) 72%, transparent);
+
+  --toast-success-bg: color-mix(in srgb, var(--c-success) 88%, #000);
+  --toast-success-border: color-mix(in srgb, var(--c-success) 30%, var(--c-border));
+
+  --toast-warning-bg: color-mix(in srgb, var(--c-warning) 90%, #000);
+  --toast-warning-border: color-mix(in srgb, var(--c-warning) 30%, var(--c-border));
+
+  --toast-error-bg: color-mix(in srgb, var(--c-danger) 88%, #000);
+  --toast-error-border: color-mix(in srgb, var(--c-danger) 30%, var(--c-border));
+
+  --toast-info-bg: color-mix(in srgb, var(--c-accent) 88%, #000);
+  --toast-info-border: color-mix(in srgb, var(--c-accent) 30%, var(--c-border));
 
   /* =========================================================
      7) GRADIENTES (LOGIN)
@@ -248,6 +280,14 @@
   --panel-inner-bg:  color-mix(in srgb, var(--n-150) 60%, #000);
   --panel-foot-bg:   color-mix(in srgb, var(--n-150) 70%, #000);
 
+  /* UX PADRÃO 2 no dark (mantém leitura e leve destaque visual) */
+  --ux2-surface: color-mix(in srgb, var(--panel-bg) 92%, rgba(255,255,255,0.04));
+  --ux2-head:    color-mix(in srgb, var(--panel-head-bg) 90%, rgba(255,255,255,0.05));
+  --ux2-inner:   color-mix(in srgb, var(--panel-inner-bg) 90%, rgba(255,255,255,0.04));
+  --ux2-foot:    color-mix(in srgb, var(--panel-foot-bg) 90%, rgba(255,255,255,0.05));
+  --ux2-hover:   color-mix(in srgb, var(--hover-soft) 90%, rgba(255,255,255,0.06));
+  --ux2-avatar-bg: color-mix(in srgb, var(--c-accent) 40%, #fff);
+
   --hover-soft: color-mix(in srgb, var(--n-200) 70%, #000);
 
   --table-head-bg: color-mix(in srgb, var(--n-150) 72%, #000);
@@ -258,6 +298,23 @@
   --btn-ghost-bg: color-mix(in srgb, var(--n-150) 70%, #000);
   --btn-ghost-text: color-mix(in srgb, var(--c-text) 92%, #000);
   --btn-ghost-border: color-mix(in srgb, var(--c-border) 70%, #000);
+
+  /* Toast no dark: contraste reforçado e borda mais visível */
+  --toast-bg: color-mix(in srgb, #060b16 90%, var(--c-surface));
+  --toast-text: #f7f9ff;
+  --toast-border: color-mix(in srgb, var(--c-border) 82%, #000);
+
+  --toast-success-bg: color-mix(in srgb, var(--c-success) 80%, #03120c);
+  --toast-success-border: color-mix(in srgb, var(--c-success) 42%, var(--c-border));
+
+  --toast-warning-bg: color-mix(in srgb, var(--c-warning) 82%, #120d03);
+  --toast-warning-border: color-mix(in srgb, var(--c-warning) 42%, var(--c-border));
+
+  --toast-error-bg: color-mix(in srgb, var(--c-danger) 80%, #140607);
+  --toast-error-border: color-mix(in srgb, var(--c-danger) 42%, var(--c-border));
+
+  --toast-info-bg: color-mix(in srgb, var(--c-accent) 78%, #050914);
+  --toast-info-border: color-mix(in srgb, var(--c-accent) 42%, var(--c-border));
 
   /* shadows mais fortes no dark */
   --shadow-soft:   0 10px 26px rgba(0,0,0,0.40);

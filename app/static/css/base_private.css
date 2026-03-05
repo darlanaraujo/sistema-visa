@@ -179,6 +179,7 @@
   align-items: center;
   gap: 12px;
   position: relative; /* ancora popover */
+  min-width: 0;
 }
 
 .topbar__actions{
@@ -270,13 +271,14 @@
 
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-8px) scale(0.98);
+  /* Padrão global: elementos na margem direita entram/saem pela direita. */
+  transform: translateX(14px) scale(0.98);
   transition: opacity 160ms var(--sv-ease), transform 180ms var(--sv-ease);
 }
 .topbar-popover.is-open{
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0) scale(1);
+  transform: translateX(0) scale(1);
 }
 
 .topbar-popover__card{
@@ -531,6 +533,86 @@
   padding: 6px 4px 4px;
 }
 
+/* UserCard da sidebar (ocupa área da marca) */
+.sidebar__user-card{
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  transition: transform var(--sv-fast) var(--sv-ease), background var(--sv-fast) var(--sv-ease), border-color var(--sv-fast) var(--sv-ease);
+}
+.sidebar__user-card:hover{
+  background: #50505040;
+  border-color: rgba(255,255,255,0.16);
+  transform: translateY(-1px);
+}
+.sidebar__user-card:active{ transform: translateY(0); }
+.sidebar__user-card--brand{
+  /* Layout vertical: avatar acima, dados abaixo */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 10px;
+  background: color-mix(in srgb, rgba(255,255,255,0.16) 68%, transparent);
+}
+
+.sidebar__user-avatar{
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--sv-accent) 30%, #fff);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+.sidebar__user-avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 999px;
+}
+.sidebar__user-meta{
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+.sidebar__user-name{
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar__user-role{
+  font-size: 11px;
+  color: rgba(255,255,255,0.78);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sidebar__logout{
   width: 100%;
   border: 1px solid rgba(255,255,255,0.08);
@@ -563,7 +645,8 @@
 }
 
 .sidebar.is-collapsed .sidebar__item span,
-.sidebar.is-collapsed .sidebar__logout span{ display: none; }
+.sidebar.is-collapsed .sidebar__logout span,
+.sidebar.is-collapsed .sidebar__user-meta{ display: none; }
 
 .sidebar.is-collapsed .sidebar__brand{ justify-content: center; }
 .sidebar.is-collapsed .sidebar__logo-wrap{ width: auto; }
@@ -581,6 +664,15 @@
 }
 .sidebar.is-collapsed .sidebar__item i{ width: 24px; }
 .sidebar.is-collapsed .sidebar__logout{ justify-content: center; }
+.sidebar.is-collapsed .sidebar__user-card{
+  justify-content: center;
+  padding: 10px 8px;
+}
+.sidebar.is-collapsed .sidebar__user-avatar{
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
 
 /* overlay + mobile drawer */
 .sidebar-overlay{
@@ -628,7 +720,15 @@
   .sidebar__logout{ justify-content: flex-start; }
 
   .sidebar__item:hover,
-  .sidebar__logout:hover{ transform: none; }
+  .sidebar__logout:hover,
+  .sidebar__user-card:hover{ transform: none; }
+}
+
+/* Durante troca desktop<->mobile, desativa transições do drawer para evitar flash. */
+.private-layout.is-breakpoint-switching .sidebar,
+.private-layout.is-breakpoint-switching .sidebar-overlay,
+.private-layout.is-breakpoint-switching .topbar{
+  transition: none !important;
 }
 
 /* edge toggle */
@@ -738,14 +838,21 @@
   left: 0 !important;           /* evita deslocamento e scroll horizontal */
   right: 0 !important;
   width: 100% !important;
+  /* Mantém efeito de vidro no footer */
+  position: fixed !important;
+  bottom: 0 !important;
+  background: var(--sv-footer-bg) !important;
+  backdrop-filter: blur(12px) saturate(1.06) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.06) !important;
 }
 
 /* No desktop, como existe sidebar fixa, alinhar o conteúdo do footer */
 @media (min-width: 981px){
   .private-footer__inner{
-    padding-left: calc(22px + var(--sv-sidebar-w));
+    /* Mantém texto centrado visualmente na página */
+    padding-left: 22px;
     padding-right: 22px;
-    /* text-align: left; */
+    text-align: center;
   }
 }
 
@@ -858,4 +965,351 @@ html[data-theme="dark"] .private-footer__inner{
 
 html[data-theme="dark"] .private-footer__inner a{
   color: color-mix(in srgb, var(--sv-accent) 85%, #fff);
+}
+
+/* =========================================================
+   ETAPA 6 — CORREÇÃO 2A (overrides finais)
+   - Resolve conflitos de regras duplicadas no arquivo.
+   - Mantém topbar/footers com vidro e layout estável.
+========================================================= */
+
+/* Topbar com transparência de corpo inteiro (não só na esquerda) */
+/* .topbar{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.10)),
+    radial-gradient(860px 520px at 15% -25%, color-mix(in srgb, var(--sv-accent) 10%, transparent), transparent 62%) !important;
+  backdrop-filter: blur(14px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.12) !important;
+} */
+html[data-theme="dark"] .topbar{
+  background:
+    linear-gradient(180deg, rgba(18,18,20,0.50), rgba(12,12,14,0.30)),
+    radial-gradient(860px 520px at 15% -25%, color-mix(in srgb, var(--sv-accent) 12%, transparent), transparent 62%) !important;
+}
+
+/* Footer fixo com limite do sidebar no desktop */
+.private-footer{
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  z-index: 75 !important;
+}
+@media (min-width: 981px){
+  .private-footer{
+    left: var(--sv-sidebar-w) !important;
+  }
+}
+@media (max-width: 980px){
+  .private-footer{
+    left: 0 !important;
+    z-index: 20 !important;
+  }
+
+  /* Quando sidebar mobile está aberto, o footer não deve sobrepor o drawer. */
+  .private-layout.is-sidebar-open .private-footer{
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+/* Reserva de espaço para conteúdo não ficar sob o footer */
+.main{
+  padding-bottom: max(70px, env(safe-area-inset-bottom)) !important;
+}
+
+/* Card de usuário na marca: tamanho correto quando aberto */
+.sidebar__brand .sidebar__user-card--brand{
+  width: 100%;
+  min-height: 128px;
+  margin: 0;
+}
+.sidebar__brand .sidebar__user-avatar{
+  width: 58px;
+  height: 58px;
+  font-size: 18px;
+}
+.sidebar.is-collapsed .sidebar__brand .sidebar__user-card--brand{
+  min-height: auto;
+  padding: 10px 8px;
+}
+.sidebar.is-collapsed .sidebar__brand .sidebar__user-avatar{
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+/* =========================================================
+   ETAPA 6 — PARTE 2.2 (Modal Ficha do Usuário)
+   - Apenas estrutura visual + transições.
+   - Abertura/fechamento via JS será aplicada na Parte 2.3.
+   - Governança visual:
+     * Este bloco usa UX Padrão 2 (tokens --ux2-* do theme.css).
+     * Restrito ao escopo .user-modal (não reutilizar em componentes globais).
+========================================================= */
+.user-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 220ms var(--sv-ease), visibility 0s linear 220ms;
+}
+
+.user-modal.is-open{
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 240ms var(--sv-ease), visibility 0s linear 0s;
+}
+
+.user-modal__overlay{
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, #000 48%, transparent);
+  opacity: 0;
+  transition: opacity 240ms var(--sv-ease);
+}
+
+.user-modal.is-open .user-modal__overlay{
+  opacity: 1;
+}
+
+.user-modal__card{
+  position: relative;
+  width: min(880px, 100%);
+  max-height: min(84vh, 760px);
+  overflow: hidden;
+
+  border-radius: 18px;
+  border: 1px solid var(--c-border);
+  /* Padrão 2: superfície premium controlada por tokens centrais. */
+  background:
+    radial-gradient(860px 520px at 16% -24%, color-mix(in srgb, var(--c-accent) 8%, transparent), transparent 64%),
+    var(--ux2-surface, var(--panel-bg, var(--c-surface)));
+  box-shadow: 0 28px 56px rgba(0,0,0,0.24);
+
+  display: flex;
+  flex-direction: column;
+
+  opacity: 0;
+  transform: translateY(28px) scale(0.985);
+  transition: transform 340ms var(--sv-ease), opacity 340ms var(--sv-ease);
+}
+
+.user-modal.is-open .user-modal__card{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Saída inversa com leve retardo visual */
+.user-modal.is-open.is-closing{
+  opacity: 0;
+  transition: opacity 260ms var(--sv-ease), visibility 0s linear 260ms;
+}
+.user-modal.is-open.is-closing .user-modal__overlay{
+  opacity: 0;
+}
+.user-modal.is-open.is-closing .user-modal__card{
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+}
+
+.user-modal__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--ux2-head, var(--panel-head-bg, var(--c-surface-2)));
+}
+
+.user-modal__title{
+  margin: 0;
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: .03em;
+  color: var(--sv-text);
+}
+
+.user-modal__close{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--ux2-inner, var(--panel-inner-bg, var(--c-surface)));
+  color: var(--sv-text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--sv-fast) var(--sv-ease), background var(--sv-fast) var(--sv-ease);
+}
+.user-modal__close:hover{
+  background: var(--ux2-hover, var(--hover-soft, var(--panel-head-bg)));
+  transform: translateY(-1px);
+}
+.user-modal__close:active{ transform: translateY(0); }
+
+.user-modal__content{
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.user-modal__avatar-col{
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.user-modal__avatar{
+  width: min(100%, 252px);
+  height: 100%;
+  min-height: 361px;
+  border-radius: 16px;
+  background: var(--ux2-avatar-bg, color-mix(in srgb, var(--sv-accent) 34%, #fff));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 34px;
+  letter-spacing: .02em;
+  overflow: hidden;
+  box-shadow: 0 16px 30px rgba(0,0,0,0.18);
+}
+.user-modal__avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}
+
+.user-modal__info-col{
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-modal__identity{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.user-modal__name{
+  font-size: 20px;
+  font-weight: 950;
+  color: var(--sv-text);
+  line-height: 1.2;
+}
+.user-modal__role{
+  font-size: 13px;
+  color: var(--sv-muted);
+  font-weight: 800;
+}
+
+.user-modal__grid{
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.user-modal__row{
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--c-border);
+  background: var(--ux2-inner, var(--panel-inner-bg, var(--c-surface-2)));
+}
+.user-modal__row dt{
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--sv-muted);
+}
+.user-modal__row dd{
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--sv-text);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-modal__foot{
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--c-border);
+  background: var(--ux2-foot, var(--panel-foot-bg, var(--c-surface-2)));
+}
+
+.user-modal__foot .fin-btn[disabled]{
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 980px){
+  .user-modal{
+    padding: 10px;
+    align-items: flex-end;
+  }
+  .user-modal__card{
+    width: 100%;
+    max-height: min(88vh, 860px);
+    border-radius: 16px 16px 12px 12px;
+  }
+  .user-modal__content{
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .user-modal__avatar-col{
+    justify-content: center;
+  }
+  .user-modal__avatar{
+    width: 210px;
+    height: 210px;
+    min-height: 210px;
+    border-radius: 999px;
+    font-size: 30px;
+  }
+  .user-modal__avatar img{
+    border-radius: 999px;
+  }
+  .user-modal__row{
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  .user-modal__row dt{
+    font-size: 11px;
+  }
+}
+
+/* Em dark, os tokens já resolvem cores do modal.
+   Mantemos somente ajuste fino no valor textual para reforçar legibilidade. */
+html[data-theme="dark"] .user-modal__row dd{
+  color: var(--c-text);
 }

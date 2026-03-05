@@ -1,5 +1,5 @@
 // app/static/js/financeiro/data/fin_bootstrap_refs.js
-// Bootstrap idempotente das tabelas de referência do Financeiro (LocalStorage).
+// Bootstrap idempotente das tabelas de referência do Financeiro.
 // Objetivo: garantir que selects (imóveis/categorias/formas/clientes) tenham base mínima
 // sem depender de mocks hardcoded em cada página.
 // NÃO altera layout. Apenas prepara dados.
@@ -16,30 +16,20 @@
     return Date.now();
   }
 
-  function safeParse(json, fallback) {
-    try {
-      const v = JSON.parse(json);
-      return v;
-    } catch (_) {
-      return fallback;
+  function storeGetArr(key) {
+    if (window.SysStore && typeof window.SysStore.get === "function") {
+      const v = window.SysStore.get(key);
+      return Array.isArray(v) ? v : [];
     }
+    return [];
   }
 
-  function lsGetArr(key) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return [];
-      const arr = safeParse(raw, []);
-      return Array.isArray(arr) ? arr : [];
-    } catch (_) {
-      return [];
+  function storeSetArr(key, arr) {
+    if (window.SysStore && typeof window.SysStore.set === "function") {
+      window.SysStore.set(key, arr);
+      return true;
     }
-  }
-
-  function lsSetArr(key, arr) {
-    try {
-      localStorage.setItem(key, JSON.stringify(arr));
-    } catch (_) {}
+    return false;
   }
 
   function normalizeStr(s) {
@@ -64,7 +54,7 @@
   }
 
   function ensureStore(key, defaults) {
-    const cur = lsGetArr(key);
+    const cur = storeGetArr(key);
 
     // Se já existe e tem conteúdo, NÃO mexe.
     if (Array.isArray(cur) && cur.length) return cur;
@@ -77,7 +67,7 @@
       updatedAt: d.updatedAt || now(),
     }));
 
-    lsSetArr(key, fresh);
+    storeSetArr(key, fresh);
     return fresh;
   }
 
@@ -123,7 +113,7 @@
   function findByNome(key, nome) {
     const n = normalizeStr(nome).toLowerCase();
     if (!n) return null;
-    const arr = lsGetArr(key);
+    const arr = storeGetArr(key);
     return arr.find((x) => normalizeStr(x?.nome).toLowerCase() === n) || null;
   }
 
@@ -131,10 +121,10 @@
     const existing = findByNome(key, nome);
     if (existing) return existing;
 
-    const arr = lsGetArr(key);
+    const arr = storeGetArr(key);
     const item = makeRef(prefix, nome);
     arr.push(item);
-    lsSetArr(key, arr);
+    storeSetArr(key, arr);
     return item;
   }
 
@@ -142,7 +132,7 @@
   window.FinRefs = window.FinRefs || {};
   window.FinRefs.KEYS = KEYS;
   window.FinRefs.ensureAll = ensureAll;
-  window.FinRefs.getAll = (kind) => lsGetArr(KEYS[kind] || "");
+  window.FinRefs.getAll = (kind) => storeGetArr(KEYS[kind] || "");
   window.FinRefs.findByNome = (kind, nome) => findByNome(KEYS[kind] || "", nome);
   window.FinRefs.findOrCreateByNome = (kind, nome) => {
     if (kind === "imoveis") return findOrCreateByNome(KEYS.imoveis, "IMV", nome);

@@ -755,18 +755,28 @@ html, body{
   position:fixed;
   inset:0;
   background:color-mix(in srgb, var(--c-text) 55%, transparent);
-  display:none;
+  /* Mantém renderizado para permitir animação de saída (close). */
+  display:flex;
+  visibility:hidden;
   align-items:center;
   justify-content:center;
   padding:16px;
   z-index:9999;
   opacity:0;
-  transition:opacity 180ms ease;
+  transition: opacity 360ms cubic-bezier(.2,.8,.2,1);
+  pointer-events:none;
 }
 
 .fin-modal.is-open{
-  display:flex;
+  visibility:visible;
   opacity:1;
+  pointer-events:auto;
+}
+
+/* Estado explícito de fechamento para garantir saída suave visível. */
+.fin-modal.is-open.is-closing{
+  opacity: 0;
+  pointer-events: none;
 }
 
 .fin-modal__card{
@@ -778,14 +788,19 @@ html, body{
   overflow:hidden;
   box-shadow: var(--fin-elev-2);
   border-color: var(--fin-stroke-soft);
-  transform:translateY(18px);
+  transform: translateY(22px);
   opacity:0;
-  transition:transform 180ms ease, opacity 180ms ease;
+  transition: transform 360ms cubic-bezier(.2,.8,.2,1), opacity 360ms cubic-bezier(.2,.8,.2,1);
 }
 
 .fin-modal.is-open .fin-modal__card{
   transform:translateY(0);
   opacity:1;
+}
+
+.fin-modal.is-open.is-closing .fin-modal__card{
+  transform: translateY(22px);
+  opacity: 0;
 }
 
 .fin-modal__head{
