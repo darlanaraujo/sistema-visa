@@ -52,6 +52,19 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
 
   <link rel="icon" href="<?= h(app_url('/app/static/img/favicon.png')) ?>">
 
+  <script>
+    window.__APP_BASE__ = <?= json_encode(app_base_path(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+    window.appUrl = window.appUrl || function (path) {
+      var base = String(window.__APP_BASE__ || '');
+      var normalized = String(path || '/');
+      if (normalized.slice(0, 1) !== '/') normalized = '/' + normalized;
+      return (base + normalized) || '/';
+    };
+  </script>
+
+  <!-- Bootstrap visual antes do CSS para evitar first paint divergente -->
+  <script src="<?= h(app_url('/app/static/js/system/sys_bootstrap_ui.js')) ?>"></script>
+
   <!-- Fonte -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,25 +86,12 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- Componentes (global no ambiente privado) -->
   <link rel="stylesheet" href="<?= h(app_url('/app/static/css/ui_components.css')) ?>">
 
-  <script>
-    window.__APP_BASE__ = <?= json_encode(app_base_path(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
-    window.appUrl = window.appUrl || function (path) {
-      var base = String(window.__APP_BASE__ || '');
-      var normalized = String(path || '/');
-      if (normalized.slice(0, 1) !== '/') normalized = '/' + normalized;
-      return (base + normalized) || '/';
-    };
-  </script>
-
   <!-- CSS específico da página/módulo -->
   <?php if (!empty($extra_css) && is_array($extra_css)): ?>
     <?php foreach ($extra_css as $css): ?>
       <link rel="stylesheet" href="<?= h($css) ?>">
     <?php endforeach; ?>
   <?php endif; ?>
-
-  <!-- Personalização -->
-  <script src="<?= h(app_url('/app/static/js/system/sys_bootstrap_ui.js')) ?>"></script>
   
   <!-- Componentes (global no ambiente privado) -->
   <script defer src="<?= h(app_url('/app/static/js/ui_components.js')) ?>"></script>

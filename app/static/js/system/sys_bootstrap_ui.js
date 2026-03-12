@@ -32,15 +32,9 @@
   }
 
   function resolveMode(modeRaw) {
-    var mode = String(modeRaw || "auto").toLowerCase().trim();
+    var mode = String(modeRaw || "light").toLowerCase().trim();
     if (mode === "dark" || mode === "light") return mode;
-    try {
-      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-    } catch (_) {
-      return "light";
-    }
+    return "light";
   }
 
   function ensureFaviconLink() {

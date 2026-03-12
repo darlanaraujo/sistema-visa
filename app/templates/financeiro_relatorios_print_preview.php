@@ -453,7 +453,12 @@ $footnote = (string)($data['footnote'] ?? '');
 
     function applyBrand(brand){
       if(!brand || typeof brand !== 'object') return;
-      const reportLogoSrc = String(brand.reportLogoDataUrl || brand.logoDataUrl || '').trim();
+      const reportLogoSrc = String(
+        brand.reportLogoDataUrl ||
+        brand.logoDataUrl ||
+        brand.faviconDataUrl ||
+        ''
+      ).trim();
       const fav = String(brand.faviconDataUrl || '').trim();
       const reportLogoEl = document.getElementById('frPreviewReportLogo');
 

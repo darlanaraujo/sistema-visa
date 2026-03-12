@@ -95,6 +95,21 @@ function ensurePrivateAreaBoot() {
 }
 
 const privateAreaBoot = ensurePrivateAreaBoot();
+const UI_BOOTSTRAP_CACHE_KEY = 'sys_ui_bootstrap_cache_v1';
+
+function syncUiBootstrapPrefsCache(prefs) {
+  try {
+    window.SysUIBootstrap?.syncPrefsCache?.(prefs);
+  } catch (_) {}
+
+  try {
+    const current = JSON.parse(localStorage.getItem(UI_BOOTSTRAP_CACHE_KEY) || '{}');
+    const next = Object.assign({}, current && typeof current === 'object' ? current : {}, {
+      prefs: prefs && typeof prefs === 'object' ? prefs : {},
+    });
+    localStorage.setItem(UI_BOOTSTRAP_CACHE_KEY, JSON.stringify(next));
+  } catch (_) {}
+}
 
 /* =========================================================
    EARLY APPLY (evita flash em navegação)
@@ -648,14 +663,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   scheduleIdleLogout();
 
-  window.addEventListener('pagehide', () => {
-    try {
-      const url = resolveAppUrl('/public_php/api/logout.php');
-      const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
-    } catch (_) {}
-  });
-
   function setActiveNav() {
     const path = window.location.pathname;
     let key = '';
@@ -676,7 +683,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   /* =========================================================
      TOPBAR — THEME + ALERTS
   ========================================================= */
-  const SYS_PREFS_KEY = 'tools_sys_prefs_v2';
+  const USER_UI_PREFS_KEY_PREFIX = 'user_ui_prefs:';
 
   const btnThemeToggle = document.getElementById('btnThemeToggle');
   const themeToggleIcon = document.getElementById('themeToggleIcon');
@@ -703,7 +710,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function getPrefs() {
+  function getGlobalPrefs() {
     try {
       if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === 'function') {
         const obj = window.BaseStore.prefs.get();
@@ -714,10 +721,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     catch (_) { return null; }
   }
 
+  function getUserPrefs() {
+    try {
+      if (window.BaseStore?.userPrefs && typeof window.BaseStore.userPrefs.get === 'function') {
+        const obj = window.BaseStore.userPrefs.get();
+        return obj && typeof obj === 'object' ? obj : null;
+      }
+      return null;
+    }
+    catch (_) { return null; }
+  }
+
+  function getCombinedPrefs() {
+    const globalPrefs = getGlobalPrefs() || {};
+    const userPrefs = getUserPrefs() || {};
+    return {
+      ...globalPrefs,
+      theme: userPrefs?.theme && typeof userPrefs.theme === 'object'
+        ? userPrefs.theme
+        : (globalPrefs?.theme && typeof globalPrefs.theme === 'object' ? globalPrefs.theme : {}),
+      preview: userPrefs?.preview && typeof userPrefs.preview === 'object'
+        ? userPrefs.preview
+        : (globalPrefs?.preview && typeof globalPrefs.preview === 'object' ? globalPrefs.preview : {}),
+    };
+  }
+
   async function setPrefs(nextPrefs) {
     try {
-      if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.set === 'function') {
-        return Boolean(await window.BaseStore.prefs.set(nextPrefs));
+      if (window.BaseStore?.userPrefs && typeof window.BaseStore.userPrefs.set === 'function') {
+        return Boolean(await window.BaseStore.userPrefs.set(nextPrefs));
       }
       return false;
     } catch (_) {
@@ -762,7 +794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function toggleTheme() {
-    const prefs = getPrefs() || {};
+    const prefs = getUserPrefs() || {};
     prefs.theme = prefs.theme && typeof prefs.theme === 'object' ? prefs.theme : {};
 
     const currentDom = getCurrentThemeModeFromDOM();
@@ -772,15 +804,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ok = await setPrefs(prefs);
     if (!ok) return;
 
-    try { window.SysUIBootstrap?.syncPrefsCache?.(prefs); } catch (_) {}
+    syncUiBootstrapPrefsCache(getCombinedPrefs());
     applyThemeLocal(next);
 
     try { window.SysUIBootstrap?.refresh?.(); } catch (_) {}
-    try { window.dispatchEvent(new CustomEvent('sys:prefs:applied', { detail: { key: SYS_PREFS_KEY } })); } catch (_) {}
+    try {
+      const userKey = window.BaseStore?.userPrefs?.key?.() || USER_UI_PREFS_KEY_PREFIX;
+      window.dispatchEvent(new CustomEvent('sys:prefs:applied', { detail: { key: userKey } }));
+    } catch (_) {}
   }
 
   function syncThemeButton() {
-    const prefs = getPrefs();
+    const prefs = getCombinedPrefs();
     const fromPrefs = prefs?.theme?.mode;
     if (fromPrefs) applyThemeLocal(fromPrefs);
     else applyThemeLocal(getCurrentThemeModeFromDOM());
@@ -1063,7 +1098,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.addEventListener('base:prefs:changed', () => {
     // Re-render para refletir tema/acento na ficha quando houver atualização de prefs.
+    const prefs = getCombinedPrefs();
+    if (prefs) syncUiBootstrapPrefsCache(prefs);
     renderUserModalData();
+  });
+
+  window.addEventListener('base:user-prefs:changed', () => {
+    const prefs = getCombinedPrefs();
+    if (prefs) syncUiBootstrapPrefsCache(prefs);
+    renderUserModalData();
+    syncThemeButton();
   });
 
   document.addEventListener('keydown', (e) => {

@@ -181,6 +181,46 @@
       return (m === "dark") ? "dark" : "light";
     }
 
+    function resolveAppUrl(path) {
+      try {
+        if (typeof window.appUrl === "function") return window.appUrl(path);
+      } catch (_) {}
+      return String(path || "");
+    }
+
+    const COMPANY_API = {
+      get: resolveAppUrl("/public_php/api/company_get.php"),
+      save: resolveAppUrl("/public_php/api/company_save.php"),
+      reset: resolveAppUrl("/public_php/api/company_reset.php"),
+    };
+
+    async function apiGetJson(url) {
+      const res = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json || json.ok !== true) {
+        throw new Error(json?.error || "REQUEST_FAILED");
+      }
+      return json.data;
+    }
+
+    async function apiPostJson(url, payload) {
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload || {}),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json || json.ok !== true) {
+        throw new Error(json?.hint || json?.error || "REQUEST_FAILED");
+      }
+      return json.data;
+    }
+
     // -----------------------------
     // DEFAULTS do sistema (fonte: base_private/login)
     // -----------------------------
@@ -224,12 +264,45 @@
     // -----------------------------
     // PERSONALIZAÇÃO (SPECIAL)
     // -----------------------------
-    async function loadSysPrefs() {
-      return window.FerStore?.prefs?.get ? window.FerStore.prefs.get() : null;
+    async function loadGlobalSysPrefs() {
+      try {
+        if (window.BaseStore?.ready && typeof window.BaseStore.ready === "function") {
+          await window.BaseStore.ready();
+        }
+        if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === "function") {
+          const prefs = window.BaseStore.prefs.get();
+          return prefs && typeof prefs === "object" ? prefs : {};
+        }
+      } catch (_) {}
+
+      try {
+        if (window.FerStore?.prefs?.get) return await window.FerStore.prefs.get();
+      } catch (_) {}
+
+      return {};
     }
 
-    async function saveSysPrefs(prefs) {
+    async function loadUserSysPrefs() {
       try {
+        if (window.BaseStore?.ready && typeof window.BaseStore.ready === "function") {
+          await window.BaseStore.ready();
+        }
+        if (window.BaseStore?.userPrefs && typeof window.BaseStore.userPrefs.get === "function") {
+          const prefs = window.BaseStore.userPrefs.get();
+          return prefs && typeof prefs === "object" ? prefs : {};
+        }
+      } catch (_) {}
+      return {};
+    }
+
+    async function saveGlobalSysPrefs(prefs) {
+      try {
+        if (window.BaseStore?.ready && typeof window.BaseStore.ready === "function") {
+          await window.BaseStore.ready();
+        }
+        if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.set === "function") {
+          return await window.BaseStore.prefs.set(prefs || {});
+        }
         if (window.FerStore?.prefs?.set) return await window.FerStore.prefs.set(prefs || {});
       } catch (_) {
         tDanger("Não foi possível salvar. O armazenamento do navegador pode estar cheio.");
@@ -237,9 +310,41 @@
       return false;
     }
 
-    async function removeSysPrefs() {
+    async function saveUserSysPrefs(prefs) {
       try {
+        if (window.BaseStore?.ready && typeof window.BaseStore.ready === "function") {
+          await window.BaseStore.ready();
+        }
+        if (window.BaseStore?.userPrefs && typeof window.BaseStore.userPrefs.set === "function") {
+          return await window.BaseStore.userPrefs.set(prefs || {});
+        }
+      } catch (_) {
+        tDanger("Não foi possível salvar. O armazenamento do navegador pode estar cheio.");
+      }
+      return false;
+    }
+
+    async function removeGlobalSysPrefs() {
+      try {
+        if (window.BaseStore?.ready && typeof window.BaseStore.ready === "function") {
+          await window.BaseStore.ready();
+        }
+        if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.clear === "function") {
+          return await window.BaseStore.prefs.clear();
+        }
         if (window.FerStore?.prefs?.remove) return await window.FerStore.prefs.remove();
+      } catch (_) {}
+      return false;
+    }
+
+    async function removeUserSysPrefs() {
+      try {
+        if (window.BaseStore?.ready && typeof window.BaseStore.ready === "function") {
+          await window.BaseStore.ready();
+        }
+        if (window.BaseStore?.userPrefs && typeof window.BaseStore.userPrefs.clear === "function") {
+          return await window.BaseStore.userPrefs.clear();
+        }
       } catch (_) {}
       return false;
     }
@@ -273,9 +378,18 @@
       else imgEl.removeAttribute("src");
     }
 
+    function getDefaultSystemName() {
+      return "Sistema Visa Remoções";
+    }
+
+    function getDefaultCompanyName() {
+      return "Visa Remoções";
+    }
+
     // estado temporário dentro do modal
     let sysLogoDataUrl = "";
     let sysFavDataUrl = "";
+    let pendingSysResetToDefault = false;
 
     const DEFAULT_THEME = {
       accent: "#a42d2d",
@@ -291,6 +405,156 @@
       orange: "#f97316",
       slate: "#334155",
     };
+
+    function buildDefaultSysPrefs() {
+      return {
+        identity: {
+          systemName: getDefaultSystemName(),
+          companyName: getDefaultCompanyName(),
+          cnpj: "",
+          razao: "",
+          slogan: "",
+          notes: "",
+        },
+        contact: {
+          site: "",
+          email: "",
+          phone: "",
+          whats: "",
+        },
+        brand: {
+          logoDataUrl: "",
+          faviconDataUrl: "",
+        },
+        prefs: {
+          currency: "BRL",
+          timezone: "America/Sao_Paulo",
+          compactTables: false,
+        },
+        theme: {
+          mode: "light",
+          accentPreset: "visa",
+          accent: "",
+          danger: DEFAULT_THEME.danger,
+          success: DEFAULT_THEME.success,
+        },
+      };
+    }
+
+    function buildGlobalSysPrefsPayload() {
+      return {
+        identity: {
+          systemName: titleCasePT(els.sysSystemName?.value || "") || getDefaultSystemName(),
+          companyName: titleCasePT(els.sysCompanyName?.value || "") || getDefaultCompanyName(),
+          cnpj: normalizeCnpj(els.sysCnpj?.value || ""),
+          razao: titleCasePT(els.sysRazao?.value || ""),
+          slogan: normalizeSpaces(els.sysSlogan?.value || ""),
+          notes: normalizeSpaces(els.sysNotes?.value || ""),
+        },
+        contact: {
+          site: normalizeSpaces(els.sysSite?.value || ""),
+          email: normalizeSpaces(els.sysEmail?.value || ""),
+          phone: normalizeSpaces(els.sysPhone?.value || ""),
+          whats: normalizeSpaces(els.sysWhats?.value || ""),
+        },
+        brand: {
+          logoDataUrl: sysLogoDataUrl || "",
+          faviconDataUrl: sysFavDataUrl || "",
+        },
+        updatedAt: Date.now(),
+        schema: "sys_prefs_v2",
+      };
+    }
+
+    function buildUserSysPrefsPayload() {
+      const themeMode = normalizeThemeMode(els.sysThemeMode?.value || "light");
+      const presetSel = String(els.sysAccentPreset?.value || "visa").toLowerCase();
+
+      let accentPreset = "";
+      let accent = "";
+
+      if (presetSel === "custom") {
+        accent = ensureHex(
+          els.sysColorAccentHex?.value || els.sysColorAccent?.value,
+          DEFAULT_THEME.accent
+        );
+        accentPreset = "";
+      } else {
+        accentPreset = ACCENT_PRESETS[presetSel] ? presetSel : "visa";
+        accent = "";
+      }
+
+      return {
+        prefs: {
+          currency: (els.sysCurrency?.value || "BRL").trim(),
+          timezone: normalizeSpaces(els.sysTimezone?.value || "America/Sao_Paulo"),
+          compactTables: (els.sysCompact?.value || "0") === "1",
+        },
+        theme: {
+          mode: themeMode,
+          accentPreset,
+          accent,
+          danger: ensureHex(els.sysColorDangerHex?.value || els.sysColorDanger?.value, DEFAULT_THEME.danger),
+          success: ensureHex(els.sysColorSuccessHex?.value || els.sysColorSuccess?.value, DEFAULT_THEME.success),
+        },
+        updatedAt: Date.now(),
+        schema: "user_ui_prefs_v1",
+      };
+    }
+
+    function buildCompanyPatchFromForm() {
+      const systemName = titleCasePT(els.sysSystemName?.value || "");
+      const companyName = titleCasePT(els.sysCompanyName?.value || "");
+
+      return {
+        system_name: systemName || getDefaultSystemName(),
+        company: companyName || getDefaultCompanyName(),
+        cnpj: prettyCnpj(els.sysCnpj?.value || ""),
+        site: normalizeSpaces(els.sysSite?.value || ""),
+        tagline: normalizeSpaces(els.sysSlogan?.value || ""),
+        logo: sysLogoDataUrl || getDefaultLogoUrl(),
+        favicon: sysFavDataUrl || getDefaultFaviconUrl(),
+        report_logo: sysFavDataUrl || getDefaultFaviconUrl(),
+        report_footer_note: systemName
+          ? `Documento gerado automaticamente pelo ${systemName}.`
+          : `Documento gerado automaticamente pelo ${getDefaultSystemName()}.`,
+      };
+    }
+
+    function mergeSysPrefsWithCompany(globalPrefs, userPrefs, corp) {
+      const merged = buildDefaultSysPrefs();
+
+      if (globalPrefs && typeof globalPrefs === "object") {
+        Object.assign(merged, JSON.parse(JSON.stringify(globalPrefs)));
+      }
+
+      if (userPrefs && typeof userPrefs === "object") {
+        if (userPrefs.prefs && typeof userPrefs.prefs === "object") {
+          merged.prefs = Object.assign({}, merged.prefs || {}, userPrefs.prefs);
+        }
+        if (userPrefs.theme && typeof userPrefs.theme === "object") {
+          merged.theme = Object.assign({}, merged.theme || {}, userPrefs.theme);
+        }
+        if (userPrefs.preview && typeof userPrefs.preview === "object") {
+          merged.preview = Object.assign({}, merged.preview || {}, userPrefs.preview);
+        }
+      }
+      merged.identity = merged.identity && typeof merged.identity === "object" ? merged.identity : {};
+      merged.contact = merged.contact && typeof merged.contact === "object" ? merged.contact : {};
+      merged.brand = merged.brand && typeof merged.brand === "object" ? merged.brand : {};
+
+      if (corp && typeof corp === "object") {
+        merged.identity.systemName = merged.identity.systemName || String(corp.system_name || "");
+        merged.identity.companyName = merged.identity.companyName || String(corp.company || "");
+        merged.identity.cnpj = merged.identity.cnpj || String(corp.cnpj || "");
+        merged.identity.slogan = merged.identity.slogan || String(corp.tagline || "");
+        merged.contact.site = merged.contact.site || String(corp.site || "");
+        merged.brand.logoDataUrl = merged.brand.logoDataUrl || String(corp.logo || "");
+        merged.brand.faviconDataUrl = merged.brand.faviconDataUrl || String(corp.favicon || "");
+      }
+
+      return merged;
+    }
 
     function syncColorPair(colorEl, hexEl, fallback) {
       if (!colorEl || !hexEl) return;
@@ -370,10 +634,20 @@
       if (els.sysFaviconFile) els.sysFaviconFile.value = "";
     }
 
+    function resetSysFormToDefaults() {
+      pendingSysResetToDefault = true;
+      fillSysForm(buildDefaultSysPrefs());
+    }
+
     async function openSysModal() {
       if (!els.sysModal) return;
-      const cur = await loadSysPrefs() || {};
-      fillSysForm(cur);
+      const [globalPrefs, userPrefs, corp] = await Promise.all([
+        loadGlobalSysPrefs().catch(() => ({})),
+        loadUserSysPrefs().catch(() => ({})),
+        apiGetJson(COMPANY_API.get).catch(() => null),
+      ]);
+      pendingSysResetToDefault = false;
+      fillSysForm(mergeSysPrefsWithCompany(globalPrefs || {}, userPrefs || {}, corp));
 
       openModalAnimated(els.sysModal);
 
@@ -384,6 +658,7 @@
 
     function closeSysModal() {
       if (!els.sysModal) return;
+      pendingSysResetToDefault = false;
       closeModalAnimated(els.sysModal);
     }
 
@@ -686,6 +961,10 @@
       colorEl.addEventListener("input", () => {
         const v = ensureHex(colorEl.value, fallback);
         if (v) hexEl.value = v;
+        if (colorEl === els.sysColorAccent && els.sysAccentPreset && isHexColor(v)) {
+          els.sysAccentPreset.value = "custom";
+          setAccentCustomEnabled(true);
+        }
       });
 
       hexEl.addEventListener("input", () => {
@@ -704,6 +983,7 @@
     bindColorPair(els.sysColorSuccess, els.sysColorSuccessHex, DEFAULT_THEME.success);
 
     els.sysAccentPreset?.addEventListener("change", () => {
+      pendingSysResetToDefault = false;
       const v = String(els.sysAccentPreset.value || "visa").toLowerCase();
       const isCustom = v === "custom";
 
@@ -722,17 +1002,21 @@
 
     // uploads
     els.sysLogoFile?.addEventListener("change", async () => {
+      pendingSysResetToDefault = false;
       const f = els.sysLogoFile?.files?.[0];
       await onPickImage(f, "logo");
     });
 
     els.sysFaviconFile?.addEventListener("change", async () => {
+      pendingSysResetToDefault = false;
       const f = els.sysFaviconFile?.files?.[0];
       await onPickImage(f, "fav");
     });
 
     // reset imagens
-    els.sysLogoRemove?.addEventListener("click", () => {
+    els.sysLogoRemove?.addEventListener("click", (e) => {
+      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      pendingSysResetToDefault = false;
       sysLogoDataUrl = "";
       const dLogo = getDefaultLogoUrl();
       setImgPreview(els.sysLogoPreview, dLogo);
@@ -740,7 +1024,9 @@
       tWarning("Logo resetada para o padrão (ainda não salva).");
     });
 
-    els.sysFaviconRemove?.addEventListener("click", () => {
+    els.sysFaviconRemove?.addEventListener("click", (e) => {
+      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      pendingSysResetToDefault = false;
       sysFavDataUrl = "";
       const dFav = getDefaultFaviconUrl();
       setImgPreview(els.sysFaviconPreview, dFav);
@@ -749,7 +1035,9 @@
     });
 
     // reset cores
-    els.sysColorsReset?.addEventListener("click", () => {
+    els.sysColorsReset?.addEventListener("click", (e) => {
+      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      pendingSysResetToDefault = false;
       if (els.sysAccentPreset) els.sysAccentPreset.value = "visa";
       setAccentCustomEnabled(false);
 
@@ -767,14 +1055,19 @@
     });
 
     // restaurar padrão geral
-    els.sysReset?.addEventListener("click", async () => {
-      const ok = await removeSysPrefs();
-      if (!ok) {
-        tDanger("Não foi possível restaurar a personalização.");
-        return;
-      }
-      fillSysForm({});
-      tSuccess("Personalização restaurada para o padrão.");
+    els.sysReset?.addEventListener("click", (e) => {
+      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      resetSysFormToDefaults();
+      tWarning("Padrão restaurado no formulário. Clique em Salvar para aplicar ou Cancelar para descartar.");
+    });
+
+    els.sysForm?.querySelectorAll("input, select, textarea").forEach((field) => {
+      field.addEventListener("input", () => {
+        if (pendingSysResetToDefault) pendingSysResetToDefault = false;
+      });
+      field.addEventListener("change", () => {
+        if (pendingSysResetToDefault) pendingSysResetToDefault = false;
+      });
     });
 
     // submit salva e aplica
@@ -790,72 +1083,44 @@
         return;
       }
 
-      const themeMode = normalizeThemeMode(els.sysThemeMode?.value || "light");
-      const presetSel = String(els.sysAccentPreset?.value || "visa").toLowerCase();
-
-      let accentPreset = "";
-      let accent = "";
-
-      if (presetSel === "custom") {
-        accent = ensureHex(
-          els.sysColorAccentHex?.value || els.sysColorAccent?.value,
-          DEFAULT_THEME.accent
-        );
-        accentPreset = "";
-      } else {
-        accentPreset = ACCENT_PRESETS[presetSel] ? presetSel : "visa";
-        accent = "";
-      }
-
-      const danger  = ensureHex(els.sysColorDangerHex?.value || els.sysColorDanger?.value, DEFAULT_THEME.danger);
-      const success = ensureHex(els.sysColorSuccessHex?.value || els.sysColorSuccess?.value, DEFAULT_THEME.success);
-
       const confirmColors = window.confirm("Alterar cores pode afetar o padrão visual do sistema. Deseja aplicar?");
       if (!confirmColors) return;
 
-      const payload = {
-        identity: {
-          systemName,
-          companyName,
-          cnpj: normalizeCnpj(els.sysCnpj?.value || ""),
-          razao: titleCasePT(els.sysRazao?.value || ""),
-          slogan: normalizeSpaces(els.sysSlogan?.value || ""),
-          notes: normalizeSpaces(els.sysNotes?.value || ""),
-        },
-        contact: {
-          site: normalizeSpaces(els.sysSite?.value || ""),
-          email: normalizeSpaces(els.sysEmail?.value || ""),
-          phone: normalizeSpaces(els.sysPhone?.value || ""),
-          whats: normalizeSpaces(els.sysWhats?.value || ""),
-        },
-        brand: {
-          logoDataUrl: sysLogoDataUrl || "",
-          faviconDataUrl: sysFavDataUrl || "",
-        },
-        prefs: {
-          currency: (els.sysCurrency?.value || "BRL").trim(),
-          timezone: normalizeSpaces(els.sysTimezone?.value || "America/Sao_Paulo"),
-          compactTables: (els.sysCompact?.value || "0") === "1",
-        },
-        theme: {
-          mode: themeMode,
-          accentPreset,
-          accent,
-          danger,
-          success,
-        },
-        updatedAt: Date.now(),
-        schema: "sys_prefs_v2",
-      };
+      const shouldRestoreDefaults = pendingSysResetToDefault === true;
 
-      const ok = await saveSysPrefs(payload);
-      if (!ok) {
-        tDanger("Não foi possível salvar a personalização.");
+      try {
+        if (shouldRestoreDefaults) {
+          const [globalOk, userOk] = await Promise.all([
+            removeGlobalSysPrefs(),
+            removeUserSysPrefs(),
+            apiPostJson(COMPANY_API.reset, {}),
+          ]);
+          if (!globalOk || !userOk) {
+            tDanger("Não foi possível restaurar a personalização.");
+            return;
+          }
+        } else {
+          const companyPatch = buildCompanyPatchFromForm();
+          const globalPayload = buildGlobalSysPrefsPayload();
+          const userPayload = buildUserSysPrefsPayload();
+          const [globalOk, userOk] = await Promise.all([
+            saveGlobalSysPrefs(globalPayload),
+            saveUserSysPrefs(userPayload),
+            apiPostJson(COMPANY_API.save, companyPatch),
+          ]);
+          if (!globalOk || !userOk) {
+            tDanger("Não foi possível salvar a personalização.");
+            return;
+          }
+        }
+      } catch (err) {
+        tDanger(String(err?.message || "Não foi possível salvar a personalização."));
         return;
       }
 
+      pendingSysResetToDefault = false;
       closeSysModal();
-      tSuccess("Personalização salva.");
+      tSuccess(shouldRestoreDefaults ? "Personalização restaurada para o padrão." : "Personalização salva.");
     });
 
     // fechar modal clicando fora

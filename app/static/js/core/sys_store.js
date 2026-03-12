@@ -17,7 +17,14 @@
   const KEYS = {
     SYS_PREFS: "tools_sys_prefs_v2",
     USER_DATA: "sys_user_v1",
+    USER_UI_PREFS_PREFIX: "user_ui_prefs:",
   };
+
+  function userUiPrefsKey(userId) {
+    const normalized = String(userId || "").trim();
+    if (!normalized) return "";
+    return `${KEYS.USER_UI_PREFS_PREFIX}${normalized}`;
+  }
 
   function buildApiError(message, status) {
     const error = new Error(message || "Falha na persistência");
@@ -177,6 +184,31 @@
     async resetSysPrefs() {
       await this.remove(KEYS.SYS_PREFS);
       emit("sys:prefs:changed", {});
+    },
+
+    userUiPrefsKey,
+
+    async getUserUiPrefs(userId) {
+      const key = userUiPrefsKey(userId);
+      if (!key) return {};
+      return (await this.get(key)) || {};
+    },
+
+    async setUserUiPrefs(userId, payload) {
+      const key = userUiPrefsKey(userId);
+      if (!key) return {};
+      const next = payload && typeof payload === "object" ? payload : {};
+      await this.set(key, next);
+      emit("sys:user-ui-prefs:changed", { userId: String(userId), prefs: next, key });
+      return next;
+    },
+
+    async resetUserUiPrefs(userId) {
+      const key = userUiPrefsKey(userId);
+      if (!key) return false;
+      await this.remove(key);
+      emit("sys:user-ui-prefs:changed", { userId: String(userId), prefs: {}, key, removed: true });
+      return true;
     },
 
     async getUser() {

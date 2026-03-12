@@ -15,8 +15,7 @@ $extra_css = [
 
 $extra_js = [
   app_url('/app/static/js/ferramentas/data/fer_store.js'),
-  app_url('/app/static/js/ferramentas/ferramentas.js'),
-  app_url('/app/static/js/system/sys_company_panel.js')
+  app_url('/app/static/js/ferramentas/ferramentas.js')
 ];
 
 include __DIR__ . '/base_private.php';

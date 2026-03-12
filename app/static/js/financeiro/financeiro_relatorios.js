@@ -1868,7 +1868,10 @@
 
         let prefs = null;
         try {
-          if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === 'function') {
+          if (window.BaseStore?.userPrefs && typeof window.BaseStore.userPrefs.get === 'function') {
+            const p = window.BaseStore.userPrefs.get();
+            prefs = p && typeof p === 'object' ? p : null;
+          } else if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === 'function') {
             const p = window.BaseStore.prefs.get();
             prefs = p && typeof p === 'object' ? p : null;
           }
@@ -1889,7 +1892,12 @@
         const companyReportLogo = String(companyData?.report_logo || companyData?.logo || '').trim();
         const companyFav = String(companyData?.favicon || '').trim();
 
-        const reportLogoDataUrl = String(prefs?.brand?.reportLogoDataUrl || prefs?.brand?.logoDataUrl || '').trim();
+        const reportLogoDataUrl = String(
+          prefs?.brand?.reportLogoDataUrl ||
+          prefs?.brand?.logoDataUrl ||
+          prefs?.brand?.faviconDataUrl ||
+          ''
+        ).trim();
         const faviconDataUrl = String(prefs?.brand?.faviconDataUrl || '').trim();
 
         const brand = {};

@@ -18,6 +18,7 @@
     DATA_CHANGED: "sys:data:changed",
     USER_CHANGED: "base:user:changed",
     PREFS_CHANGED: "base:prefs:changed",
+    USER_PREFS_CHANGED: "base:user-prefs:changed",
     UI_CHANGED: "base:ui:changed",
   };
 
@@ -25,6 +26,7 @@
     ready: false,
     user: null,
     prefs: {},
+    userPrefs: {},
     ui: {
       [KEYS.SIDEBAR_COLLAPSED]: "0",
     },
@@ -42,6 +44,7 @@
     emit(EVENTS.DATA_CHANGED, detail);
     if (kind === "user") emit(EVENTS.USER_CHANGED, detail);
     if (kind === "prefs") emit(EVENTS.PREFS_CHANGED, detail);
+    if (kind === "user_ui_prefs") emit(EVENTS.USER_PREFS_CHANGED, detail);
     if (kind === "ui") emit(EVENTS.UI_CHANGED, detail);
   }
 
@@ -72,6 +75,35 @@
       return Boolean(await s.remove(key));
     } catch (_) {
       return false;
+    }
+  }
+
+  async function fetchSessionUser() {
+    try {
+      const res = await fetch(resolveAppUrl("/public_php/api/me.php"), {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return null;
+      const json = await res.json().catch(() => null);
+      const user = json && typeof json === "object" ? json.user : null;
+      return user && typeof user === "object" ? user : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function getCurrentUserId() {
+    const raw = state.user && typeof state.user === "object" ? state.user.id : "";
+    return String(raw || "").trim();
+  }
+
+  function getUserUiPrefsKey() {
+    try {
+      return global.SysStore?.userUiPrefsKey?.(getCurrentUserId()) || "";
+    } catch (_) {
+      return "";
     }
   }
 
@@ -179,14 +211,24 @@
     if (initPromise) return initPromise;
 
     initPromise = (async () => {
-      const [user, prefs, sidebarCollapsed] = await Promise.all([
+      const [sessionUser, storedUser, prefs, sidebarCollapsed] = await Promise.all([
+        fetchSessionUser(),
         storeGet(KEYS.USER),
         storeGet(KEYS.SYS_PREFS),
         storeGet(KEYS.SIDEBAR_COLLAPSED),
       ]);
 
-      state.user = user && typeof user === "object" ? normalizeUser(user) : defaultUser();
+      const resolvedUser = sessionUser && typeof sessionUser === "object"
+        ? sessionUser
+        : (storedUser && typeof storedUser === "object" ? storedUser : defaultUser());
+
+      state.user = normalizeUser(resolvedUser);
       state.prefs = prefs && typeof prefs === "object" ? prefs : {};
+      {
+        const userPrefsKey = getUserUiPrefsKey();
+        const userPrefs = userPrefsKey ? await storeGet(userPrefsKey) : {};
+        state.userPrefs = userPrefs && typeof userPrefs === "object" ? userPrefs : {};
+      }
       state.ui[KEYS.SIDEBAR_COLLAPSED] = (sidebarCollapsed === null || typeof sidebarCollapsed === "undefined")
         ? "0"
         : String(sidebarCollapsed);
@@ -211,6 +253,22 @@
       get() {
         return state.user ? normalizeUser(state.user) : defaultUser();
       },
+      async refreshFromSession() {
+        await init();
+        const sessionUser = await fetchSessionUser();
+        if (!sessionUser || typeof sessionUser !== "object") {
+          return this.get();
+        }
+        const next = normalizeUser(sessionUser);
+        state.user = next;
+        {
+          const userPrefsKey = getUserUiPrefsKey();
+          const userPrefs = userPrefsKey ? await storeGet(userPrefsKey) : {};
+          state.userPrefs = userPrefs && typeof userPrefs === "object" ? userPrefs : {};
+        }
+        emitChange("user", next);
+        return next;
+      },
       async set(payload) {
         await init();
         const current = this.get();
@@ -219,6 +277,11 @@
         const ok = await storeSet(KEYS.USER, next);
         if (!ok) return current;
         state.user = next;
+        {
+          const userPrefsKey = getUserUiPrefsKey();
+          const userPrefs = userPrefsKey ? await storeGet(userPrefsKey) : {};
+          state.userPrefs = userPrefs && typeof userPrefs === "object" ? userPrefs : {};
+        }
         emitChange("user", next);
         return next;
       },
@@ -227,6 +290,7 @@
         const ok = await storeRemove(KEYS.USER);
         if (!ok) return false;
         state.user = defaultUser();
+        state.userPrefs = {};
         emitChange("user", null);
         return true;
       },
@@ -261,6 +325,42 @@
         if (!ok) return false;
         state.prefs = {};
         emitChange("prefs", {});
+        return true;
+      },
+    },
+
+    userPrefs: {
+      key() {
+        return getUserUiPrefsKey();
+      },
+      get() {
+        return state.userPrefs && typeof state.userPrefs === "object" ? state.userPrefs : {};
+      },
+      async set(nextPrefs) {
+        await init();
+        const key = getUserUiPrefsKey();
+        if (!key) return false;
+        const next = nextPrefs && typeof nextPrefs === "object" ? nextPrefs : {};
+        const ok = await storeSet(key, next);
+        if (!ok) return false;
+        state.userPrefs = next;
+        emitChange("user_ui_prefs", { key, prefs: next, userId: getCurrentUserId() });
+        return true;
+      },
+      async patch(patch) {
+        await init();
+        const current = this.get();
+        const next = deepMerge(current, patch && typeof patch === "object" ? patch : {});
+        return this.set(next);
+      },
+      async clear() {
+        await init();
+        const key = getUserUiPrefsKey();
+        if (!key) return false;
+        const ok = await storeRemove(key);
+        if (!ok) return false;
+        state.userPrefs = {};
+        emitChange("user_ui_prefs", { key, prefs: {}, userId: getCurrentUserId(), removed: true });
         return true;
       },
     },

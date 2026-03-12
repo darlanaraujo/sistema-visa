@@ -12,17 +12,55 @@
     } catch (_) {}
   }
 
-  async function getPrefs() {
-    // Caminho oficial: BaseStore (UI não toca persistência diretamente).
+  async function getGlobalPrefs() {
     try {
       if (window.BaseStore?.init && typeof window.BaseStore.init === "function") {
         await window.BaseStore.init();
       }
       if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === "function") {
         const prefs = window.BaseStore.prefs.get();
-        return prefs && typeof prefs === "object" ? prefs : null;
+        return prefs && typeof prefs === "object" ? prefs : {};
       }
     } catch (_) {}
+    return {};
+  }
+
+  async function getUserPrefs() {
+    try {
+      if (window.BaseStore?.init && typeof window.BaseStore.init === "function") {
+        await window.BaseStore.init();
+      }
+      if (window.BaseStore?.userPrefs && typeof window.BaseStore.userPrefs.get === "function") {
+        const prefs = window.BaseStore.userPrefs.get();
+        return prefs && typeof prefs === "object" ? prefs : {};
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  async function getPrefs() {
+    // Caminho oficial: BaseStore (UI não toca persistência diretamente).
+    try {
+      const [globalPrefs, userPrefs] = await Promise.all([
+        getGlobalPrefs(),
+        getUserPrefs(),
+      ]);
+
+      const theme = (userPrefs?.theme && typeof userPrefs.theme === "object")
+        ? userPrefs.theme
+        : (globalPrefs?.theme && typeof globalPrefs.theme === "object" ? globalPrefs.theme : {});
+
+      const preview = (userPrefs?.preview && typeof userPrefs.preview === "object")
+        ? userPrefs.preview
+        : (globalPrefs?.preview && typeof globalPrefs.preview === "object" ? globalPrefs.preview : {});
+
+      return {
+        ...(globalPrefs && typeof globalPrefs === "object" ? globalPrefs : {}),
+        theme,
+        preview,
+      };
+    } catch (_) {}
+
     // Público/login: usa estado já bootstrapado sem tocar persistência aqui.
     try {
       const prefs = window.__SYS_BOOTSTRAP__?.prefs;
@@ -36,10 +74,10 @@
   }
 
   function normalizeMode(v) {
-    const s = String(v || "").toLowerCase().trim();
+    const s = String(v || "light").toLowerCase().trim();
     if (s === "dark") return "dark";
     if (s === "light") return "light";
-    return "auto";
+    return "light";
   }
 
   function resolveAutoMode() {
@@ -139,7 +177,15 @@
   }
 
   function applyColorVars(themeObj) {
-    if (!themeObj || typeof themeObj !== "object") return;
+    if (!themeObj || typeof themeObj !== "object") {
+      document.documentElement.removeAttribute("data-accent");
+      document.documentElement.style.removeProperty("--c-accent");
+      document.documentElement.style.removeProperty("--fin-blue");
+      document.documentElement.style.removeProperty("--accent");
+      document.documentElement.style.removeProperty("--c-danger");
+      document.documentElement.style.removeProperty("--c-success");
+      return;
+    }
 
     // ✅ NOVO: preset do acento (data-accent)
     const preset = String(themeObj.accentPreset || themeObj.accent_preset || "").trim().toLowerCase();
@@ -308,6 +354,7 @@
   function applyIdentity(identityObj) {
     const systemName = String(identityObj?.systemName || "").trim();
     const companyName = String(identityObj?.companyName || "").trim();
+    const defaultTitle = String(document.documentElement.getAttribute("data-default-title") || "").trim();
 
     if (systemName) {
       try {
@@ -316,6 +363,8 @@
         const pagePart = parts.length ? parts[0] : cur;
         document.title = pagePart ? `${pagePart} • ${systemName}` : systemName;
       } catch (_) {}
+    } else if (defaultTitle) {
+      document.title = defaultTitle;
     }
 
     window.SysPrefs = window.SysPrefs || {};
@@ -342,13 +391,20 @@
   }
 
   async function init() {
+    try {
+      if (!document.documentElement.getAttribute("data-default-title")) {
+        document.documentElement.setAttribute("data-default-title", document.title || "");
+      }
+    } catch (_) {}
+
     await waitPrivateAreaBoot();
     await applyAll();
 
     // Evento padrão da camada BaseStore
     window.addEventListener("base:prefs:changed", () => { applyAll().catch(() => {}); });
+    window.addEventListener("base:user-prefs:changed", () => { applyAll().catch(() => {}); });
     window.addEventListener("base:changed", (e) => {
-      if (e?.detail?.kind === "prefs") applyAll().catch(() => {});
+      if (e?.detail?.kind === "prefs" || e?.detail?.kind === "user_ui_prefs") applyAll().catch(() => {});
     });
 
     // Compatibilidade com eventos do Financeiro em versões antigas
