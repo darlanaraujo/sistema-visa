@@ -1,11 +1,22 @@
 // app/static/js/financeiro_contas_pagar.js
 (function () {
+  async function waitPrivateAreaBoot() {
+    try {
+      if (window.__SV_PRIVATE_BOOT__ && typeof window.__SV_PRIVATE_BOOT__.ready === "function") {
+        await window.__SV_PRIVATE_BOOT__.ready();
+      }
+    } catch (_) {}
+  }
+
   function ready(fn) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
     else fn();
   }
 
-  ready(function () {
+  ready(async function () {
+    await waitPrivateAreaBoot();
+    try { await window.FinRefs?.ensureAll?.(); } catch (_) {}
+    try { await window.FinRefsBridge?.exportAll?.(); } catch (_) {}
     const STORAGE_ROWS_KEY = "fin_cp_rows_v1";
     const STORAGE_TPL_KEY = "fin_cp_templates_v1";
     const FIXED_LIMIT = 12;
@@ -174,19 +185,17 @@
       return [];
     }
 
-    function storeSetRows(nextRows) {
+    async function storeSetRows(nextRows) {
       const fs = finStore();
       try {
         if (fs?.cp && typeof fs.cp.setRows === "function") {
-          fs.cp.setRows(nextRows);
-          return;
+          return fs.cp.setRows(nextRows);
         }
         if (fs?.cp && typeof fs.cp.rowsSet === "function") {
-          fs.cp.rowsSet(nextRows);
-          return;
+          return fs.cp.rowsSet(nextRows);
         }
       } catch (_) {}
-
+      return false;
     }
 
     function storeGetTemplates() {
@@ -205,24 +214,22 @@
       return [];
     }
 
-    function storeSetTemplates(nextTemplates) {
+    async function storeSetTemplates(nextTemplates) {
       const fs = finStore();
       try {
         if (fs?.cp && typeof fs.cp.setTemplates === "function") {
-          fs.cp.setTemplates(nextTemplates);
-          return;
+          return fs.cp.setTemplates(nextTemplates);
         }
         if (fs?.cp && typeof fs.cp.templatesSet === "function") {
-          fs.cp.templatesSet(nextTemplates);
-          return;
+          return fs.cp.templatesSet(nextTemplates);
         }
       } catch (_) {}
-
+      return false;
     }
 
-    function saveStore() {
-      storeSetRows(rows);
-      storeSetTemplates(templates);
+    async function saveStore() {
+      await storeSetRows(rows);
+      await storeSetTemplates(templates);
     }
 
     // ---------------------------
@@ -421,7 +428,7 @@
       );
     }
 
-    function loadStorage() {
+    async function loadStorage() {
       try {
         rows = storeGetRows();
         templates = storeGetTemplates();
@@ -435,7 +442,7 @@
 
       rows = rows.map(normalizeRowTextFields);
 
-      saveStore();
+      await saveStore();
     }
 
     // ---------------------------
@@ -555,17 +562,17 @@
       return rows.find((r) => String(r.id) === String(id));
     }
 
-    function upsert(item) {
+    async function upsert(item) {
       const it = normalizeRowTextFields(item);
       const idx = rows.findIndex((r) => String(r.id) === String(it.id));
       if (idx >= 0) rows[idx] = it;
       else rows.unshift(it);
-      saveStore();
+      await saveStore();
     }
 
-    function removeById(id) {
+    async function removeById(id) {
       rows = rows.filter((r) => String(r.id) !== String(id));
-      saveStore();
+      await saveStore();
     }
 
     // ---------------------------
@@ -811,7 +818,7 @@
       });
     }
 
-    els.tbody.addEventListener("click", (e) => {
+    els.tbody.addEventListener("click", async (e) => {
       const btn = e.target.closest("button[data-act]");
       if (!btn) return;
 
@@ -831,7 +838,7 @@
       if (act === "toggle") {
         const wasDone = item.status === "done";
         item.status = wasDone ? "open" : "done";
-        upsert(item);
+        await upsert(item);
         render();
         if (wasDone) tWarning("Conta reaberta.");
         else tSuccess("Pagamento confirmado.");
@@ -845,7 +852,7 @@
     });
 
     if (els.form) {
-      els.form.addEventListener("submit", (e) => {
+      els.form.addEventListener("submit", async (e) => {
         try { e.preventDefault(); } catch (_) {}
 
         const isEdit = Boolean(els.id && els.id.value);
@@ -886,17 +893,17 @@
           const detId = instanceIdFor(tpl.id, mk);
 
           if (String(payload.id) !== String(detId)) {
-            if (isEdit && existing) removeById(existing.id);
+            if (isEdit && existing) await removeById(existing.id);
             payload.id = detId;
           }
 
           payload.templateId = tpl.id;
           payload.instanceMonth = mk;
 
-          upsert(payload);
+          await upsert(payload);
 
           ensureFixedInstancesHorizonFrom(tpl.startMonth || mk);
-          saveStore();
+          await saveStore();
 
           closeModal();
           render();
@@ -909,14 +916,14 @@
         if (!payload.fixa && existing && existing.templateId) {
           payload.templateId = null;
           payload.instanceMonth = monthKeyFromIso(payload.data) || existing.instanceMonth || monthKeyFromDate(new Date());
-          upsert(payload);
+          await upsert(payload);
           closeModal();
           render();
           tWarning("Conta salva sem vínculo de fixa (somente este mês).");
           return;
         }
 
-        upsert(payload);
+        await upsert(payload);
         closeModal();
         render();
         tSuccess(isEdit ? "Alterações salvas." : "Conta cadastrada.");
@@ -927,12 +934,12 @@
     if (els.delCancel) els.delCancel.addEventListener("click", closeDelModal);
 
     if (els.delConfirm) {
-      els.delConfirm.addEventListener("click", () => {
+      els.delConfirm.addEventListener("click", async () => {
         if (pendingDeleteId == null) return;
 
         const item = getById(pendingDeleteId);
 
-        removeById(pendingDeleteId);
+        await removeById(pendingDeleteId);
 
         closeDelModal();
         render();
@@ -948,14 +955,14 @@
     attachMoneyGuards(els.valor);
     attachTextNormalization(els.conta, normalizeConta);
 
-    loadStorage();
+    await loadStorage();
     viewMonth = new Date();
 
     // liga Ferramentas -> selects logo na entrada
     syncCatalogsFromTools();
 
     ensureFixedInstancesHorizonFrom(monthKeyFromDate(new Date()));
-    saveStore();
+    await saveStore();
 
     render();
   });

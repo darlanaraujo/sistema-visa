@@ -1,5 +1,16 @@
 // app/static/js/financeiro_relatorios.js
 (function(){
+  function ready(fn) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+    else fn();
+  }
+
+  ready(async function(){
+    try {
+      if (window.__SV_PRIVATE_BOOT__ && typeof window.__SV_PRIVATE_BOOT__.ready === 'function') {
+        await window.__SV_PRIVATE_BOOT__.ready();
+      }
+    } catch (_) {}
   const root = document.getElementById('frPage');
   if(!root) return;
 
@@ -99,11 +110,11 @@
     }
   }
 
-  function storeSet(key, value){
+  async function storeSet(key, value){
     try{
       const fs = window.FinStore;
       if(key === LS_KEY && fs?.reports && typeof fs.reports.setFavorites === 'function'){
-        fs.reports.setFavorites(Array.isArray(value) ? value : []);
+        await fs.reports.setFavorites(Array.isArray(value) ? value : []);
         return true;
       }
       return false;
@@ -118,8 +129,8 @@
     return Array.isArray(mock.favorites) ? mock.favorites.slice(0, FAV_LIMIT) : [];
   }
 
-  function saveFavorites(){
-    storeSet(LS_KEY, favorites.slice(0, FAV_LIMIT));
+  async function saveFavorites(){
+    return storeSet(LS_KEY, favorites.slice(0, FAV_LIMIT));
   }
 
   function uniq(arr){
@@ -141,7 +152,7 @@
       .filter(Boolean)
     );
     favorites = uniq(favorites).filter(id => valid.has(id)).slice(0, FAV_LIMIT);
-    saveFavorites();
+    saveFavorites().catch(() => {});
   }
 
   function isFav(id){ return favorites.indexOf(id) !== -1; }
@@ -160,14 +171,14 @@
       }
       favorites.push(id);
       favorites = uniq(favorites).slice(0, FAV_LIMIT);
-      saveFavorites();
+      saveFavorites().catch(() => {});
       showToast('Adicionado aos favoritos.', 'success');
       return true;
     }else{
       const idx = favorites.indexOf(id);
       if(idx !== -1){
         favorites.splice(idx, 1);
-        saveFavorites();
+        saveFavorites().catch(() => {});
         showToast('Removido dos favoritos.', 'warning');
       }
       return true;
@@ -1922,7 +1933,9 @@
       const form = document.createElement('form');
       form.method = 'POST';
       form.target = '_blank';
-      form.action = '/sistema-visa/app/templates/financeiro_relatorios_print_preview.php';
+      form.action = (typeof window.appUrl === 'function')
+        ? window.appUrl('/app/templates/financeiro_relatorios_print_preview.php')
+        : '/app/templates/financeiro_relatorios_print_preview.php';
 
       const input = document.createElement('input');
       input.type = 'hidden';
@@ -1989,4 +2002,5 @@
     return st.lastExec;
   };
 
+  });
 })();

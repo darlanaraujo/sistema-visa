@@ -80,10 +80,10 @@ $agenda = [
 
 // Relatórios (cards clicáveis)
 $relatorios = [
-  ['icon'=>'fa-solid fa-calendar-days','nome'=>'Resumo mensal','desc'=>'Entradas x saídas e pendências por mês','href'=>'/sistema-visa/app/templates/financeiro_relatorios.php'],
-  ['icon'=>'fa-solid fa-hourglass-half','nome'=>'Vencimentos','desc'=>'A pagar e a receber por data','href'=>'/sistema-visa/app/templates/financeiro_relatorios.php'],
-  ['icon'=>'fa-solid fa-warehouse','nome'=>'Despesas por imóvel','desc'=>'Distribuição por centro de custo','href'=>'/sistema-visa/app/templates/financeiro_relatorios.php'],
-  ['icon'=>'fa-solid fa-tags','nome'=>'Despesas por categoria','desc'=>'Distribuição por categoria','href'=>'/sistema-visa/app/templates/financeiro_relatorios.php'],
+  ['icon'=>'fa-solid fa-calendar-days','nome'=>'Resumo mensal','desc'=>'Entradas x saídas e pendências por mês','href'=>app_url('/app/templates/financeiro_relatorios.php')],
+  ['icon'=>'fa-solid fa-hourglass-half','nome'=>'Vencimentos','desc'=>'A pagar e a receber por data','href'=>app_url('/app/templates/financeiro_relatorios.php')],
+  ['icon'=>'fa-solid fa-warehouse','nome'=>'Despesas por imóvel','desc'=>'Distribuição por centro de custo','href'=>app_url('/app/templates/financeiro_relatorios.php')],
+  ['icon'=>'fa-solid fa-tags','nome'=>'Despesas por categoria','desc'=>'Distribuição por categoria','href'=>app_url('/app/templates/financeiro_relatorios.php')],
 ];
 
 function br_md($iso){
@@ -107,7 +107,7 @@ function br_md($iso){
 
       <!-- Pagar: Pendente -->
       <a class="fin-toolbar__block fin-toolbar__block--kpi fin-dash-kpi"
-         href="/sistema-visa/app/templates/financeiro_contas_pagar.php">
+         href="<?= h(app_url('/app/templates/financeiro_contas_pagar.php')) ?>">
         <div class="fin-kpi fin-kpi--two-col">
           <div class="fin-kpi__iconcol fin-kpi__iconcol--danger" aria-hidden="true">
             <i class="fa-solid fa-receipt"></i>
@@ -126,7 +126,7 @@ function br_md($iso){
 
       <!-- Pagar: Pago -->
       <a class="fin-toolbar__block fin-toolbar__block--kpi fin-dash-kpi"
-         href="/sistema-visa/app/templates/financeiro_contas_pagar.php">
+         href="<?= h(app_url('/app/templates/financeiro_contas_pagar.php')) ?>">
         <div class="fin-kpi fin-kpi--two-col">
           <div class="fin-kpi__iconcol fin-kpi__iconcol--success" aria-hidden="true">
             <i class="fa-solid fa-file-invoice-dollar"></i>
@@ -148,7 +148,7 @@ function br_md($iso){
 
       <!-- Receber: A receber -->
       <a class="fin-toolbar__block fin-toolbar__block--kpi fin-dash-kpi"
-         href="/sistema-visa/app/templates/financeiro_contas_receber.php">
+         href="<?= h(app_url('/app/templates/financeiro_contas_receber.php')) ?>">
         <div class="fin-kpi fin-kpi--two-col">
           <div class="fin-kpi__iconcol fin-kpi__iconcol--danger" aria-hidden="true">
             <i class="fa-solid fa-receipt"></i>
@@ -167,7 +167,7 @@ function br_md($iso){
 
       <!-- Receber: Recebido -->
       <a class="fin-toolbar__block fin-toolbar__block--kpi fin-dash-kpi"
-         href="/sistema-visa/app/templates/financeiro_contas_receber.php">
+         href="<?= h(app_url('/app/templates/financeiro_contas_receber.php')) ?>">
         <div class="fin-kpi fin-kpi--two-col">
           <div class="fin-kpi__iconcol fin-kpi__iconcol--success" aria-hidden="true">
             <i class="fa-solid fa-file-invoice-dollar"></i>
@@ -192,7 +192,7 @@ function br_md($iso){
     <section class="fin-panel fin-dash-panel fin-dash-chart">
       <div class="fin-panel__head">
         <div class="fin-panel__title"><i class="fa-solid fa-chart-line"></i><span>Fluxo do período</span></div>
-        <a class="fin-badge fin-badge--pt fin-badge--link" href="/sistema-visa/app/templates/financeiro_relatorios.php">ver</a>
+        <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/financeiro_relatorios.php')) ?>">ver</a>
       </div>
 
       <div class="fin-dash-mockbars">
@@ -207,7 +207,7 @@ function br_md($iso){
     <section class="fin-panel fin-dash-panel fin-dash-chart">
       <div class="fin-panel__head">
         <div class="fin-panel__title"><i class="fa-solid fa-warehouse"></i><span>Despesas por imóveis</span></div>
-        <a class="fin-badge fin-badge--pt fin-badge--link" href="/sistema-visa/app/templates/financeiro_imoveis.php">ver</a>
+        <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/financeiro_imoveis.php')) ?>">ver</a>
       </div>
 
       <div class="fin-pie-wrap">
@@ -224,7 +224,7 @@ function br_md($iso){
     <section class="fin-panel fin-dash-panel fin-dash-chart">
       <div class="fin-panel__head">
         <div class="fin-panel__title"><i class="fa-solid fa-tags"></i><span>Despesas por categorias</span></div>
-        <a class="fin-badge fin-badge--pt fin-badge--link" href="/sistema-visa/app/templates/financeiro_categorias.php">ver</a>
+        <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/financeiro_categorias.php')) ?>">ver</a>
       </div>
 
       <div class="fin-pie-wrap">
@@ -289,10 +289,10 @@ function br_md($iso){
         </summary>
 
         <div class="fin-dash-shortcuts__body">
-          <a class="fin-dash-shortcut is-pay" href="/sistema-visa/app/templates/financeiro_contas_pagar.php">
+          <a class="fin-dash-shortcut is-pay" href="<?= h(app_url('/app/templates/financeiro_contas_pagar.php')) ?>">
             <i class="fa-solid fa-file-invoice-dollar"></i><span>Contas a pagar</span>
           </a>
-          <a class="fin-dash-shortcut is-rec" href="/sistema-visa/app/templates/financeiro_contas_receber.php">
+          <a class="fin-dash-shortcut is-rec" href="<?= h(app_url('/app/templates/financeiro_contas_receber.php')) ?>">
             <i class="fa-solid fa-hand-holding-dollar"></i><span>Contas a receber</span>
           </a>
           <a class="fin-dash-shortcut" href="#">
@@ -304,7 +304,7 @@ function br_md($iso){
           <a class="fin-dash-shortcut" href="#">
             <i class="fa-solid fa-users"></i><span>Clientes / Fornecedores</span>
           </a>
-          <a class="fin-dash-shortcut" href="/sistema-visa/app/templates/financeiro_relatorios.php">
+          <a class="fin-dash-shortcut" href="<?= h(app_url('/app/templates/financeiro_relatorios.php')) ?>">
             <i class="fa-solid fa-chart-pie"></i><span>Relatórios</span>
           </a>
         </div>
@@ -324,7 +324,7 @@ function br_md($iso){
       <div class="fin-dash-listbox">
         <div class="fin-dash-listbox__head">
           <i class="fa-solid fa-file-invoice-dollar"></i><span>Contas a pagar</span>
-          <a class="fin-dash-listbox__link" href="/sistema-visa/app/templates/financeiro_contas_pagar.php">abrir</a>
+          <a class="fin-dash-listbox__link" href="<?= h(app_url('/app/templates/financeiro_contas_pagar.php')) ?>">abrir</a>
         </div>
 
         <div class="fin-dash-mini" id="dashPagarList">
@@ -346,7 +346,7 @@ function br_md($iso){
       <div class="fin-dash-listbox">
         <div class="fin-dash-listbox__head">
           <i class="fa-solid fa-hand-holding-dollar"></i><span>Contas a receber</span>
-          <a class="fin-dash-listbox__link" href="/sistema-visa/app/templates/financeiro_contas_receber.php">abrir</a>
+          <a class="fin-dash-listbox__link" href="<?= h(app_url('/app/templates/financeiro_contas_receber.php')) ?>">abrir</a>
         </div>
 
         <div class="fin-dash-mini" id="dashReceberList">
@@ -370,7 +370,7 @@ function br_md($iso){
   <section class="fin-panel fin-dash-panel">
     <div class="fin-panel__head">
       <div class="fin-panel__title"><i class="fa-solid fa-print"></i><span>Relatórios</span></div>
-      <a class="fin-badge fin-badge--pt fin-badge--link" href="/sistema-visa/app/templates/financeiro_relatorios.php">ver</a>
+      <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/financeiro_relatorios.php')) ?>">ver</a>
     </div>
 
     <div class="rep-grid" id="dashReportsGrid">

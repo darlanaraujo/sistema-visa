@@ -1,11 +1,20 @@
 // app/static/js/financeiro_dashboard.js
 (function () {
+  async function waitPrivateAreaBoot() {
+    try {
+      if (window.__SV_PRIVATE_BOOT__ && typeof window.__SV_PRIVATE_BOOT__.ready === "function") {
+        await window.__SV_PRIVATE_BOOT__.ready();
+      }
+    } catch (_) {}
+  }
+
   function ready(fn) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
     else fn();
   }
 
-  ready(function () {
+  ready(async function () {
+    await waitPrivateAreaBoot();
     // Detecta se é o Dashboard Financeiro pela presença dos blocos característicos
     const root = document.querySelector(".fin-page");
     const kpiWrap = document.querySelector(".fin-toolbar.fin-dash-kpis");
@@ -323,7 +332,9 @@
       icon: "fa-solid fa-chart-column",
       title: "Entradas x Saídas (12 meses)",
       badgeText: "Período anual",
-      badgeHref: "/sistema-visa/app/templates/financeiro_relatorios.php?rid=rep_fluxo",
+      badgeHref: (typeof window.appUrl === "function")
+        ? window.appUrl("/app/templates/financeiro_relatorios.php?rid=rep_fluxo")
+        : "/app/templates/financeiro_relatorios.php?rid=rep_fluxo",
       chartCfg: histCfg,
     });
 
@@ -352,7 +363,9 @@
       icon: "fa-solid fa-house",
       title: "Despesas por Imóveis",
       badgeText: `Mês: ${mk}`,
-      badgeHref: "/sistema-visa/app/templates/financeiro_relatorios.php?rid=rep_imoveis",
+      badgeHref: (typeof window.appUrl === "function")
+        ? window.appUrl("/app/templates/financeiro_relatorios.php?rid=rep_imoveis")
+        : "/app/templates/financeiro_relatorios.php?rid=rep_imoveis",
       chartCfg: imCfg,
     });
 
@@ -380,7 +393,9 @@
       icon: "fa-solid fa-tags",
       title: "Despesas por Categorias",
       badgeText: `Mês: ${mk}`,
-      badgeHref: "/sistema-visa/app/templates/financeiro_relatorios.php?rid=rep_categorias",
+      badgeHref: (typeof window.appUrl === "function")
+        ? window.appUrl("/app/templates/financeiro_relatorios.php?rid=rep_categorias")
+        : "/app/templates/financeiro_relatorios.php?rid=rep_categorias",
       chartCfg: catCfg,
     });
   }
@@ -641,8 +656,9 @@
     run();
 
     // Atualiza em tempo real quando salvar em outra aba
-    window.addEventListener("storage", (e) => {
-      if (e.key === LS_CP || e.key === LS_CR) run();
+    window.addEventListener((window.FinStore && window.FinStore.EVT) ? window.FinStore.EVT : "fin:change", (e) => {
+      const key = e?.detail?.key || "";
+      if (key === LS_CP || key === LS_CR) run();
     });
   });
 })();

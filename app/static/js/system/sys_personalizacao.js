@@ -4,9 +4,20 @@
 // Aplica: tema, cores (variáveis), logo e favicon (inclui <img> favicon em relatórios/prints)
 
 (function () {
-  function getPrefs() {
+  async function waitPrivateAreaBoot() {
+    try {
+      if (window.__SV_PRIVATE_BOOT__ && typeof window.__SV_PRIVATE_BOOT__.ready === "function") {
+        await window.__SV_PRIVATE_BOOT__.ready();
+      }
+    } catch (_) {}
+  }
+
+  async function getPrefs() {
     // Caminho oficial: BaseStore (UI não toca persistência diretamente).
     try {
+      if (window.BaseStore?.init && typeof window.BaseStore.init === "function") {
+        await window.BaseStore.init();
+      }
       if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.get === "function") {
         const prefs = window.BaseStore.prefs.get();
         return prefs && typeof prefs === "object" ? prefs : null;
@@ -314,13 +325,15 @@
   // ---------------------------------------------------------
   // Apply all
   // ---------------------------------------------------------
-  function applyAll() {
-    const prefs = getPrefs();
+  async function applyAll() {
+    const prefs = await getPrefs();
 
     if (!prefs) {
       // Sem prefs disponíveis, preserva estado já renderizado (server/bootstrap).
       return;
     }
+
+    try { window.SysUIBootstrap?.syncPrefsCache?.(prefs); } catch (_) {}
 
     applyTheme(prefs?.theme?.mode);
     applyColorVars(prefs?.theme);
@@ -328,26 +341,27 @@
     applyIdentity(prefs?.identity);
   }
 
-  function init() {
-    applyAll();
+  async function init() {
+    await waitPrivateAreaBoot();
+    await applyAll();
 
     // Evento padrão da camada BaseStore
-    window.addEventListener("base:prefs:changed", () => applyAll());
+    window.addEventListener("base:prefs:changed", () => { applyAll().catch(() => {}); });
     window.addEventListener("base:changed", (e) => {
-      if (e?.detail?.kind === "prefs") applyAll();
+      if (e?.detail?.kind === "prefs") applyAll().catch(() => {});
     });
 
     // Compatibilidade com eventos do Financeiro em versões antigas
     const evtName = (window.FinStore && window.FinStore.EVT) ? window.FinStore.EVT : "fin:change";
     window.addEventListener(evtName, (e) => {
       const key = e?.detail?.key || "";
-      if (key === "tools:sistema.personalizacao") applyAll();
+      if (key === "tools:sistema.personalizacao") applyAll().catch(() => {});
     });
 
-    window.addEventListener("sidebar:toggle", () => applyAll());
-    window.addEventListener("resize", () => applyAll());
+    window.addEventListener("sidebar:toggle", () => { applyAll().catch(() => {}); });
+    window.addEventListener("resize", () => { applyAll().catch(() => {}); });
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { init().catch(() => {}); });
+  else init().catch(() => {});
 })();

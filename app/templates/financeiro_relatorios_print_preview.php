@@ -9,7 +9,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Proteção (mesmo padrão do base_private.php)
 if (!isset($_SESSION['auth_user'])) {
-  header('Location: /sistema-visa/app/templates/login.php');
+  require_once __DIR__ . '/../core/url.php';
+  header('Location: ' . app_url('/app/templates/login.php'));
   exit;
 }
 
@@ -18,6 +19,7 @@ if (!isset($_SESSION['auth_user'])) {
 // - Necessário porque esta página usa h() e não passa pelo base_private.php
 // ---------------------------------------------------------
 require_once __DIR__ . '/../../public_php/src/Support/helpers.php';
+require_once __DIR__ . '/../core/url.php';
 
 // ---------------------------------------------------------
 // Company (fonte única dos dados da empresa)
@@ -112,9 +114,9 @@ $footnote = (string)($data['footnote'] ?? '');
   <title><?= h($title) ?> • Preview</title>
 
   <!-- Favicon (usa fonte única; fallback mantém padrão) -->
-  <link rel="icon" type="image/png" sizes="32x32" href="<?= h($corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>">
-  <link rel="icon" type="image/png" sizes="16x16" href="<?= h($corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>">
-  <link rel="apple-touch-icon" sizes="180x180" href="<?= h($corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>">
+  <link rel="icon" type="image/png" sizes="32x32" href="<?= h($corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>">
+  <link rel="icon" type="image/png" sizes="16x16" href="<?= h($corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>">
+  <link rel="apple-touch-icon" sizes="180x180" href="<?= h($corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>">
 
   <!-- Fonte -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -125,13 +127,13 @@ $footnote = (string)($data['footnote'] ?? '');
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <!-- CSS do módulo -->
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/theme.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/theme.css')) ?>">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/global.css')) ?>">
 
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/financeiro.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/financeiro_relatorios.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/financeiro_relatorios_print.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/financeiro_relatorios_print_preview.css">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/financeiro.css')) ?>">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/financeiro_relatorios.css')) ?>">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/financeiro_relatorios_print.css')) ?>">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/financeiro_relatorios_print_preview.css')) ?>">
 </head>
 <body>
 
@@ -162,9 +164,9 @@ $footnote = (string)($data['footnote'] ?? '');
           <img
             id="frPreviewReportLogo"
             data-brand="report-logo"
-            data-favicon-default="<?= h($corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>"
+            data-favicon-default="<?= h($corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
             class="fr-print__logo"
-            src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? '/sistema-visa/app/static/img/favicon.png') ?>"
+            src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
             alt="<?= h($corp['company'] ?? 'Empresa') ?>"
           >
 

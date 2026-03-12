@@ -16,10 +16,10 @@ function fin_is_active(string $needle): bool {
  * Categorias / Imóveis / Clientes saíram do módulo (não devem aparecer aqui).
  */
 $items = [
-  ['href' => '/sistema-visa/app/templates/financeiro.php', 'label' => 'Dashboard', 'icon' => 'fa-solid fa-gauge', 'key' => 'financeiro.php'],
-  ['href' => '/sistema-visa/app/templates/financeiro_contas_pagar.php', 'label' => 'Contas a Pagar', 'icon' => 'fa-solid fa-file-invoice-dollar', 'key' => 'financeiro_contas_pagar.php'],
-  ['href' => '/sistema-visa/app/templates/financeiro_contas_receber.php', 'label' => 'Contas a Receber', 'icon' => 'fa-solid fa-hand-holding-dollar', 'key' => 'financeiro_contas_receber.php'],
-  ['href' => '/sistema-visa/app/templates/financeiro_relatorios.php', 'label' => 'Relatórios', 'icon' => 'fa-solid fa-chart-pie', 'key' => 'financeiro_relatorios.php'],
+  ['href' => app_url('/app/templates/financeiro.php'), 'label' => 'Dashboard', 'icon' => 'fa-solid fa-gauge', 'key' => 'financeiro.php'],
+  ['href' => app_url('/app/templates/financeiro_contas_pagar.php'), 'label' => 'Contas a Pagar', 'icon' => 'fa-solid fa-file-invoice-dollar', 'key' => 'financeiro_contas_pagar.php'],
+  ['href' => app_url('/app/templates/financeiro_contas_receber.php'), 'label' => 'Contas a Receber', 'icon' => 'fa-solid fa-hand-holding-dollar', 'key' => 'financeiro_contas_receber.php'],
+  ['href' => app_url('/app/templates/financeiro_relatorios.php'), 'label' => 'Relatórios', 'icon' => 'fa-solid fa-chart-pie', 'key' => 'financeiro_relatorios.php'],
 ];
 
 $activeLabel = 'Menu do Financeiro';

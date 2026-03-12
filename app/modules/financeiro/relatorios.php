@@ -361,7 +361,7 @@ $fr_mock_json = h(json_encode($fr_mock_payload, JSON_UNESCAPED_UNICODE));
               <!-- Logo pequena do relatório (padrão: report_logo -> favicon -> logo) -->
               <img
                 class="fr-print__logo"
-                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? $corp['logo'] ?? '/sistema-visa/app/static/img/favicon.png') ?>"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? $corp['logo'] ?? app_url('/app/static/img/favicon.png')) ?>"
                 alt="<?= h($corp['company'] ?? 'Empresa') ?>"
               >
 

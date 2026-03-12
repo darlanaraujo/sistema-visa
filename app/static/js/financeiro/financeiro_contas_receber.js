@@ -1,11 +1,22 @@
 // app/static/js/financeiro_contas_receber.js
 (function () {
+  async function waitPrivateAreaBoot() {
+    try {
+      if (window.__SV_PRIVATE_BOOT__ && typeof window.__SV_PRIVATE_BOOT__.ready === "function") {
+        await window.__SV_PRIVATE_BOOT__.ready();
+      }
+    } catch (_) {}
+  }
+
   function ready(fn) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
     else fn();
   }
 
-  ready(function () {
+  ready(async function () {
+    await waitPrivateAreaBoot();
+    try { await window.FinRefs?.ensureAll?.(); } catch (_) {}
+    try { await window.FinRefsBridge?.exportAll?.(); } catch (_) {}
     const STORAGE_ROWS_KEY = "fin_cr_rows_v1";
 
     const fallback = Array.isArray(window.__CR_MOCK__) ? window.__CR_MOCK__ : [];
@@ -396,21 +407,20 @@
       return [];
     }
 
-    function storeSetRows(nextRows) {
+    async function storeSetRows(nextRows) {
       const fs = finStore();
       try {
         if (fs?.cr && typeof fs.cr.setRows === "function") {
-          fs.cr.setRows(nextRows);
-          return;
+          return fs.cr.setRows(nextRows);
         }
         if (fs?.cr && typeof fs.cr.rowsSet === "function") {
-          fs.cr.rowsSet(nextRows);
-          return;
+          return fs.cr.rowsSet(nextRows);
         }
       } catch (_) {}
+      return false;
     }
 
-    function loadStorage() {
+    async function loadStorage() {
       try {
         rows = storeGetRows();
         if (!Array.isArray(rows) || !rows.length) rows = normalizeFallback(fallback);
@@ -419,11 +429,11 @@
         rows = normalizeFallback(fallback);
       }
 
-      saveStorage();
+      await saveStorage();
     }
 
-    function saveStorage() {
-      try { storeSetRows(rows); } catch (_) {}
+    async function saveStorage() {
+      try { await storeSetRows(rows); } catch (_) {}
     }
 
     function alignInitialViewMonth() {
@@ -560,19 +570,19 @@
       return rows.find((r) => String(r.id) === String(id));
     }
 
-    function upsert(item) {
+    async function upsert(item) {
       const normalized = normalizeRow(item);
 
       const idx = rows.findIndex((r) => String(r.id) === String(normalized.id));
       if (idx >= 0) rows[idx] = normalized;
       else rows.unshift(normalized);
 
-      saveStorage();
+      await saveStorage();
     }
 
-    function removeById(id) {
+    async function removeById(id) {
       rows = rows.filter((r) => String(r.id) !== String(id));
-      saveStorage();
+      await saveStorage();
     }
 
     // ---------------------------
@@ -702,7 +712,7 @@
       });
     }
 
-    els.tbody.addEventListener("click", (e) => {
+    els.tbody.addEventListener("click", async (e) => {
       const btn = e.target.closest("button[data-act]");
       if (!btn) return;
 
@@ -722,7 +732,7 @@
       if (act === "toggle") {
         const wasDone = item.status === "done";
         item.status = wasDone ? "open" : "done";
-        upsert(item);
+        await upsert(item);
         render();
         if (wasDone) tWarning("Recebimento reaberto.");
         else tSuccess("Recebimento confirmado.");
@@ -736,7 +746,9 @@
     });
 
     if (els.form) {
-      els.form.addEventListener("submit", () => {
+      els.form.addEventListener("submit", async (e) => {
+        try { e.preventDefault(); } catch (_) {}
+
         const isEdit = Boolean(els.id && els.id.value);
         const existing = isEdit ? getById(els.id.value) : null;
 
@@ -774,11 +786,11 @@
         }
 
         if (isEdit) {
-          upsert(payload);
+          await upsert(payload);
         } else if (payload.totalParcelas > 1) {
           const groupId = uidGroup();
           for (let i = 1; i <= payload.totalParcelas; i += 1) {
-            upsert({
+            await upsert({
               ...payload,
               id: String(uid()),
               data: addMonthsIso(payload.data, i - 1),
@@ -788,7 +800,7 @@
             });
           }
         } else {
-          upsert(payload);
+          await upsert(payload);
         }
         closeModal();
         render();
@@ -800,10 +812,10 @@
     if (els.delCancel) els.delCancel.addEventListener("click", closeDelModal);
 
     if (els.delConfirm) {
-      els.delConfirm.addEventListener("click", () => {
+      els.delConfirm.addEventListener("click", async () => {
         if (pendingDeleteId == null) return;
 
-        removeById(pendingDeleteId);
+        await removeById(pendingDeleteId);
         closeDelModal();
         render();
         tSuccess("Recebível excluído.");
@@ -826,7 +838,7 @@
     attachTextNormalization(els.forma, normalizeForma);
     attachTextNormalization(els.processo, normalizeProcesso);
 
-    loadStorage();
+    await loadStorage();
     viewMonth = new Date();
     alignInitialViewMonth();
 

@@ -4,10 +4,17 @@
 // - Salva no servidor e recarrega a página para refletir em trechos server-side (rodapés/relatórios).
 
 (function () {
+  function resolveAppUrl(path) {
+    try {
+      if (typeof window.appUrl === "function") return window.appUrl(path);
+    } catch (_) {}
+    return String(path || "");
+  }
+
   const API = {
-    get:   "/sistema-visa/public_php/api/company_get.php",
-    save:  "/sistema-visa/public_php/api/company_save.php",
-    reset: "/sistema-visa/public_php/api/company_reset.php",
+    get:   resolveAppUrl("/public_php/api/company_get.php"),
+    save:  resolveAppUrl("/public_php/api/company_save.php"),
+    reset: resolveAppUrl("/public_php/api/company_reset.php"),
   };
 
   // IDs REAIS do seu modal (home.php)

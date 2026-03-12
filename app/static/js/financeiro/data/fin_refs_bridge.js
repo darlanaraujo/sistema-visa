@@ -1,6 +1,4 @@
 // app/static/js/financeiro/data/fin_refs_bridge.js
-// Ponte: Ferramentas (tools_ns_) -> FinStore refs (fin_ref_*)
-// Agora via SysStore (não localStorage direto)
 (function () {
   if (!window.SysStore) return;
 
@@ -14,7 +12,6 @@
     "financeiro.imoveis": FS.KEYS.imoveis,
     "financeiro.categorias": FS.KEYS.categorias,
     "financeiro.formas": FS.KEYS.formas,
-    // "financeiro.clientes": FS.KEYS.clientes,
   };
 
   function storageKey(ns) {
@@ -26,22 +23,14 @@
   }
 
   function isActive(item) {
-    // compat: modelos antigos usam "ativo", novos usam "active"
     return Boolean(item?.active ?? item?.ativo);
   }
 
-  function emitFinChange(key) {
-    try {
-      window.dispatchEvent(new CustomEvent(FS.EVT, { detail: { key, at: Date.now() } }));
-    } catch (_) {}
-  }
-
-  function exportNsToFinRef(ns) {
+  async function exportNsToFinRef(ns) {
     const finKey = MAP[ns];
     if (!finKey) return;
 
-    // ✅ lê do SysStore (fonte única)
-    const arr = SysStore.get(storageKey(ns));
+    const arr = await window.SysStore.get(storageKey(ns)).catch(() => []);
     const list = Array.isArray(arr) ? arr : [];
 
     const onlyActive = list
@@ -49,18 +38,11 @@
       .map((x) => normalizeName(x?.name))
       .filter(Boolean);
 
-    // Evita apagar refs existentes quando Ferramentas ainda não possui dados.
-    if (!onlyActive.length) return;
-
-    // ✅ grava no SysStore também (FinStore lê via SysStore)
-    SysStore.set(finKey, onlyActive);
-
-    // evento para atualizar selects na mesma aba
-    emitFinChange(finKey);
+    await window.SysStore.set(finKey, onlyActive);
   }
 
-  function exportAll() {
-    Object.keys(MAP).forEach(exportNsToFinRef);
+  async function exportAll() {
+    await Promise.all(Object.keys(MAP).map(exportNsToFinRef));
   }
 
   function nsFromStorageKey(rawKey) {
@@ -73,14 +55,11 @@
     const key = e?.detail?.key || "";
     const ns = nsFromStorageKey(key);
     if (!ns || !MAP[ns]) return;
-    exportNsToFinRef(ns);
+    exportNsToFinRef(ns).catch(() => {});
   });
 
   window.FinRefsBridge = {
     exportNsToFinRef,
     exportAll,
   };
-
-  // Garante sync no carregamento da página
-  exportAll();
 })();

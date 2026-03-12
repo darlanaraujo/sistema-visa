@@ -78,7 +78,7 @@ $relatorios_favoritos = [
             <i class="fa-solid fa-boxes-stacked"></i>
             <span>Gestão de Lotes</span>
           </div>
-          <a class="dash2__link" href="/sistema-visa/app/templates/lotes.php">Ver módulo</a>
+          <a class="dash2__link" href="<?= h(app_url('/app/templates/lotes.php')) ?>">Ver módulo</a>
         </div>
 
         <div class="dash2__box">
@@ -86,7 +86,7 @@ $relatorios_favoritos = [
 
           <div class="lotes-list">
             <?php foreach ($ultimos_lotes as $l): ?>
-              <?php $href = '/sistema-visa/app/templates/lotes.php?processo=' . urlencode($l['processo']); ?>
+              <?php $href = app_url('/app/templates/lotes.php?processo=' . urlencode($l['processo'])); ?>
 
               <!-- Desktop/tablet: “tabela” 2 linhas -->
               <a class="lote-card lote-card--desktop" href="<?= htmlspecialchars($href) ?>">
@@ -154,7 +154,7 @@ $relatorios_favoritos = [
             <i class="fa-solid fa-coins"></i>
             <span>Gestão Financeira</span>
           </div>
-          <a class="dash2__link" href="/sistema-visa/app/templates/financeiro.php">Ver módulo</a>
+          <a class="dash2__link" href="<?= h(app_url('/app/templates/financeiro.php')) ?>">Ver módulo</a>
         </div>
 
         <div class="fin-grid">
@@ -270,7 +270,7 @@ $relatorios_favoritos = [
         <div class="rep-grid">
           <?php foreach ($relatorios_favoritos as $rep): ?>
             
-            <?php $hrefRel = '/sistema-visa/app/templates/relatorios.php?rel=' . urlencode($rep['nome']); ?>
+            <?php $hrefRel = app_url('/app/templates/relatorios.php?rel=' . urlencode($rep['nome'])); ?>
               <a class="rep-card" href="<?= htmlspecialchars($hrefRel) ?>">
                 <div class="rep-card__icon"><i class="<?= htmlspecialchars($rep['icon']) ?>"></i></div>
                 <div class="rep-card__title"><?= htmlspecialchars($rep['nome']) ?></div>

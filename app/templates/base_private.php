@@ -12,6 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
  * - O caminho usa __DIR__ porque este arquivo está em app/templates.
  */
 require_once __DIR__ . '/../../public_php/src/Support/helpers.php';
+require_once __DIR__ . '/../core/url.php';
 
 // ✅ Fonte única (server-side)
 require_once __DIR__ . '/../core/company.php';
@@ -33,7 +34,7 @@ if (!function_exists('h')) {
  * AuthService grava a sessão em $_SESSION['auth_user'].
  */
 if (!isset($_SESSION['auth_user'])) {
-  header('Location: /sistema-visa/app/templates/login.php');
+  header('Location: ' . app_url('/app/templates/login.php'));
   exit;
 }
 
@@ -49,7 +50,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
 
   <title><?= h($page_title) ?> • Sistema Visa</title>
 
-  <link rel="icon" href="/sistema-visa/app/static/img/favicon.png">
+  <link rel="icon" href="<?= h(app_url('/app/static/img/favicon.png')) ?>">
 
   <!-- Fonte -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,17 +61,27 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <!-- CSS base (ordem obrigatória) -->
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/theme.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/theme.css')) ?>">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/global.css')) ?>">
 
   <!-- ✅ Layout privado (Sidebar/Topo/Rodapé/Tooltip) -->
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/base_private.css">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/base_private.css')) ?>">
 
   <!-- Toast (global no ambiente privado) -->
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/toast.css">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/toast.css')) ?>">
  
   <!-- Componentes (global no ambiente privado) -->
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/ui_components.css">
+  <link rel="stylesheet" href="<?= h(app_url('/app/static/css/ui_components.css')) ?>">
+
+  <script>
+    window.__APP_BASE__ = <?= json_encode(app_base_path(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+    window.appUrl = window.appUrl || function (path) {
+      var base = String(window.__APP_BASE__ || '');
+      var normalized = String(path || '/');
+      if (normalized.slice(0, 1) !== '/') normalized = '/' + normalized;
+      return (base + normalized) || '/';
+    };
+  </script>
 
   <!-- CSS específico da página/módulo -->
   <?php if (!empty($extra_css) && is_array($extra_css)): ?>
@@ -80,25 +91,25 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <?php endif; ?>
 
   <!-- Personalização -->
-  <script src="/sistema-visa/app/static/js/system/sys_bootstrap_ui.js"></script>
+  <script src="<?= h(app_url('/app/static/js/system/sys_bootstrap_ui.js')) ?>"></script>
   
   <!-- Componentes (global no ambiente privado) -->
-  <script defer src="/sistema-visa/app/static/js/ui_components.js"></script>
+  <script defer src="<?= h(app_url('/app/static/js/ui_components.js')) ?>"></script>
 
   <!-- JS de conexão com BD (LocalStorage) -->
-  <script src="/sistema-visa/app/static/js/core/sys_store.js"></script>
+  <script src="<?= h(app_url('/app/static/js/core/sys_store.js')) ?>"></script>
 
   <!-- Store global do ambiente privado -->
-  <script src="/sistema-visa/app/static/js/data/base_store.js"></script>
+  <script src="<?= h(app_url('/app/static/js/data/base_store.js')) ?>"></script>
 
   <!-- ✅ JS base do layout privado (sempre) -->
-  <script defer src="/sistema-visa/app/static/js/base_private.js"></script>
+  <script defer src="<?= h(app_url('/app/static/js/base_private.js')) ?>"></script>
 
   <!-- Toast (global no ambiente privado) -->
-  <script defer src="/sistema-visa/app/static/js/toast.js"></script>
+  <script defer src="<?= h(app_url('/app/static/js/toast.js')) ?>"></script>
 
   <!-- JS personalização da empresa -->
-  <script defer src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
+  <script defer src="<?= h(app_url('/app/static/js/system/sys_personalizacao.js')) ?>"></script>
 
   <!-- JS no HEAD (use somente se for estritamente necessário) -->
   <?php if (!empty($extra_head_js) && is_array($extra_head_js)): ?>
@@ -125,27 +136,27 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       </div>
 
       <nav class="sidebar__nav">
-        <a class="sidebar__item" href="/sistema-visa/app/templates/dashboard.php" data-nav="dashboard">
+        <a class="sidebar__item" href="<?= h(app_url('/app/templates/dashboard.php')) ?>" data-nav="dashboard">
           <i class="fa-solid fa-gauge-high"></i>
           <span>Dashboard</span>
         </a>
 
-        <a class="sidebar__item" href="/sistema-visa/app/templates/lotes.php" data-nav="lotes">
+        <a class="sidebar__item" href="<?= h(app_url('/app/templates/lotes.php')) ?>" data-nav="lotes">
           <i class="fa-solid fa-boxes-stacked"></i>
           <span>Lotes</span>
         </a>
 
-        <a class="sidebar__item" href="/sistema-visa/app/templates/financeiro.php" data-nav="financeiro">
+        <a class="sidebar__item" href="<?= h(app_url('/app/templates/financeiro.php')) ?>" data-nav="financeiro">
           <i class="fa-solid fa-coins"></i>
           <span>Financeiro</span>
         </a>
 
-        <a class="sidebar__item" href="/sistema-visa/app/templates/relatorios.php" data-nav="relatorios">
+        <a class="sidebar__item" href="<?= h(app_url('/app/templates/relatorios.php')) ?>" data-nav="relatorios">
           <i class="fa-solid fa-chart-line"></i>
           <span>Relatórios</span>
         </a>
 
-        <a class="sidebar__item" href="/sistema-visa/app/templates/ferramentas.php" data-nav="ferramentas">
+        <a class="sidebar__item" href="<?= h(app_url('/app/templates/ferramentas.php')) ?>" data-nav="ferramentas">
           <i class="fa-solid fa-screwdriver-wrench"></i>
           <span>Ferramentas</span>
         </a>
@@ -174,11 +185,11 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
           <img
             id="topbarLogo"
             data-brand="logo"
-            src="/sistema-visa/app/static/img/logo.png"
-            data-logo="/sistema-visa/app/static/img/logo.png"
-            data-favicon="/sistema-visa/app/static/img/favicon.png"
-            data-logo-default="/sistema-visa/app/static/img/logo.png"
-            data-favicon-default="/sistema-visa/app/static/img/favicon.png"
+            src="<?= h(app_url('/app/static/img/logo.png')) ?>"
+            data-logo="<?= h(app_url('/app/static/img/logo.png')) ?>"
+            data-favicon="<?= h(app_url('/app/static/img/favicon.png')) ?>"
+            data-logo-default="<?= h(app_url('/app/static/img/logo.png')) ?>"
+            data-favicon-default="<?= h(app_url('/app/static/img/favicon.png')) ?>"
             alt="<?= h($corp['system_name'] ?? 'Sistema Visa Remoções') ?>"
           >
         </div>

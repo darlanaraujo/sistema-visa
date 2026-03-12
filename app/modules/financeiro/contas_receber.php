@@ -50,7 +50,7 @@ $mock = [
       <!-- Logo (primeira coluna) -->
       <div class="fin-toolbar__block fin-toolbar__block--logo">
         <div class="fin-kpi-logo">
-          <img src="/sistema-visa/app/static/img/logo.png" alt="Sistema Visa" />
+          <img src="<?= h(app_url('/app/static/img/logo.png')) ?>" alt="Sistema Visa" />
         </div>
       </div>
 

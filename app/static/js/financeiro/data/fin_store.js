@@ -1,11 +1,5 @@
 // app/static/js/financeiro/data/fin_store.js
-// Camada de domínio do módulo Financeiro.
-// NÃO conhece localStorage.
-// Usa SysStore como infraestrutura.
-// Se o driver mudar para BD, este arquivo NÃO muda.
-
 (function () {
-
   if (!window.SysStore) {
     console.error("SysStore não carregado antes do FinStore.");
     return;
@@ -24,10 +18,10 @@
   };
 
   const EVT = "fin:change";
-
-  // ========================
-  // Utils
-  // ========================
+  const cache = new Map();
+  let initPromise = null;
+  let ready = false;
+  const REF_KEYS = new Set([KEYS.imoveis, KEYS.categorias, KEYS.formas, KEYS.clientes]);
 
   function now() {
     return Date.now();
@@ -109,26 +103,53 @@
     return out.sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
   }
 
-  // ========================
-  // Infra wrappers
-  // ========================
+  function emitChange(key) {
+    window.dispatchEvent(new CustomEvent(EVT, { detail: { key, at: now() } }));
+  }
+
+  async function init() {
+    if (ready) return true;
+    if (initPromise) return initPromise;
+    const keys = Object.values(KEYS);
+    initPromise = Promise.all(keys.map(async (key) => {
+      const value = await window.SysStore.get(key).catch(() => null);
+      cache.set(key, Array.isArray(value) ? value : (value ?? null));
+    })).then(() => {
+      ready = true;
+      return true;
+    });
+    return initPromise;
+  }
+
+  function syncFromSysStore(key, removed) {
+    if (!key || !REF_KEYS.has(key)) return;
+
+    const fallback = removed ? null : [];
+    const latest = window.SysStore?.getCached?.(key, fallback);
+    cache.set(key, Array.isArray(latest) ? latest : (latest ?? null));
+    emitChange(key);
+  }
 
   function getArr(key) {
-    const arr = SysStore.get(key);
+    const arr = cache.get(key);
     return Array.isArray(arr) ? arr : [];
   }
 
-  function setArr(key, arr) {
-    SysStore.set(key, Array.isArray(arr) ? arr : []);
+  async function setArr(key, arr) {
+    const next = Array.isArray(arr) ? arr : [];
+    const ok = await window.SysStore.set(key, next);
+    if (!ok) return false;
+    cache.set(key, next);
     emitChange(key);
+    return true;
   }
 
   function getById(key, id) {
     return getArr(key).find((x) => String(x?.id) === String(id)) || null;
   }
 
-  function upsert(key, entity, normalizer) {
-    const arr = getArr(key);
+  async function upsert(key, entity, normalizer) {
+    const arr = getArr(key).slice();
     const item = normalizer(entity);
     item.updatedAt = now();
 
@@ -136,25 +157,17 @@
     if (idx >= 0) arr[idx] = item;
     else arr.unshift(item);
 
-    setArr(key, arr);
-    return item;
+    const ok = await setArr(key, arr);
+    return ok ? item : null;
   }
 
-  function remove(key, id) {
+  async function remove(key, id) {
     let arr = getArr(key);
     const before = arr.length;
     arr = arr.filter((x) => String(x?.id) !== String(id));
-    setArr(key, arr);
-    return arr.length !== before;
+    const ok = await setArr(key, arr);
+    return ok ? (arr.length !== before) : false;
   }
-
-  function emitChange(key) {
-    window.dispatchEvent(new CustomEvent(EVT, { detail: { key, at: now() } }));
-  }
-
-  // ========================
-  // Normalizers
-  // ========================
 
   function normalizeCP(r) {
     return {
@@ -201,45 +214,42 @@
     };
   }
 
-  // ========================
-  // API pública
-  // ========================
-
   const Store = {
     KEYS,
     EVT,
+    init,
+    isReady: () => ready === true,
+    ready: () => init(),
 
     cp: {
       list: () => getArr(KEYS.cpRows).map(normalizeCP),
       getRows: () => getArr(KEYS.cpRows).map(normalizeCP),
       rowsGet: () => getArr(KEYS.cpRows).map(normalizeCP),
-      setRows: (rows) => setArr(KEYS.cpRows, (Array.isArray(rows) ? rows : []).map(normalizeCP)),
-      rowsSet: (rows) => setArr(KEYS.cpRows, (Array.isArray(rows) ? rows : []).map(normalizeCP)),
+      setRows: async (rows) => setArr(KEYS.cpRows, (Array.isArray(rows) ? rows : []).map(normalizeCP)),
+      rowsSet: async (rows) => setArr(KEYS.cpRows, (Array.isArray(rows) ? rows : []).map(normalizeCP)),
       getById: (id) => getById(KEYS.cpRows, id),
-      upsert: (row) => upsert(KEYS.cpRows, row, normalizeCP),
-      remove: (id) => remove(KEYS.cpRows, id),
-      sort: (arr) => sortByPriority(arr, (x) => x?.conta),
+      upsert: async (row) => upsert(KEYS.cpRows, row, normalizeCP),
+      remove: async (id) => remove(KEYS.cpRows, id),
       getTemplates: () => getArr(KEYS.cpTemplates),
       templatesGet: () => getArr(KEYS.cpTemplates),
-      setTemplates: (rows) => setArr(KEYS.cpTemplates, Array.isArray(rows) ? rows : []),
-      templatesSet: (rows) => setArr(KEYS.cpTemplates, Array.isArray(rows) ? rows : []),
+      setTemplates: async (rows) => setArr(KEYS.cpTemplates, Array.isArray(rows) ? rows : []),
+      templatesSet: async (rows) => setArr(KEYS.cpTemplates, Array.isArray(rows) ? rows : []),
     },
 
     cr: {
       list: () => getArr(KEYS.crRows).map(normalizeCR),
       getRows: () => getArr(KEYS.crRows).map(normalizeCR),
       rowsGet: () => getArr(KEYS.crRows).map(normalizeCR),
-      setRows: (rows) => setArr(KEYS.crRows, (Array.isArray(rows) ? rows : []).map(normalizeCR)),
-      rowsSet: (rows) => setArr(KEYS.crRows, (Array.isArray(rows) ? rows : []).map(normalizeCR)),
+      setRows: async (rows) => setArr(KEYS.crRows, (Array.isArray(rows) ? rows : []).map(normalizeCR)),
+      rowsSet: async (rows) => setArr(KEYS.crRows, (Array.isArray(rows) ? rows : []).map(normalizeCR)),
       getById: (id) => getById(KEYS.crRows, id),
-      upsert: (row) => upsert(KEYS.crRows, row, normalizeCR),
-      remove: (id) => remove(KEYS.crRows, id),
-      sort: (arr) => sortByPriority(arr, (x) => x?.cliente),
+      upsert: async (row) => upsert(KEYS.crRows, row, normalizeCR),
+      remove: async (id) => remove(KEYS.crRows, id),
     },
 
     reports: {
       getFavorites: () => getArr(KEYS.reportsFav),
-      setFavorites: (rows) => setArr(KEYS.reportsFav, Array.isArray(rows) ? rows : []),
+      setFavorites: async (rows) => setArr(KEYS.reportsFav, Array.isArray(rows) ? rows : []),
     },
 
     tools: {
@@ -252,4 +262,7 @@
 
   window.FinStore = window.FinStore || Store;
 
-})();
+  window.addEventListener("sys:changed", (e) => {
+    syncFromSysStore(e?.detail?.key || "", Boolean(e?.detail?.removed));
+  });
+})(window);

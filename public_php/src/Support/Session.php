@@ -66,10 +66,7 @@ final class Session
     public static function destroy(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            // nada para destruir
-            self::$started = false;
-            $_SESSION = [];
-            return;
+            self::start();
         }
 
         // Limpa dados

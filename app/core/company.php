@@ -6,6 +6,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/url.php';
+
 function company_storage_path(): string {
   // Você pode mover para fora do webroot se quiser (ideal).
   return __DIR__ . '/../storage/company_override.json';
@@ -21,14 +23,14 @@ function company_defaults(): array {
     'site'    => 'visaremocoes.com.br',
 
     // Logo principal do sistema (sidebar, headers gerais etc.)
-    'logo'    => '/sistema-visa/app/static/img/logo.png',
+    'logo'    => app_url('/app/static/img/logo.png'),
 
     // Ícone do sistema (aba do navegador, etc.)
-    'favicon' => '/sistema-visa/app/static/img/favicon.png',
+    'favicon' => app_url('/app/static/img/favicon.png'),
 
     // ✅ Logo pequena usada em relatórios/prints/modais
     // Por padrão, queremos o favicon (fica mais “corporate” e encaixa no layout de impressão).
-    'report_logo' => '/sistema-visa/app/static/img/favicon.png',
+    'report_logo' => app_url('/app/static/img/favicon.png'),
 
     // Texto padrão de rodapé de relatórios/prints
     'report_footer_note' => 'Documento gerado automaticamente pelo Sistema Visa Remoções.',

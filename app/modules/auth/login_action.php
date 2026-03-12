@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../../public_php/src/Support/Session.php';
 require_once __DIR__ . '/../../../public_php/src/Errors/AppError.php';
 require_once __DIR__ . '/../../../public_php/src/Repositories/UserRepository.php';
 require_once __DIR__ . '/../../../public_php/src/Services/AuthService.php';
+require_once __DIR__ . '/../../core/url.php';
 
 try {
   Session::start();
@@ -26,14 +27,14 @@ try {
   $service->login($email, $password);
 
   // Login OK → redireciona para o Dashboard (HTML)
-  header('Location: /sistema-visa/app/templates/dashboard.php');
+  header('Location: ' . app_url('/app/templates/dashboard.php'));
   exit;
 
 } catch (AppError $e) {
   $msg = urlencode($e->getMessage());
-  header("Location: /sistema-visa/app/templates/login.php?error={$msg}");
+  header('Location: ' . app_url("/app/templates/login.php?error={$msg}"));
   exit;
 } catch (Throwable $e) {
-  header("Location: /sistema-visa/app/templates/login.php?error=" . urlencode('Erro interno no servidor'));
+  header('Location: ' . app_url('/app/templates/login.php?error=' . urlencode('Erro interno no servidor')));
   exit;
 }

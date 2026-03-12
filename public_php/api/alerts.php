@@ -1,5 +1,7 @@
 <?php
 // public_php/api/alerts.php
+require_once __DIR__ . '/../../app/core/url.php';
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
@@ -53,7 +55,7 @@ if ($module === 'financeiro') {
     [
       'key'   => 'cp',
       'title' => 'Contas a Pagar',
-      'href'  => '/sistema-visa/app/templates/financeiro_contas_pagar.php',
+      'href'  => app_url('/app/templates/financeiro_contas_pagar.php'),
       'summary' => [
         'success' => 8,
         'info'    => 2,
@@ -66,7 +68,7 @@ if ($module === 'financeiro') {
           'type' => 'danger', // info | warning | danger | success
           'title' => 'Vencido hoje',
           'message' => '1 título vencido — exige ação imediata (placeholder).',
-          'href' => '/sistema-visa/app/templates/financeiro_contas_pagar.php',
+          'href' => app_url('/app/templates/financeiro_contas_pagar.php'),
           'ts' => nowIso(),
         ],
         [
@@ -74,7 +76,7 @@ if ($module === 'financeiro') {
           'type' => 'warning',
           'title' => 'Próximas 48h',
           'message' => '3 títulos vencem em até 48h (placeholder).',
-          'href' => '/sistema-visa/app/templates/financeiro_contas_pagar.php',
+          'href' => app_url('/app/templates/financeiro_contas_pagar.php'),
           'ts' => nowIso(),
         ],
         [
@@ -82,7 +84,7 @@ if ($module === 'financeiro') {
           'type' => 'info',
           'title' => 'Conferência',
           'message' => '2 pagamentos aguardando validação manual (placeholder).',
-          'href' => '/sistema-visa/app/templates/financeiro_contas_pagar.php',
+          'href' => app_url('/app/templates/financeiro_contas_pagar.php'),
           'ts' => nowIso(),
         ],
       ],
@@ -90,7 +92,7 @@ if ($module === 'financeiro') {
     [
       'key'   => 'cr',
       'title' => 'Contas a Receber',
-      'href'  => '/sistema-visa/app/templates/financeiro_contas_receber.php',
+      'href'  => app_url('/app/templates/financeiro_contas_receber.php'),
       'summary' => [
         'success' => 5,
         'info'    => 4,
@@ -103,7 +105,7 @@ if ($module === 'financeiro') {
           'type' => 'info',
           'title' => 'Confirmação',
           'message' => '4 recebíveis em aberto para conciliação (placeholder).',
-          'href' => '/sistema-visa/app/templates/financeiro_contas_receber.php',
+          'href' => app_url('/app/templates/financeiro_contas_receber.php'),
           'ts' => nowIso(),
         ],
         [
@@ -111,7 +113,7 @@ if ($module === 'financeiro') {
           'type' => 'warning',
           'title' => 'Atenção',
           'message' => '1 recebível com risco de atraso (placeholder).',
-          'href' => '/sistema-visa/app/templates/financeiro_contas_receber.php',
+          'href' => app_url('/app/templates/financeiro_contas_receber.php'),
           'ts' => nowIso(),
         ],
       ],
@@ -134,7 +136,7 @@ if ($module === 'financeiro') {
       'type' => 'info',
       'title' => 'Lotes',
       'message' => 'Existe 1 lote aguardando vinculação de processo (placeholder).',
-      'href' => '/sistema-visa/app/templates/lotes.php',
+      'href' => app_url('/app/templates/lotes.php'),
       'ts' => nowIso(),
     ],
   ];

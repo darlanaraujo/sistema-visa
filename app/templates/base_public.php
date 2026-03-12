@@ -1,6 +1,8 @@
 <?php
 // app/templates/base_public.php
 
+require_once __DIR__ . '/../core/url.php';
+
 $title = $title ?? 'Sistema Visa';
 ?>
 <!doctype html>
@@ -10,14 +12,23 @@ $title = $title ?? 'Sistema Visa';
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($title) ?></title>
 
-  <link rel="icon" type="image/png" href="/sistema-visa/app/static/img/favicon.png">
+  <link rel="icon" type="image/png" href="<?= htmlspecialchars(app_url('/app/static/img/favicon.png')) ?>">
 
   <!-- =========================================================
        JS BOOTSTRAP (FIRST PAINT)
        - Aplica tema, cor, sidebar state antes do CSS pintar
        - Evita flash visual no login
   ========================================================== -->
-  <script src="/sistema-visa/app/static/js/system/sys_bootstrap_ui.js"></script>
+  <script>
+    window.__APP_BASE__ = <?= json_encode(app_base_path(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+    window.appUrl = window.appUrl || function (path) {
+      var base = String(window.__APP_BASE__ || '');
+      var normalized = String(path || '/');
+      if (normalized.slice(0, 1) !== '/') normalized = '/' + normalized;
+      return (base + normalized) || '/';
+    };
+  </script>
+  <script src="<?= htmlspecialchars(app_url('/app/static/js/system/sys_bootstrap_ui.js')) ?>"></script>
 
   <!-- Fonte (Inter) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,9 +39,9 @@ $title = $title ?? 'Sistema Visa';
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <!-- CSS base (ordem obrigatória) -->
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/theme.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/global.css">
-  <link rel="stylesheet" href="/sistema-visa/app/static/css/login.css">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/app/static/css/theme.css')) ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/app/static/css/global.css')) ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/app/static/css/login.css')) ?>">
 
   <!-- CSS extra da página pública (opcional) -->
   <?php if (!empty($extra_css) && is_array($extra_css)): ?>
@@ -65,7 +76,7 @@ $title = $title ?? 'Sistema Visa';
        - Aplica logo, favicon, cor, identidade
        - Atualiza DOM após carregamento
   ========================================================== -->
-  <script src="/sistema-visa/app/static/js/system/sys_personalizacao.js"></script>
+  <script src="<?= htmlspecialchars(app_url('/app/static/js/system/sys_personalizacao.js')) ?>"></script>
 
   <!-- JS extra (defer) -->
   <?php if (!empty($extra_js) && is_array($extra_js)): ?>

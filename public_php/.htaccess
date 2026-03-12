@@ -1,3 +1,8 @@
 RewriteEngine On
 
+SetEnv SV_DB_HOST localhost
+SetEnv SV_DB_NAME sistema_visa
+SetEnv SV_DB_USER root
+SetEnv SV_DB_PORT 3306
+
 RewriteRule ^login$ api/login.php [L]

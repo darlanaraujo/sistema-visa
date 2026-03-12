@@ -1,9 +1,4 @@
 // app/static/js/financeiro/data/fin_bootstrap_refs.js
-// Bootstrap idempotente das tabelas de referência do Financeiro.
-// Objetivo: garantir que selects (imóveis/categorias/formas/clientes) tenham base mínima
-// sem depender de mocks hardcoded em cada página.
-// NÃO altera layout. Apenas prepara dados.
-
 (function () {
   const KEYS = {
     imoveis: "fin_ref_imoveis_v1",
@@ -16,62 +11,29 @@
     return Date.now();
   }
 
-  function storeGetArr(key) {
+  async function storeGetArr(key) {
     if (window.SysStore && typeof window.SysStore.get === "function") {
-      const v = window.SysStore.get(key);
+      const v = await window.SysStore.get(key).catch(() => []);
       return Array.isArray(v) ? v : [];
     }
     return [];
   }
 
-  function storeSetArr(key, arr) {
+  async function storeSetArr(key, arr) {
     if (window.SysStore && typeof window.SysStore.set === "function") {
-      window.SysStore.set(key, arr);
-      return true;
+      return await window.SysStore.set(key, arr);
     }
     return false;
   }
 
   function normalizeStr(s) {
-    return String(s ?? "")
-      .trim()
-      .replace(/\s+/g, " ");
+    return String(s ?? "").trim().replace(/\s+/g, " ");
   }
 
   function idFor(prefix) {
     return `${prefix}-${now()}-${Math.floor(Math.random() * 1000)}`;
   }
 
-  function makeRef(prefix, nome) {
-    const t = now();
-    return {
-      id: idFor(prefix),
-      nome: normalizeStr(nome),
-      ativo: true,
-      createdAt: t,
-      updatedAt: t,
-    };
-  }
-
-  function ensureStore(key, defaults) {
-    const cur = storeGetArr(key);
-
-    // Se já existe e tem conteúdo, NÃO mexe.
-    if (Array.isArray(cur) && cur.length) return cur;
-
-    const fresh = (defaults || []).map((d) => ({
-      id: d.id || makeRef(d.prefix || "REF", d.nome).id,
-      nome: normalizeStr(d.nome),
-      ativo: d.ativo !== false,
-      createdAt: d.createdAt || now(),
-      updatedAt: d.updatedAt || now(),
-    }));
-
-    storeSetArr(key, fresh);
-    return fresh;
-  }
-
-  // Defaults mínimos (podem ser ampliados depois no módulo Configurações/Clientes)
   const DEFAULTS = {
     imoveis: [
       { prefix: "IMV", nome: "Galpão A" },
@@ -100,48 +62,66 @@
     ],
   };
 
-  // API pública para ser usada pelos próximos arquivos (adapter/data-layer)
-  function ensureAll() {
-    const imoveis = ensureStore(KEYS.imoveis, DEFAULTS.imoveis);
-    const categorias = ensureStore(KEYS.categorias, DEFAULTS.categorias);
-    const formas = ensureStore(KEYS.formas, DEFAULTS.formas);
-    const clientes = ensureStore(KEYS.clientes, DEFAULTS.clientes);
-    return { imoveis, categorias, formas, clientes };
+  async function ensureStore(key, defaults) {
+    const cur = await storeGetArr(key);
+    if (Array.isArray(cur) && cur.length) return cur;
+
+    const fresh = (defaults || []).map((d) => ({
+      id: d.id || idFor(d.prefix || "REF"),
+      nome: normalizeStr(d.nome),
+      ativo: d.ativo !== false,
+      createdAt: d.createdAt || now(),
+      updatedAt: d.updatedAt || now(),
+    }));
+
+    await storeSetArr(key, fresh);
+    return fresh;
   }
 
-  // helpers úteis p/ migração (Etapa 3)
-  function findByNome(key, nome) {
+  async function ensureAll() {
+    return {
+      imoveis: await ensureStore(KEYS.imoveis, DEFAULTS.imoveis),
+      categorias: await ensureStore(KEYS.categorias, DEFAULTS.categorias),
+      formas: await ensureStore(KEYS.formas, DEFAULTS.formas),
+      clientes: await ensureStore(KEYS.clientes, DEFAULTS.clientes),
+    };
+  }
+
+  async function findByNome(key, nome) {
     const n = normalizeStr(nome).toLowerCase();
     if (!n) return null;
-    const arr = storeGetArr(key);
+    const arr = await storeGetArr(key);
     return arr.find((x) => normalizeStr(x?.nome).toLowerCase() === n) || null;
   }
 
-  function findOrCreateByNome(key, prefix, nome) {
-    const existing = findByNome(key, nome);
+  async function findOrCreateByNome(key, prefix, nome) {
+    const existing = await findByNome(key, nome);
     if (existing) return existing;
-
-    const arr = storeGetArr(key);
-    const item = makeRef(prefix, nome);
+    const arr = await storeGetArr(key);
+    const item = {
+      id: idFor(prefix),
+      nome: normalizeStr(nome),
+      ativo: true,
+      createdAt: now(),
+      updatedAt: now(),
+    };
     arr.push(item);
-    storeSetArr(key, arr);
+    await storeSetArr(key, arr);
     return item;
   }
 
-  // expõe no window (não conflita com nada existente)
-  window.FinRefs = window.FinRefs || {};
-  window.FinRefs.KEYS = KEYS;
-  window.FinRefs.ensureAll = ensureAll;
-  window.FinRefs.getAll = (kind) => storeGetArr(KEYS[kind] || "");
-  window.FinRefs.findByNome = (kind, nome) => findByNome(KEYS[kind] || "", nome);
-  window.FinRefs.findOrCreateByNome = (kind, nome) => {
+  const api = window.FinRefs || {};
+  api.KEYS = KEYS;
+  api.ensureAll = ensureAll;
+  api.getAll = function (kind) { return storeGetArr(KEYS[kind] || ""); };
+  api.findByNome = function (kind, nome) { return findByNome(KEYS[kind] || "", nome); };
+  api.findOrCreateByNome = function (kind, nome) {
     if (kind === "imoveis") return findOrCreateByNome(KEYS.imoveis, "IMV", nome);
     if (kind === "categorias") return findOrCreateByNome(KEYS.categorias, "CAT", nome);
     if (kind === "formas") return findOrCreateByNome(KEYS.formas, "FOR", nome);
     if (kind === "clientes") return findOrCreateByNome(KEYS.clientes, "CLI", nome);
-    return null;
+    return Promise.resolve(null);
   };
 
-  // roda bootstrap imediatamente (sem depender de DOM)
-  ensureAll();
+  window.FinRefs = api;
 })();

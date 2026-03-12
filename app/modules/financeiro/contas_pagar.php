@@ -23,7 +23,7 @@ $mock = [
       <!-- Logo na 1ª coluna (esquerda) -->
       <div class="fin-toolbar__block fin-toolbar__block--logo" aria-label="Identidade visual">
         <div class="fin-kpi-logo">
-          <img src="/sistema-visa/app/static/img/logo.png" alt="Visa Remoções">
+          <img src="<?= h(app_url('/app/static/img/logo.png')) ?>" alt="Visa Remoções">
         </div>
       </div>
 

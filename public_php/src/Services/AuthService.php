@@ -32,19 +32,29 @@ final class AuthService {
       throw new AppError('Credenciais inválidas', 401);
     }
 
-    Session::set('auth_user', [
+    Session::regenerate();
+
+    $authUser = [
       'id' => $user['id'],
+      'company_id' => $user['companyId'] ?? 1,
+      'name' => $user['name'] ?? '',
       'email' => $user['email'],
       'role' => $user['role'],
+      'active' => (bool)($user['active'] ?? true),
+    ];
+
+    Session::set('auth_user', [
+      'id' => $authUser['id'],
+      'company_id' => $authUser['company_id'],
+      'name' => $authUser['name'],
+      'email' => $authUser['email'],
+      'role' => $authUser['role'],
+      'active' => $authUser['active'],
     ]);
 
     return [
       'message' => 'Login realizado com sucesso',
-      'user' => [
-        'id' => $user['id'],
-        'email' => $user['email'],
-        'role' => $user['role'],
-      ],
+      'user' => $authUser,
     ];
   }
 }

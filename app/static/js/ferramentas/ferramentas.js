@@ -4,12 +4,21 @@
 // Futuro: SysStore migra para BD sem refazer páginas.
 
 (function () {
+  async function waitPrivateAreaBoot() {
+    try {
+      if (window.__SV_PRIVATE_BOOT__ && typeof window.__SV_PRIVATE_BOOT__.ready === "function") {
+        await window.__SV_PRIVATE_BOOT__.ready();
+      }
+    } catch (_) {}
+  }
+
   function ready(fn) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
     else fn();
   }
 
-  ready(function () {
+  ready(async function () {
+    await waitPrivateAreaBoot();
     // ✅ obrigatoriedade: FerStore deve existir
     if (!window.FerStore) {
       console.error("[ferramentas] FerStore não carregado.");
@@ -147,14 +156,15 @@
     // -----------------------------
     // FerStore bridge (infra)
     // -----------------------------
-    function load(ns) {
+    async function load(ns) {
       return window.FerStore?.tools?.list ? window.FerStore.tools.list(ns) : [];
     }
 
-    function save(ns, list) {
+    async function save(ns, list) {
       if (window.FerStore?.tools?.save) {
-        window.FerStore.tools.save(ns, list);
+        return window.FerStore.tools.save(ns, list);
       }
+      return false;
     }
 
     function isHexColor(v) {
@@ -214,22 +224,24 @@
     // -----------------------------
     // PERSONALIZAÇÃO (SPECIAL)
     // -----------------------------
-    function loadSysPrefs() {
+    async function loadSysPrefs() {
       return window.FerStore?.prefs?.get ? window.FerStore.prefs.get() : null;
     }
 
-    function saveSysPrefs(prefs) {
+    async function saveSysPrefs(prefs) {
       try {
-        if (window.FerStore?.prefs?.set) window.FerStore.prefs.set(prefs || {});
+        if (window.FerStore?.prefs?.set) return await window.FerStore.prefs.set(prefs || {});
       } catch (_) {
         tDanger("Não foi possível salvar. O armazenamento do navegador pode estar cheio.");
       }
+      return false;
     }
 
-    function removeSysPrefs() {
+    async function removeSysPrefs() {
       try {
-        if (window.FerStore?.prefs?.remove) window.FerStore.prefs.remove();
+        if (window.FerStore?.prefs?.remove) return await window.FerStore.prefs.remove();
       } catch (_) {}
+      return false;
     }
 
     function normalizeCnpj(v) {
@@ -358,9 +370,9 @@
       if (els.sysFaviconFile) els.sysFaviconFile.value = "";
     }
 
-    function openSysModal() {
+    async function openSysModal() {
       if (!els.sysModal) return;
-      const cur = loadSysPrefs() || {};
+      const cur = await loadSysPrefs() || {};
       fillSysForm(cur);
 
       openModalAnimated(els.sysModal);
@@ -524,33 +536,33 @@
         .join("");
     }
 
-    function upsert(item) {
+    async function upsert(item) {
       const idx = items.findIndex((x) => String(x.id) === String(item.id));
       if (idx >= 0) items[idx] = item;
       else items.unshift(item);
 
-      save(currentNs, items);
+      return save(currentNs, items);
     }
 
-    function removeById(id) {
+    async function removeById(id) {
       items = items.filter((x) => String(x.id) !== String(id));
-      save(currentNs, items);
+      return save(currentNs, items);
     }
 
     // -----------------------------
     // abrir por card
     // -----------------------------
     document.querySelectorAll("[data-ft-open]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         currentNs = btn.getAttribute("data-ft-open") || "";
         currentTitle = btn.getAttribute("data-ft-title") || "Cadastro";
 
         if (currentNs === "sistema.personalizacao") {
-          openSysModal();
+          await openSysModal();
           return;
         }
 
-        items = load(currentNs);
+        items = await load(currentNs);
 
         if (els.modalTitle) els.modalTitle.textContent = currentTitle;
         if (els.modalHint) els.modalHint.textContent = `Namespace: ${currentNs} • Armazenamento: SysStore`;
@@ -565,7 +577,7 @@
     els.newBtn?.addEventListener("click", () => openFormModal("new", null));
 
     // tabela actions
-    els.tbody?.addEventListener("click", (e) => {
+    els.tbody?.addEventListener("click", async (e) => {
       const btn = e.target.closest("button[data-act]");
       if (!btn) return;
 
@@ -584,7 +596,7 @@
 
       if (act === "toggle") {
         item.active = !item.active;
-        upsert(item);
+        await upsert(item);
         render();
         item.active ? tSuccess("Item ativado.") : tWarning("Item desativado.");
         return;
@@ -600,7 +612,7 @@
     els.formClose?.addEventListener("click", closeFormModal);
     els.cancel?.addEventListener("click", closeFormModal);
 
-    els.form?.addEventListener("submit", (e) => {
+    els.form?.addEventListener("submit", async (e) => {
       try { e.preventDefault(); } catch (_) {}
 
       const isEdit = Boolean(els.id?.value);
@@ -630,7 +642,11 @@
         updatedAt: Date.now(),
       };
 
-      upsert(payload);
+      const ok = await upsert(payload);
+      if (!ok) {
+        tDanger("Não foi possível salvar o item.");
+        return;
+      }
       render();
       closeFormModal();
 
@@ -640,9 +656,13 @@
     // delete modal
     els.delClose?.addEventListener("click", closeDelModal);
     els.delCancel?.addEventListener("click", closeDelModal);
-    els.delConfirm?.addEventListener("click", () => {
+    els.delConfirm?.addEventListener("click", async () => {
       if (!pendingDeleteId) return;
-      removeById(pendingDeleteId);
+      const ok = await removeById(pendingDeleteId);
+      if (!ok) {
+        tDanger("Não foi possível excluir o item.");
+        return;
+      }
       closeDelModal();
       render();
       tSuccess("Item excluído.");
@@ -747,14 +767,18 @@
     });
 
     // restaurar padrão geral
-    els.sysReset?.addEventListener("click", () => {
-      removeSysPrefs();
+    els.sysReset?.addEventListener("click", async () => {
+      const ok = await removeSysPrefs();
+      if (!ok) {
+        tDanger("Não foi possível restaurar a personalização.");
+        return;
+      }
       fillSysForm({});
       tSuccess("Personalização restaurada para o padrão.");
     });
 
     // submit salva e aplica
-    els.sysForm?.addEventListener("submit", (e) => {
+    els.sysForm?.addEventListener("submit", async (e) => {
       try { e.preventDefault(); } catch (_) {}
 
       const systemName = titleCasePT(els.sysSystemName?.value || "");
@@ -824,7 +848,11 @@
         schema: "sys_prefs_v2",
       };
 
-      saveSysPrefs(payload);
+      const ok = await saveSysPrefs(payload);
+      if (!ok) {
+        tDanger("Não foi possível salvar a personalização.");
+        return;
+      }
 
       closeSysModal();
       tSuccess("Personalização salva.");

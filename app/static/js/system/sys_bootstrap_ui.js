@@ -6,8 +6,7 @@
 // - Persistência oficial continua no SysStore/BaseStore.
 
 (function () {
-  var SYS_PREFS_KEY = "tools_sys_prefs_v2";
-  var SIDEBAR_COLLAPSE_KEY = "sv_sidebar_collapsed";
+  var BOOTSTRAP_CACHE_KEY = "sys_ui_bootstrap_cache_v1";
 
   function lsGetRaw(key) {
     // Leitura mínima pré-paint (não escrever aqui).
@@ -57,12 +56,32 @@
     return link;
   }
 
+  function readCache() {
+    var cached = lsGet(BOOTSTRAP_CACHE_KEY);
+    return cached && typeof cached === "object" ? cached : {};
+  }
+
+  function writeCache(next) {
+    try {
+      localStorage.setItem(BOOTSTRAP_CACHE_KEY, JSON.stringify(next || {}));
+    } catch (_) {}
+  }
+
+  function mergeCache(patch) {
+    var current = readCache();
+    var next = Object.assign({}, current, patch || {});
+    writeCache(next);
+    return next;
+  }
+
   function readState() {
     var prev = window.__SYS_BOOTSTRAP__;
+    var cached = readCache();
+    var cachedPrefs = (cached && cached.prefs && typeof cached.prefs === "object") ? cached.prefs : null;
     var prevPrefs = (prev && prev.prefs && typeof prev.prefs === "object") ? prev.prefs : null;
 
-    // Prioriza estado já bootstrapado; localStorage é fallback mínimo de pré-paint.
-    var prefs = prevPrefs || lsGet(SYS_PREFS_KEY);
+    // Cache estritamente técnico de first paint. Fonte de verdade continua fora deste arquivo.
+    var prefs = cachedPrefs || prevPrefs;
     if (!prefs || typeof prefs !== "object") prefs = {};
 
     var theme = prefs.theme || {};
@@ -70,13 +89,22 @@
 
     var primary = String(theme.primary || "").trim();
     var accent = String(theme.accent || "").trim();
+    var accentPreset = String(
+      theme.accentPreset ||
+      theme.accent_preset ||
+      prefs.accentPreset ||
+      prefs.accent_preset ||
+      ""
+    ).trim().toLowerCase();
     var danger = String(theme.danger || "").trim();
     var success = String(theme.success || "").trim();
 
     var accentToUse = isHex(accent) ? accent : (isHex(primary) ? primary : "");
-    var sidebarRaw = (prev && typeof prev.sidebarCollapsedSaved !== "undefined")
-      ? (prev.sidebarCollapsedSaved ? 1 : 0)
-      : lsGet(SIDEBAR_COLLAPSE_KEY);
+    var sidebarRaw = (cached && typeof cached.sidebarCollapsedSaved !== "undefined")
+      ? (cached.sidebarCollapsedSaved ? 1 : 0)
+      : ((prev && typeof prev.sidebarCollapsedSaved !== "undefined")
+        ? (prev.sidebarCollapsedSaved ? 1 : 0)
+        : 0);
     var sidebarCollapsedSaved =
       sidebarRaw === true ||
       sidebarRaw === 1 ||
@@ -89,6 +117,7 @@
       brandLogo: String(brand.logoDataUrl || "").trim(),
       brandFav: String(brand.faviconDataUrl || "").trim(),
       accentToUse: accentToUse,
+      accentPresetToUse: accentPreset,
       danger: isHex(danger) ? danger : "",
       success: isHex(success) ? success : "",
       isMobile: isMobile,
@@ -107,9 +136,20 @@
     root.classList.toggle("theme-light", state.themeMode !== "dark");
 
     if (state.accentToUse) {
+      root.removeAttribute("data-accent");
       root.style.setProperty("--c-accent", state.accentToUse);
       root.style.setProperty("--fin-blue", state.accentToUse);
       root.style.setProperty("--accent", state.accentToUse);
+    } else if (state.accentPresetToUse) {
+      root.setAttribute("data-accent", state.accentPresetToUse);
+      root.style.removeProperty("--c-accent");
+      root.style.removeProperty("--fin-blue");
+      root.style.removeProperty("--accent");
+    } else {
+      root.removeAttribute("data-accent");
+      root.style.removeProperty("--c-accent");
+      root.style.removeProperty("--fin-blue");
+      root.style.removeProperty("--accent");
     }
     if (state.danger) root.style.setProperty("--c-danger", state.danger);
     if (state.success) root.style.setProperty("--c-success", state.success);
@@ -212,6 +252,13 @@
     refresh: refresh,
     applyRootEarly: function () { applyRootEarly(window.__SYS_BOOTSTRAP__ || state); },
     applyAllPresent: function () { applyAllPresent(window.__SYS_BOOTSTRAP__ || state); },
+    syncPrefsCache: function (prefs) {
+      if (!prefs || typeof prefs !== "object") return readCache();
+      return mergeCache({ prefs: prefs });
+    },
+    syncSidebarCache: function (collapsed) {
+      return mergeCache({ sidebarCollapsedSaved: Boolean(collapsed) });
+    },
   };
 
   if (document.readyState === "loading") {

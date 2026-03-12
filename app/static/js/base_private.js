@@ -32,6 +32,12 @@ function withBreakpointSwitching(flagOn) {
 
 function storageGet(key, fallback = null) {
   try {
+    if (key === 'sv_sidebar_collapsed') {
+      const boot = window.__SYS_BOOTSTRAP__;
+      if (boot && typeof boot.sidebarCollapsedSaved !== 'undefined') {
+        return boot.sidebarCollapsedSaved ? '1' : '0';
+      }
+    }
     if (window.BaseStore?.ui && typeof window.BaseStore.ui.getRaw === 'function') {
       const v = window.BaseStore.ui.getRaw(key, fallback);
       return v === null || typeof v === 'undefined' ? fallback : String(v);
@@ -47,8 +53,48 @@ function storageSet(key, value) {
     if (window.BaseStore?.ui && typeof window.BaseStore.ui.setRaw === 'function') {
       window.BaseStore.ui.setRaw(key, String(value));
     }
+    if (key === 'sv_sidebar_collapsed') {
+      window.SysUIBootstrap?.syncSidebarCache?.(String(value) === '1');
+    }
   } catch (_) {}
 }
+
+function resolveAppUrl(path) {
+  try {
+    if (typeof window.appUrl === 'function') return window.appUrl(path);
+  } catch (_) {}
+  return String(path || '');
+}
+
+function ensurePrivateAreaBoot() {
+  const existing = window.__SV_PRIVATE_BOOT__;
+  if (existing && typeof existing.ready === 'function') return existing;
+
+  let bootReady = false;
+  const promise = (async () => {
+    await Promise.all([
+      window.BaseStore?.ready?.() ?? window.BaseStore?.init?.(),
+      window.FerStore?.ready?.() ?? window.FerStore?.init?.() ?? true,
+      window.FinStore?.ready?.() ?? window.FinStore?.init?.() ?? true,
+    ]);
+    bootReady = true;
+    return true;
+  })();
+
+  const api = {
+    ready() {
+      return promise;
+    },
+    isReady() {
+      return bootReady === true;
+    },
+  };
+
+  window.__SV_PRIVATE_BOOT__ = api;
+  return api;
+}
+
+const privateAreaBoot = ensurePrivateAreaBoot();
 
 /* =========================================================
    EARLY APPLY (evita flash em navegação)
@@ -76,7 +122,7 @@ function storageSet(key, value) {
 --------------------------- */
 function ensureToastAssets() {
   try {
-    const cssHref = '/sistema-visa/app/static/css/toast.css';
+    const cssHref = resolveAppUrl('/app/static/css/toast.css');
     const hasCss = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
       .some(l => (l.getAttribute('href') || '').includes(cssHref));
 
@@ -88,7 +134,7 @@ function ensureToastAssets() {
       document.head.appendChild(link);
     }
 
-    const jsSrc = '/sistema-visa/app/static/js/toast.js';
+    const jsSrc = resolveAppUrl('/app/static/js/toast.js');
     const hasJs = Array.from(document.scripts)
       .some(s => (s.getAttribute('src') || '').includes(jsSrc));
 
@@ -118,7 +164,7 @@ function ensureToastAssets() {
 --------------------------- */
 function ensureUIComponentsAssets() {
   try {
-    const cssHref = '/sistema-visa/app/static/css/ui_components.css';
+    const cssHref = resolveAppUrl('/app/static/css/ui_components.css');
     const hasCss = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
       .some(l => (l.getAttribute('href') || '').includes(cssHref));
 
@@ -130,7 +176,7 @@ function ensureUIComponentsAssets() {
       document.head.appendChild(link);
     }
 
-    const jsSrc = '/sistema-visa/app/static/js/ui_components.js';
+    const jsSrc = resolveAppUrl('/app/static/js/ui_components.js');
     const hasJs = Array.from(document.scripts)
       .some(s => (s.getAttribute('src') || '').includes(jsSrc));
 
@@ -161,7 +207,8 @@ function scheduleInitUIComponents(sidebarEl) {
 /* =========================================================
    DOM READY
 ========================================================= */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try { await privateAreaBoot.ready(); } catch (_) {}
   ensureToastAssets();
   ensureUIComponentsAssets();
 
@@ -262,8 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const candidates = [];
     stems.forEach((stem) => {
       exts.forEach((ext) => {
-        candidates.push(`/sistema-visa/app/static/img/users/${stem}.${ext}`);
-        candidates.push(`/sistema-visa/app/static/img/user/${stem}.${ext}`); // compat legado
+        candidates.push(resolveAppUrl(`/app/static/img/users/${stem}.${ext}`));
+        candidates.push(resolveAppUrl(`/app/static/img/user/${stem}.${ext}`)); // compat legado
       });
     });
     const uniqueCandidates = Array.from(new Set(candidates));
@@ -584,14 +631,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let idleTimer = null;
 
   function forceToLogin() {
-    window.location.href = '/sistema-visa/app/templates/login.php';
+    window.location.href = resolveAppUrl('/app/templates/login.php');
   }
 
   function scheduleIdleLogout() {
     if (idleTimer) clearTimeout(idleTimer);
 
     idleTimer = setTimeout(async () => {
-      try { await apiPost('/sistema-visa/public_php/api/logout.php', {}); } catch (_) {}
+      try { await apiPost(resolveAppUrl('/public_php/api/logout.php'), {}); } catch (_) {}
       forceToLogin();
     }, IDLE_LIMIT_MS);
   }
@@ -603,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('pagehide', () => {
     try {
-      const url = '/sistema-visa/public_php/api/logout.php';
+      const url = resolveAppUrl('/public_php/api/logout.php');
       const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
       navigator.sendBeacon(url, blob);
     } catch (_) {}
@@ -667,10 +714,10 @@ document.addEventListener('DOMContentLoaded', () => {
     catch (_) { return null; }
   }
 
-  function setPrefs(nextPrefs) {
+  async function setPrefs(nextPrefs) {
     try {
       if (window.BaseStore?.prefs && typeof window.BaseStore.prefs.set === 'function') {
-        return Boolean(window.BaseStore.prefs.set(nextPrefs));
+        return Boolean(await window.BaseStore.prefs.set(nextPrefs));
       }
       return false;
     } catch (_) {
@@ -714,7 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return dt === 'dark' ? 'dark' : 'light';
   }
 
-  function toggleTheme() {
+  async function toggleTheme() {
     const prefs = getPrefs() || {};
     prefs.theme = prefs.theme && typeof prefs.theme === 'object' ? prefs.theme : {};
 
@@ -722,8 +769,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const next = (currentDom === 'dark') ? 'light' : 'dark';
 
     prefs.theme.mode = next;
-    setPrefs(prefs);
+    const ok = await setPrefs(prefs);
+    if (!ok) return;
 
+    try { window.SysUIBootstrap?.syncPrefsCache?.(prefs); } catch (_) {}
     applyThemeLocal(next);
 
     try { window.SysUIBootstrap?.refresh?.(); } catch (_) {}
@@ -793,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let alertsInFlight = null;
 
   async function fetchAlerts(moduleKey) {
-    const url = `/sistema-visa/public_php/api/alerts.php?module=${encodeURIComponent(moduleKey)}`;
+    const url = resolveAppUrl(`/public_php/api/alerts.php?module=${encodeURIComponent(moduleKey)}`);
 
     const res = await fetch(url, {
       method: 'GET',
@@ -878,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Eventos do theme
-  if (btnThemeToggle) btnThemeToggle.addEventListener('click', () => toggleTheme());
+  if (btnThemeToggle) btnThemeToggle.addEventListener('click', () => { toggleTheme().catch(() => {}); });
   syncThemeButton();
 
   // Eventos do popover de alertas
@@ -964,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
-      try { await apiPost('/sistema-visa/public_php/api/logout.php', {}); } catch (_) {}
+      try { await apiPost(resolveAppUrl('/public_php/api/logout.php'), {}); } catch (_) {}
       forceToLogin();
     });
   }

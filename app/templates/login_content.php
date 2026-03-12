@@ -5,11 +5,11 @@
       <div class="sidebar__logo-wrap logo-wrap">
         <img
           id="sidebarLogo"
-          src="/sistema-visa/app/static/img/logo.png"
-          data-logo="/sistema-visa/app/static/img/logo.png"
-          data-favicon="/sistema-visa/app/static/img/favicon.png"
-          data-logo-default="/sistema-visa/app/static/img/logo.png"
-          data-favicon-default="/sistema-visa/app/static/img/favicon.png"
+          src="<?= htmlspecialchars(app_url('/app/static/img/logo.png')) ?>"
+          data-logo="<?= htmlspecialchars(app_url('/app/static/img/logo.png')) ?>"
+          data-favicon="<?= htmlspecialchars(app_url('/app/static/img/favicon.png')) ?>"
+          data-logo-default="<?= htmlspecialchars(app_url('/app/static/img/logo.png')) ?>"
+          data-favicon-default="<?= htmlspecialchars(app_url('/app/static/img/favicon.png')) ?>"
           alt="Logo do sistema"
           class="sidebar__logo"
         >
@@ -26,7 +26,7 @@
       </div>
     <?php endif; ?>
 
-    <form method="POST" action="/sistema-visa/app/modules/auth/login_action.php" class="login-form">
+    <form method="POST" action="<?= htmlspecialchars(app_url('/app/modules/auth/login_action.php')) ?>" class="login-form">
       <div class="field">
         <label for="email">E-mail</label>
         <div class="input-icon">

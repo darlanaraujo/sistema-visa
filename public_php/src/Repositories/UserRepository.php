@@ -1,26 +1,41 @@
 <?php
 declare(strict_types=1);
 
-final class UserRepository {
-  public function findByEmail(string $email): ?array {
-    // hash fixo gerado com password_hash('123456', PASSWORD_BCRYPT)
-    // vamos gerar e colar uma vez (abaixo explico)
-    $users = [
-      [
-        'id' => 1,
-        'email' => 'admin@visa.com',
-        'passwordHash' => '$2y$10$LHixaJFunG/65xJvCY9H/.QoNnit0dOCGv/46GIiwP5.doO86lNji',
-        'role' => 'ADMIN',
-        'active' => true,
-      ]
-    ];
+require_once __DIR__ . '/../Support/Database.php';
 
-    foreach ($users as $u) {
-      if (strtolower($u['email']) === strtolower($email)) {
-        return $u;
-      }
+final class UserRepository {
+  public function findByEmail(string $email, int $companyId = 1): ?array {
+    $email = trim($email);
+    if ($email === '') {
+      return null;
     }
 
-    return null;
+    $pdo = Database::connection();
+    $stmt = $pdo->prepare(
+      'SELECT id, company_id, name, email, password_hash, role
+         FROM users
+        WHERE company_id = :company_id
+          AND email = :email
+        LIMIT 1'
+    );
+    $stmt->execute([
+      ':company_id' => $companyId,
+      ':email' => $email,
+    ]);
+
+    $user = $stmt->fetch();
+    if (!is_array($user) || !$user) {
+      return null;
+    }
+
+    return [
+      'id' => (int)($user['id'] ?? 0),
+      'companyId' => (int)($user['company_id'] ?? $companyId),
+      'name' => (string)($user['name'] ?? ''),
+      'email' => (string)($user['email'] ?? ''),
+      'passwordHash' => (string)($user['password_hash'] ?? ''),
+      'role' => (string)($user['role'] ?? ''),
+      'active' => true,
+    ];
   }
 }
