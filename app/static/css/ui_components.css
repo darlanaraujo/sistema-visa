@@ -332,13 +332,148 @@ html[data-theme="dark"] .sv-alertitem{
 .sv-alertitem--success .sv-alertitem__dot{ background: color-mix(in srgb, #22c55e 82%, var(--sv-accent)); }
 
 /* =========================================================
+   CONFIRM MODAL (GLOBAL / REUTILIZÁVEL)
+========================================================= */
+.sv-confirm{
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms var(--sv-ease);
+}
+
+.sv-confirm.is-open{
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sv-confirm__overlay{
+  position: absolute;
+  inset: 0;
+  background: rgba(15,23,42,0.34);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.sv-confirm__card{
+  position: relative;
+  width: min(520px, calc(100vw - 32px));
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--sv-border) 72%, transparent);
+  background: color-mix(in srgb, #fff 92%, transparent);
+  box-shadow:
+    0 30px 60px rgba(15,23,42,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+  transform: translateY(10px) scale(0.98);
+  transition: transform 180ms var(--sv-ease), opacity 180ms var(--sv-ease);
+}
+
+.sv-confirm.is-open .sv-confirm__card{
+  transform: translateY(0) scale(1);
+}
+
+.sv-confirm.is-closing{
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sv-confirm__head{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px;
+}
+
+.sv-confirm__eyebrow{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--sv-accent) 76%, var(--sv-text));
+}
+
+.sv-confirm__title{
+  margin: 8px 0 0;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--sv-text);
+}
+
+.sv-confirm__close{
+  width: 40px;
+  height: 40px;
+  border: 1px solid color-mix(in srgb, var(--sv-border) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 84%, transparent);
+  color: var(--sv-text);
+}
+
+.sv-confirm__body{
+  padding: 0 20px 18px;
+}
+
+.sv-confirm__message{
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--sv-muted);
+}
+
+.sv-confirm__foot{
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 20px 20px;
+}
+
+html[data-theme="dark"] .sv-confirm__card{
+  border-color: color-mix(in srgb, rgba(255,255,255,0.14) 72%, transparent);
+  background: rgba(18,21,28,0.92);
+  box-shadow:
+    0 34px 68px rgba(0,0,0,0.42),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+html[data-theme="dark"] .sv-confirm__close{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.12);
+  color: var(--sv-text);
+}
+
+/* =========================================================
    REDUCED MOTION (somente componentes)
 ========================================================= */
 @media (prefers-reduced-motion: reduce){
   .sv-sidebar-tip,
   .sv-alert,
   .sv-alertitem,
-  .sv-alertblock__cta{
+  .sv-alertblock__cta,
+  .sv-confirm,
+  .sv-confirm__card{
     transition: none !important;
+  }
+}
+
+@media (max-width: 640px){
+  .sv-confirm{
+    padding: 16px;
+  }
+
+  .sv-confirm__card{
+    width: min(100%, calc(100vw - 24px));
+  }
+
+  .sv-confirm__foot{
+    flex-direction: column-reverse;
+  }
+
+  .sv-confirm__foot .fin-btn{
+    width: 100%;
+    justify-content: center;
   }
 }

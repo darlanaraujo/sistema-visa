@@ -13,7 +13,6 @@
     imoveis: "fin_ref_imoveis_v1",
     categorias: "fin_ref_categorias_v1",
     formas: "fin_ref_formas_v1",
-    clientes: "fin_ref_clientes_v1",
     version: "fin_store_version_v1",
   };
 
@@ -21,7 +20,15 @@
   const cache = new Map();
   let initPromise = null;
   let ready = false;
-  const REF_KEYS = new Set([KEYS.imoveis, KEYS.categorias, KEYS.formas, KEYS.clientes]);
+  const SYNC_KEYS = new Set([
+    KEYS.cpRows,
+    KEYS.cpTemplates,
+    KEYS.crRows,
+    KEYS.reportsFav,
+    KEYS.imoveis,
+    KEYS.categorias,
+    KEYS.formas,
+  ]);
 
   function now() {
     return Date.now();
@@ -122,7 +129,7 @@
   }
 
   function syncFromSysStore(key, removed) {
-    if (!key || !REF_KEYS.has(key)) return;
+    if (!key || !SYNC_KEYS.has(key)) return;
 
     const fallback = removed ? null : [];
     const latest = window.SysStore?.getCached?.(key, fallback);
@@ -199,7 +206,9 @@
 
     return {
       id: String(r?.id || uid("CR")),
+      cadastroId: Number(r?.cadastroId || r?.cadastro_id || 0) || null,
       cliente: normalizeStr(r?.cliente),
+      clienteDocumento: normalizeStr(r?.clienteDocumento || r?.cliente_documento),
       valor: Number(r?.valor || 0),
       data: String(r?.data || ""),
       forma: normalizeStr(r?.forma),
@@ -256,7 +265,6 @@
       getImoveis: () => getRefNames(KEYS.imoveis),
       getCategorias: () => getRefNames(KEYS.categorias),
       getFormas: () => getRefNames(KEYS.formas),
-      getClientes: () => getRefNames(KEYS.clientes),
     },
   };
 

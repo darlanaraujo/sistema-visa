@@ -719,22 +719,6 @@ html, body{
   border-color:var(--fin-hover-bd);
 }
 
-.fin-action-ico[data-tip]:hover::after{
-  content:attr(data-tip);
-  position:absolute;
-  bottom:42px;
-  left:50%;
-  transform:translateX(-50%);
-  background:color-mix(in srgb, var(--fin-text) 92%, #000);
-  color:#fff;
-  padding:6px 8px;
-  border-radius:10px;
-  font-size:11px;
-  font-weight:900;
-  white-space:nowrap;
-  pointer-events:none;
-}
-
 .fin-status{
   display:inline-flex;
   align-items:center;

@@ -1083,7 +1083,13 @@
         return;
       }
 
-      const confirmColors = window.confirm("Alterar cores pode afetar o padrão visual do sistema. Deseja aplicar?");
+      const confirmColors = await window.UIComponents.confirm({
+        eyebrow: "Personalização",
+        title: "Aplicar alteração visual",
+        message: "Alterar cores pode afetar o padrão visual do sistema. Deseja aplicar?",
+        confirmLabel: "Aplicar cores",
+        cancelLabel: "Cancelar",
+      });
       if (!confirmColors) return;
 
       const shouldRestoreDefaults = pendingSysResetToDefault === true;

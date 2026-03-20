@@ -68,3 +68,152 @@
   background: inherit !important;
   color: var(--fin-text) !important;
 }
+
+/* ---------------------------------------------------------
+   BUSCA DE CLIENTE (cadastro real)
+   - substitui datalist nativo por painel consistente do modulo
+--------------------------------------------------------- */
+#crPage .fin-modal__body,
+#crPage .fin-form,
+#crPage .fin-form__row,
+#crPage .fin-field{
+  overflow: visible;
+}
+
+#crPage .fin-form__row:first-child{
+  position: relative;
+  z-index: 8;
+}
+
+#crPage .fin-form__row:nth-child(2){
+  position: relative;
+  z-index: 1;
+}
+
+#crPage .cr-lookup{
+  position: relative;
+}
+
+#crPage .cr-lookup__menu{
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid var(--fin-border-2);
+  background: color-mix(in srgb, var(--fin-surface) 96%, white);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+}
+
+#crPage .cr-lookup__menu[hidden]{
+  display: none;
+}
+
+#crPage .cr-lookup__item{
+  width: 100%;
+  height: auto;
+  min-height: 74px;
+  min-width: 0;
+  align-content: start;
+  border: 1px solid color-mix(in srgb, var(--fin-border-2) 92%, transparent);
+  background: color-mix(in srgb, var(--fin-surface-2) 82%, white);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  text-align: left;
+  color: var(--fin-text);
+  line-height: 1.25;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+#crPage .cr-lookup__item:hover,
+#crPage .cr-lookup__item:focus-visible{
+  outline: none;
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--fin-blue) 34%, var(--fin-border-2));
+  background: color-mix(in srgb, var(--fin-blue) 8%, var(--fin-surface));
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.10);
+}
+
+#crPage .cr-lookup__name{
+  font-weight: 800;
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#crPage .cr-lookup__meta,
+#crPage .cr-lookup__empty{
+  font-size: .9rem;
+  color: var(--fin-text-soft);
+}
+
+#crPage .cr-lookup__meta{
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#crPage .cr-lookup__empty{
+  padding: 10px 12px;
+}
+
+#crPage .cr-client-meta{
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+#crPage .cr-client-meta__field{
+  display: grid;
+  gap: 6px;
+}
+
+#crPage .cr-client-meta__field label{
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--fin-text-soft);
+}
+
+#crPage .cr-client-meta__field input[readonly]{
+  background: color-mix(in srgb, var(--fin-surface-2) 88%, white);
+  color: var(--fin-text);
+}
+
+#crPage .cr-client-meta__action{
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] #crPage .cr-lookup__menu{
+  background: color-mix(in srgb, var(--fin-surface) 94%, #0b1220);
+  box-shadow: 0 22px 42px rgba(0, 0, 0, 0.34);
+}
+
+html[data-theme="dark"] #crPage .cr-lookup__item{
+  background: color-mix(in srgb, var(--fin-surface-2) 82%, #101828);
+}
+
+html[data-theme="dark"] #crPage .cr-lookup__item:hover,
+html[data-theme="dark"] #crPage .cr-lookup__item:focus-visible{
+  background: color-mix(in srgb, var(--fin-blue) 14%, var(--fin-surface));
+}
+
+@media (max-width: 720px){
+  #crPage .cr-client-meta{
+    grid-template-columns: 1fr;
+  }
+}

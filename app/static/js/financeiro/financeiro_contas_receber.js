@@ -6,6 +6,9 @@
         await window.__SV_PRIVATE_BOOT__.ready();
       }
     } catch (_) {}
+    try {
+      await (window.FinStore?.ready?.() ?? window.FinStore?.init?.() ?? true);
+    } catch (_) {}
   }
 
   function ready(fn) {
@@ -17,12 +20,13 @@
     await waitPrivateAreaBoot();
     try { await window.FinRefs?.ensureAll?.(); } catch (_) {}
     try { await window.FinRefsBridge?.exportAll?.(); } catch (_) {}
-    const STORAGE_ROWS_KEY = "fin_cr_rows_v1";
-
-    const fallback = Array.isArray(window.__CR_MOCK__) ? window.__CR_MOCK__ : [];
     let rows = [];
     let viewMonth = new Date();
     let pendingDeleteId = null;
+    const cadastroLookupSeq = { form: 0, filter: 0 };
+    let cadastroCatalog = [];
+    let filterCadastroCatalog = [];
+    const cadastroLookupTimers = { form: null, filter: null };
 
     const el = (id) => document.getElementById(id);
 
@@ -36,6 +40,8 @@
       count: el("crCount"),
 
       filterCliente: el("crFilterCliente"),
+      filterCadastroId: el("crFilterCadastroId"),
+      filterClienteMenu: el("crFilterClienteMenu"),
       filterStatus: el("crFilterStatus"),
       filterForma: el("crFilterForma"),
       filterProcesso: el("crFilterProcesso"),
@@ -54,6 +60,9 @@
 
       id: el("crId"),
       cliente: el("crCliente"),
+      cadastroId: el("crCadastroId"),
+      clienteMenu: el("crClienteMenu"),
+      clienteDocumento: el("crClienteDocumento"),
       valor: el("crValor"),
       data: el("crData"),
       forma: el("crForma"),
@@ -142,6 +151,216 @@
       const formas = tools.getFormas ? tools.getFormas() : [];
       fillSelectFromList(els.filterForma, formas, "Todas");
       fillSelectFromList(els.forma, formas, "Selecione");
+    }
+
+    function appBase() {
+      const path = String(window.location.pathname || "");
+      const idx = path.indexOf("/app/templates/");
+      return idx >= 0 ? path.slice(0, idx) : "";
+    }
+
+    function apiUrl(path) {
+      return `${appBase()}${path}`;
+    }
+
+    function normalizeDigits(value) {
+      return String(value || "").replace(/\D+/g, "");
+    }
+
+    function normalizeLookupText(value) {
+      return normalizeSpaces(String(value || "")).toLowerCase();
+    }
+
+    function cadastroDisplayName(item) {
+      return normalizeCliente(item?.label || "");
+    }
+
+    function cadastroSearchLabel(item) {
+      return normalizeSpaces(String(item?.searchLabel || item?.label || ""));
+    }
+
+    function cadastroDocument(item) {
+      return normalizeSpaces(String(item?.documento || ""));
+    }
+
+    function lookupMenu(target) {
+      return target === "filter" ? els.filterClienteMenu : els.clienteMenu;
+    }
+
+    function lookupInput(target) {
+      return target === "filter" ? els.filterCliente : els.cliente;
+    }
+
+    function closeCadastroMenu(target) {
+      const menu = lookupMenu(target);
+      if (!menu) return;
+      menu.hidden = true;
+      menu.innerHTML = "";
+    }
+
+    function setSelectedCadastro(target, item) {
+      if (target === "filter") {
+        if (els.filterCadastroId) els.filterCadastroId.value = item ? String(item.id || "") : "";
+        if (els.filterCliente) els.filterCliente.value = item ? cadastroDisplayName(item) : "";
+        return;
+      }
+
+      if (els.cadastroId) els.cadastroId.value = item ? String(item.id || "") : "";
+      if (els.cliente) els.cliente.value = item ? cadastroDisplayName(item) : "";
+      if (els.clienteDocumento) els.clienteDocumento.value = item ? cadastroDocument(item) : "";
+    }
+
+    function clearSelectedCadastroState(target) {
+      if (target === "filter") {
+        if (els.filterCadastroId) els.filterCadastroId.value = "";
+        return;
+      }
+
+      if (els.cadastroId) els.cadastroId.value = "";
+      if (els.clienteDocumento) els.clienteDocumento.value = "";
+    }
+
+    function filterCadastroItems(items, term) {
+      const text = normalizeLookupText(term);
+      const digits = normalizeDigits(term);
+      if (!text && !digits) return [];
+
+      return (Array.isArray(items) ? items : []).filter((item) => {
+        const searchLabel = normalizeLookupText(cadastroSearchLabel(item));
+        const displayName = normalizeLookupText(cadastroDisplayName(item));
+        const documento = normalizeDigits(item?.documento || "");
+        return searchLabel.includes(text) || displayName.includes(text) || (digits !== "" && documento.includes(digits));
+      });
+    }
+
+    function renderCadastroMenu(target, items, term = "") {
+      const menu = lookupMenu(target);
+      if (!menu) return;
+
+      const cleanedTerm = normalizeSpaces(term);
+      if (!cleanedTerm) {
+        closeCadastroMenu(target);
+        return;
+      }
+
+      const list = filterCadastroItems(items, cleanedTerm).slice(0, 8);
+      if (!list.length) {
+        menu.innerHTML = '<div class="cr-lookup__empty">Nenhum cadastro encontrado.</div>';
+        menu.hidden = false;
+        return;
+      }
+
+      menu.innerHTML = list
+        .map((item, index) => `
+          <button class="cr-lookup__item" type="button" data-cr-option="${escapeHtml(String(index))}">
+            <span class="cr-lookup__name">${escapeHtml(cadastroDisplayName(item))}</span>
+            <span class="cr-lookup__meta">${escapeHtml(cadastroDocument(item) || "Documento não informado")}</span>
+          </button>
+        `)
+        .join("");
+      menu.hidden = false;
+
+      Array.from(menu.querySelectorAll("[data-cr-option]")).forEach((node) => {
+        node.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+        });
+        node.addEventListener("click", () => {
+          const idx = Number(node.getAttribute("data-cr-option") || -1);
+          const selected = list[idx];
+          if (!selected) return;
+          setSelectedCadastro(target, selected);
+          closeCadastroMenu(target);
+          if (target === "filter") render();
+        });
+      });
+    }
+
+    function findCadastroByText(items, rawValue) {
+      const text = normalizeLookupText(rawValue);
+      const digits = normalizeDigits(rawValue);
+      if (!text && !digits) return null;
+      return (Array.isArray(items) ? items : []).find((item) => {
+        const searchLabel = normalizeLookupText(cadastroSearchLabel(item));
+        const displayName = normalizeLookupText(cadastroDisplayName(item));
+        const documento = normalizeDigits(item?.documento || "");
+        return searchLabel === text || displayName === text || (digits !== "" && documento === digits);
+      }) || null;
+    }
+
+    async function fetchCadastros(target, term = "") {
+      const seqKey = target === "filter" ? "filter" : "form";
+      const sequence = ++cadastroLookupSeq[seqKey];
+      const url = new URL(apiUrl("/public_php/api/financeiro_cadastros_lookup.php"), window.location.origin);
+      if (String(term || "").trim() !== "") {
+        url.searchParams.set("term", String(term || "").trim());
+      }
+      url.searchParams.set("limit", "60");
+
+      const response = await fetch(url.toString(), {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload || payload.success !== true || !payload.data) {
+        throw new Error(payload?.error || "Não foi possível consultar os cadastros.");
+      }
+      if (sequence !== cadastroLookupSeq[seqKey]) {
+        return [];
+      }
+      return Array.isArray(payload.data.items) ? payload.data.items : [];
+    }
+
+    async function refreshCadastroCatalog(target, term = "") {
+      const items = await fetchCadastros(target, term);
+      if (target === "filter") {
+        filterCadastroCatalog = items;
+      } else {
+        cadastroCatalog = items;
+      }
+      renderCadastroMenu(target, items, term);
+      return items;
+    }
+
+    function scheduleCadastroCatalogRefresh(target, term = "", immediate = false) {
+      const timerKey = target === "filter" ? "filter" : "form";
+      if (cadastroLookupTimers[timerKey]) {
+        window.clearTimeout(cadastroLookupTimers[timerKey]);
+      }
+      cadastroLookupTimers[timerKey] = window.setTimeout(() => {
+        refreshCadastroCatalog(target, term).catch(() => {});
+      }, immediate ? 0 : 220);
+    }
+
+    async function resolveCadastroSelection(inputEl, hiddenEl, target) {
+      if (!inputEl || !hiddenEl) return null;
+      const rawValue = String(inputEl.value || "").trim();
+      if (!rawValue) {
+        setSelectedCadastro(target, null);
+        closeCadastroMenu(target);
+        return null;
+      }
+
+      const currentCatalog = target === "filter" ? filterCadastroCatalog : cadastroCatalog;
+      let selected = findCadastroByText(currentCatalog, rawValue);
+      if (!selected) {
+        try {
+          const items = await refreshCadastroCatalog(target, rawValue);
+          selected = findCadastroByText(items, rawValue);
+        } catch (_) {
+          return null;
+        }
+      }
+
+      if (!selected) {
+        if (target !== "filter" && els.clienteDocumento) {
+          els.clienteDocumento.value = "";
+        }
+        return null;
+      }
+
+      setSelectedCadastro(target, selected);
+      closeCadastroMenu(target);
+      return selected;
     }
 
     window.addEventListener((window.FinStore && window.FinStore.EVT) ? window.FinStore.EVT : "fin:change", (e) => {
@@ -364,9 +583,12 @@
       const fromObs = String(base.obs || "").match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
       const totalParcelas = clampParcelas(base.totalParcelas || fromObs?.[2] || 1);
       const parcelaAtual = Math.min(totalParcelas, clampParcelas(base.parcelaAtual || fromObs?.[1] || 1));
+      const cadastroId = Number(base.cadastroId ?? base.cadastro_id ?? 0);
       return {
         id: base.id ?? uid(),
         cliente: normalizeCliente(base.cliente ?? ""),
+        cadastroId: Number.isFinite(cadastroId) && cadastroId > 0 ? cadastroId : null,
+        clienteDocumento: normalizeSpaces(base.clienteDocumento ?? base.cliente_documento ?? ""),
         valor: Number(base.valor || 0),
         data: String(base.data || ""),
         forma: normalizeForma(base.forma ?? ""),
@@ -422,14 +644,15 @@
 
     async function loadStorage() {
       try {
-        rows = storeGetRows();
-        if (!Array.isArray(rows) || !rows.length) rows = normalizeFallback(fallback);
-        else rows = rows.map(normalizeRow);
+        const storedRows = storeGetRows();
+        if (Array.isArray(storedRows) && storedRows.length) {
+          rows = storedRows.map(normalizeRow);
+        } else {
+          rows = [];
+        }
       } catch (_) {
-        rows = normalizeFallback(fallback);
+        rows = [];
       }
-
-      await saveStorage();
     }
 
     async function saveStorage() {
@@ -450,6 +673,8 @@
       }
 
       if (!latest) return;
+      if (latest.getFullYear() < viewMonth.getFullYear()) return;
+      if (latest.getFullYear() === viewMonth.getFullYear() && latest.getMonth() <= viewMonth.getMonth()) return;
       viewMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
     }
 
@@ -458,6 +683,7 @@
     // ---------------------------
     function applyFilters(list) {
       const cliente = (els.filterCliente?.value || "").trim();
+      const cadastroId = Number(els.filterCadastroId?.value || 0);
       const status = (els.filterStatus?.value || "").trim();
       const forma = (els.filterForma?.value || "").trim();
       const processo = (els.filterProcesso?.value || "").trim().toLowerCase();
@@ -465,7 +691,13 @@
 
       return list
         .filter((r) => sameMonth(r.data, viewMonth))
-        .filter((r) => !cliente || r.cliente === cliente)
+        .filter((r) => {
+          if (cadastroId > 0) return Number(r.cadastroId || 0) === cadastroId;
+          if (!cliente) return true;
+          const byName = String(r.cliente || "").toLowerCase();
+          const byDoc = normalizeDigits(r.clienteDocumento || "");
+          return byName.includes(cliente.toLowerCase()) || (normalizeDigits(cliente) !== "" && byDoc.includes(normalizeDigits(cliente)));
+        })
         .filter((r) => !status || r.status === status)
         .filter((r) => !forma || r.forma === forma)
         .filter((r) => !processo || String(r.processo || "").toLowerCase().includes(processo))
@@ -473,7 +705,9 @@
           if (!search) return true;
           const a = String(r.cliente || "").toLowerCase();
           const b = String(r.obs || "").toLowerCase();
-          return a.includes(search) || b.includes(search);
+          const c = normalizeDigits(r.clienteDocumento || "");
+          const termDigits = normalizeDigits(search);
+          return a.includes(search) || b.includes(search) || (termDigits !== "" && c.includes(termDigits));
         });
     }
 
@@ -623,7 +857,11 @@
       if (els.modalTitle) els.modalTitle.textContent = mode === "edit" ? "Editar lançamento" : "Novo lançamento";
 
       if (els.id) els.id.value = item?.id ?? "";
-      if (els.cliente) els.cliente.value = item?.cliente ?? "";
+      setSelectedCadastro("form", item ? {
+        id: item.cadastroId,
+        label: item.cliente,
+        documento: item.clienteDocumento,
+      } : null);
       if (els.valor) els.valor.value = item?.valor ?? "";
       if (els.data) els.data.value = item?.data ?? "";
 
@@ -639,6 +877,8 @@
         els.parcelas.value = String(total);
         els.parcelas.disabled = mode === "edit";
       }
+
+      closeCadastroMenu("form");
 
       openModalAnimated(els.modal);
 
@@ -685,19 +925,52 @@
     if (els.modalClose) els.modalClose.addEventListener("click", closeModal);
     if (els.cancel) els.cancel.addEventListener("click", closeModal);
 
-    ["filterCliente", "filterStatus", "filterForma"].forEach((k) => {
+    ["filterStatus", "filterForma"].forEach((k) => {
       if (els[k]) els[k].addEventListener("change", render);
     });
+    if (els.filterCliente) {
+      els.filterCliente.addEventListener("focus", () => {
+        closeCadastroMenu("filter");
+      });
+      els.filterCliente.addEventListener("input", () => {
+        clearSelectedCadastroState("filter");
+        const term = String(els.filterCliente.value || "").trim();
+        if (!term) {
+          closeCadastroMenu("filter");
+        } else {
+          scheduleCadastroCatalogRefresh("filter", term);
+        }
+        render();
+      });
+      els.filterCliente.addEventListener("change", async () => {
+        await resolveCadastroSelection(els.filterCliente, els.filterCadastroId, "filter");
+        render();
+      });
+      els.filterCliente.addEventListener("blur", async () => {
+        window.setTimeout(async () => {
+          await resolveCadastroSelection(els.filterCliente, els.filterCadastroId, "filter");
+          closeCadastroMenu("filter");
+          render();
+        }, 120);
+      });
+    }
+    if (els.filterCliente) {
+      els.filterCliente.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeCadastroMenu("filter");
+      });
+    }
     if (els.filterProcesso) els.filterProcesso.addEventListener("input", render);
     if (els.filterSearch) els.filterSearch.addEventListener("input", render);
 
     if (els.clear)
       els.clear.addEventListener("click", () => {
         if (els.filterCliente) els.filterCliente.value = "";
+        if (els.filterCadastroId) els.filterCadastroId.value = "";
         if (els.filterStatus) els.filterStatus.value = "";
         if (els.filterForma) els.filterForma.value = "";
         if (els.filterProcesso) els.filterProcesso.value = "";
         if (els.filterSearch) els.filterSearch.value = "";
+        closeCadastroMenu("filter");
         tShow("Filtros limpos.");
         render();
       });
@@ -711,6 +984,44 @@
         }
       });
     }
+
+    if (els.cliente) {
+      els.cliente.addEventListener("focus", () => {
+        closeCadastroMenu("form");
+      });
+      els.cliente.addEventListener("input", () => {
+        clearSelectedCadastroState("form");
+        const term = String(els.cliente.value || "").trim();
+        if (!term) {
+          closeCadastroMenu("form");
+        } else {
+          scheduleCadastroCatalogRefresh("form", term);
+        }
+      });
+      els.cliente.addEventListener("change", () => {
+        resolveCadastroSelection(els.cliente, els.cadastroId, "form").catch(() => {});
+      });
+      els.cliente.addEventListener("blur", () => {
+        window.setTimeout(() => {
+          resolveCadastroSelection(els.cliente, els.cadastroId, "form").catch(() => {});
+          closeCadastroMenu("form");
+        }, 120);
+      });
+      els.cliente.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeCadastroMenu("form");
+      });
+    }
+
+    document.addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      if (!target.closest('[data-cr-lookup="filter"]')) {
+        closeCadastroMenu("filter");
+      }
+      if (!target.closest('[data-cr-lookup="form"]')) {
+        closeCadastroMenu("form");
+      }
+    });
 
     els.tbody.addEventListener("click", async (e) => {
       const btn = e.target.closest("button[data-act]");
@@ -755,10 +1066,13 @@
         const id = isEdit ? String(els.id.value) : String(uid());
 
         const totalParcelas = clampParcelas(els.parcelas?.value || existing?.totalParcelas || 1);
+        const selectedCadastro = await resolveCadastroSelection(els.cliente, els.cadastroId, "form");
 
         const payload = {
           id,
-          cliente: normalizeCliente((els.cliente?.value || "").trim()),
+          cadastroId: Number(els.cadastroId?.value || existing?.cadastroId || 0) || null,
+          cliente: cadastroDisplayName(selectedCadastro) || existing?.cliente || "",
+          clienteDocumento: normalizeSpaces(selectedCadastro?.documento || existing?.clienteDocumento || ""),
           valor: parseMoneyInput(els.valor?.value || ""),
           data: els.data?.value || "",
           forma: normalizeForma(els.forma?.value || ""),
@@ -773,8 +1087,12 @@
 
         payload.obs = payload.totalParcelas > 1 ? `Parcela ${payload.parcelaAtual}/${payload.totalParcelas}` : "";
 
-        if (!payload.cliente || !payload.data || !payload.forma) {
+        if (!payload.cadastroId || !payload.cliente || !payload.data || !payload.forma) {
           tDanger("Preencha os campos obrigatórios.");
+          if (!payload.cadastroId && els.cliente) {
+            els.cliente.focus();
+            tWarning("Selecione um cadastro ativo da base real.");
+          }
           return;
         }
 
@@ -834,7 +1152,6 @@
     // Init
     // ---------------------------
     attachMoneyGuards(els.valor);
-    attachTextNormalization(els.cliente, normalizeCliente);
     attachTextNormalization(els.forma, normalizeForma);
     attachTextNormalization(els.processo, normalizeProcesso);
 

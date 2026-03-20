@@ -6,6 +6,9 @@
         await window.__SV_PRIVATE_BOOT__.ready();
       }
     } catch (_) {}
+    try {
+      await (window.FinStore?.ready?.() ?? window.FinStore?.init?.() ?? true);
+    } catch (_) {}
   }
 
   function ready(fn) {
@@ -430,19 +433,18 @@
 
     async function loadStorage() {
       try {
-        rows = storeGetRows();
+        const storedRows = storeGetRows();
         templates = storeGetTemplates();
 
-        if (!Array.isArray(rows) || !rows.length) rows = normalizeFallback(fallback);
+        if (Array.isArray(storedRows) && storedRows.length) rows = storedRows;
+        else rows = [];
         if (!Array.isArray(templates)) templates = [];
       } catch (_) {
-        rows = normalizeFallback(fallback);
+        rows = [];
         templates = [];
       }
 
       rows = rows.map(normalizeRowTextFields);
-
-      await saveStore();
     }
 
     // ---------------------------
@@ -962,7 +964,6 @@
     syncCatalogsFromTools();
 
     ensureFixedInstancesHorizonFrom(monthKeyFromDate(new Date()));
-    await saveStore();
 
     render();
   });

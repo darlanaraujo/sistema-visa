@@ -7,10 +7,11 @@ $groups = [
     'icon'  => 'fa-solid fa-coins',
     'title' => 'Financeiro',
     'desc'  => 'Cadastros usados em contas a pagar/receber e relatórios.',
+    'quick_desc' => 'Apoio ao contas e relatórios',
     'items' => [
-      ['ns'=>'financeiro.imoveis',    'title'=>'Imóveis',    'desc'=>'Centros de custo (ex: Galpão A).'],
-      ['ns'=>'financeiro.categorias', 'title'=>'Categorias', 'desc'=>'Categorias de despesas/receitas.'],
-      ['ns'=>'financeiro.formas',     'title'=>'Meios de Pagamento',     'desc'=>'Meios de pagamento.'],
+      ['ns'=>'financeiro.imoveis',    'title'=>'Imóveis',    'desc'=>'Centros de custo (ex: Galpão A).', 'icon' => 'fa-solid fa-warehouse'],
+      ['ns'=>'financeiro.categorias', 'title'=>'Categorias', 'desc'=>'Categorias de despesas/receitas.', 'icon' => 'fa-solid fa-tags'],
+      ['ns'=>'financeiro.formas',     'title'=>'Meios de Pagamento',     'desc'=>'Meios de pagamento.', 'icon' => 'fa-solid fa-credit-card'],
     ],
   ],
   [
@@ -18,62 +19,116 @@ $groups = [
     'icon'  => 'fa-solid fa-boxes-stacked',
     'title' => 'Lotes',
     'desc'  => 'Cadastros do módulo de lotes (separados do financeiro).',
+    'quick_desc' => 'Status e apoio operacional',
     'items' => [
-      ['ns'=>'lotes.status', 'title'=>'Status (Lotes)', 'desc'=>'Status do fluxo de lotes (não mistura com financeiro).'],
+      ['ns'=>'lotes.status', 'title'=>'Status (Lotes)', 'desc'=>'Status do fluxo de lotes (não mistura com financeiro).', 'icon' => 'fa-solid fa-list-check'],
     ],
   ],
   [
     'key'   => 'sistema',
     'icon'  => 'fa-solid fa-sliders',
     'title' => 'Sistema',
-    'desc'  => 'Preferências gerais e personalização (localStorage nesta fase).',
+    'desc'  => 'Preferências gerais e personalização do ambiente administrativo.',
+    'quick_desc' => 'Tema, marca e preferências',
     'items' => [
-      ['ns'=>'sistema.personalizacao', 'title'=>'Personalização', 'desc'=>'Nome do sistema, empresa, tema e preferências básicas.'],
+      ['ns'=>'sistema.personalizacao', 'title'=>'Personalização', 'desc'=>'Nome do sistema, empresa, tema e preferências básicas.', 'icon' => 'fa-solid fa-palette'],
     ],
   ],
 ];
+
+$groupCount = count($groups);
+$entryCount = 0;
+foreach ($groups as $group) {
+  $entryCount += count($group['items'] ?? []);
+}
 ?>
 
 <div class="fin-page ft-page" id="ftPage">
-  <div class="fin-head">
-    <h1>Ferramentas</h1>
-    <p>Cadastros de apoio por módulo (localStorage nesta fase).</p>
-  </div>
+  <div class="admin-main-layout">
+    <section class="admin-main-content">
+      <div class="fin-head">
+        <h1>Ferramentas</h1>
+        <p>Cadastros de apoio e personalização administrativa organizados por módulo.</p>
+      </div>
 
-  <section class="fin-panel">
-    <div class="fin-panel__head">
-      <div class="fin-panel__title"><i class="fa-solid fa-layer-group"></i><span>Cadastros</span></div>
-      <span class="fin-badge fin-badge--pt">namespace por módulo</span>
-    </div>
+      <section class="admin-block">
+        <div class="admin-block-head">
+          <h2 class="admin-block-title"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Painel do módulo</span></h2>
+        </div>
+        <div class="admin-block-body">
+          <p>Esta área centraliza os cadastros auxiliares que sustentam fluxos operacionais do sistema, preservando o comportamento atual do módulo.</p>
 
-    <div class="ft-grid">
-      <?php foreach($groups as $g): ?>
-        <div class="ft-card">
-          <div class="ft-card__head">
-            <div class="ft-card__title">
-              <i class="<?= h($g['icon']) ?>"></i>
-              <span><?= h($g['title']) ?></span>
-            </div>
-            <div class="ft-card__desc"><?= h($g['desc']) ?></div>
+          <div class="admin-card-meta" aria-label="Resumo do módulo" style="margin-top:14px;">
+            <span><i class="fa-solid fa-cubes" aria-hidden="true"></i><?= h((string)$groupCount) ?> grupos ativos</span>
+            <span><i class="fa-solid fa-list-check" aria-hidden="true"></i><?= h((string)$entryCount) ?> entradas disponíveis</span>
+            <span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i>Fluxo preservado</span>
           </div>
 
-          <div class="ft-card__items">
-            <?php foreach($g['items'] as $it): ?>
-              <button class="ft-item" type="button"
-                      data-ft-open="<?= h($it['ns']) ?>"
-                      data-ft-title="<?= h($it['title']) ?>">
-                <div class="ft-item__main">
-                  <div class="ft-item__title"><?= h($it['title']) ?></div>
-                  <div class="ft-item__desc"><?= h($it['desc']) ?></div>
-                </div>
-                <i class="fa-solid fa-arrow-right"></i>
+          <div class="admin-actions-grid" style="margin-top:16px;">
+            <?php foreach ($groups as $g): ?>
+              <?php $primary = $g['items'][0] ?? null; ?>
+              <?php if (!$primary) continue; ?>
+              <button
+                class="admin-btn admin-btn--tile"
+                type="button"
+                data-ft-open="<?= h($primary['ns']) ?>"
+                data-ft-title="<?= h($primary['title']) ?>"
+              >
+                <span class="admin-btn-icon"><i class="<?= h($g['icon']) ?>"></i></span>
+                <span class="admin-btn-copy">
+                  <span class="admin-btn-label"><?= h($g['title']) ?></span>
+                  <span class="admin-btn-desc"><?= h($g['quick_desc'] ?? $g['desc']) ?></span>
+                </span>
               </button>
             <?php endforeach; ?>
           </div>
         </div>
-      <?php endforeach; ?>
-    </div>
-  </section>
+      </section>
+
+      <section class="admin-block">
+        <div class="admin-block-head">
+          <h2 class="admin-block-title"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i><span>Grupos disponíveis</span></h2>
+        </div>
+        <div class="admin-block-body">
+          <div class="ft-grid">
+            <?php foreach($groups as $g): ?>
+              <section class="admin-card">
+                <span class="admin-card-icon" aria-hidden="true"><i class="<?= h($g['icon']) ?>"></i></span>
+
+                <div class="admin-card-body">
+                  <h3 class="admin-card-title"><?= h($g['title']) ?></h3>
+                  <p class="admin-card-desc"><?= h($g['desc']) ?></p>
+
+                  <div class="admin-card-meta">
+                    <span><i class="fa-solid fa-folder-tree" aria-hidden="true"></i><?= h((string)count($g['items'])) ?> entradas</span>
+                    <span><i class="fa-solid fa-code-branch" aria-hidden="true"></i>Namespace por módulo</span>
+                  </div>
+
+                  <div class="ft-card__items">
+                    <?php foreach($g['items'] as $it): ?>
+                      <button class="ft-item" type="button"
+                              data-ft-open="<?= h($it['ns']) ?>"
+                              data-ft-title="<?= h($it['title']) ?>">
+                        <span class="ft-item__icon" aria-hidden="true"><i class="<?= h($it['icon'] ?? 'fa-solid fa-circle') ?>"></i></span>
+                        <div class="ft-item__main">
+                          <div class="ft-item__title"><?= h($it['title']) ?></div>
+                          <div class="ft-item__desc"><?= h($it['desc']) ?></div>
+                        </div>
+                      </button>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+              </section>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <aside class="admin-main-widgets">
+      <?php require __DIR__ . '/../../templates/partials/admin_main_widgets.php'; ?>
+    </aside>
+  </div>
 
   <!-- MODAL CRUD (LISTA) -->
   <div class="fin-modal" id="ftModal" aria-hidden="true">

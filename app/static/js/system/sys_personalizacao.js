@@ -22,7 +22,7 @@
         return prefs && typeof prefs === "object" ? prefs : {};
       }
     } catch (_) {}
-    return {};
+    return null;
   }
 
   async function getUserPrefs() {
@@ -35,7 +35,7 @@
         return prefs && typeof prefs === "object" ? prefs : {};
       }
     } catch (_) {}
-    return {};
+    return null;
   }
 
   async function getPrefs() {
@@ -45,6 +45,15 @@
         getGlobalPrefs(),
         getUserPrefs(),
       ]);
+
+      const hasBasePrefs =
+        globalPrefs && typeof globalPrefs === "object" && Object.keys(globalPrefs).length > 0;
+      const hasUserPrefs =
+        userPrefs && typeof userPrefs === "object" && Object.keys(userPrefs).length > 0;
+
+      if (!hasBasePrefs && !hasUserPrefs) {
+        throw new Error("NO_BASE_PREFS");
+      }
 
       const theme = (userPrefs?.theme && typeof userPrefs.theme === "object")
         ? userPrefs.theme

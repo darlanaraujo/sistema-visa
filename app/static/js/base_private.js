@@ -73,9 +73,7 @@ function ensurePrivateAreaBoot() {
   let bootReady = false;
   const promise = (async () => {
     await Promise.all([
-      window.BaseStore?.ready?.() ?? window.BaseStore?.init?.(),
-      window.FerStore?.ready?.() ?? window.FerStore?.init?.() ?? true,
-      window.FinStore?.ready?.() ?? window.FinStore?.init?.() ?? true,
+      window.BaseStore?.ready?.() ?? window.BaseStore?.init?.() ?? true,
     ]);
     bootReady = true;
     return true;

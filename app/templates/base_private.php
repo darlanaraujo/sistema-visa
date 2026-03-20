@@ -1,6 +1,10 @@
 <?php
 // app/templates/base_private.php
 
+if (!headers_sent()) {
+  ob_start();
+}
+
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
@@ -151,6 +155,11 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
           <span>Financeiro</span>
         </a>
 
+        <a class="sidebar__item" href="<?= h(app_url('/app/templates/cadastros.php')) ?>" data-nav="cadastros">
+          <i class="fa-solid fa-id-card"></i>
+          <span>Cadastros</span>
+        </a>
+
         <a class="sidebar__item" href="<?= h(app_url('/app/templates/relatorios.php')) ?>" data-nav="relatorios">
           <i class="fa-solid fa-chart-line"></i>
           <span>Relatórios</span>
@@ -245,8 +254,9 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
       <footer class="private-footer">
         <div class="private-footer__inner">
           <span>
-            <strong><?= h($corp['system_name'] ?? 'Sistema Visa Remoções') ?></strong> • © <?= date('Y') ?> • Desenvolvido por
-            <a href="https://grupoi9.com.br" target="_blank" rel="noopener noreferrer">Darlan P. Araujo</a>
+            Desenvolvido por
+            <a href="https://grupoi9.com.br" target="_blank" rel="noopener noreferrer">Darlan P. Araujo</a> • © <?= date('Y') ?> • 
+            <strong><?= h($corp['system_name'] ?? 'Sistema Visa Remoções') ?></strong>
           </span>
         </div>
       </footer>
@@ -256,7 +266,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   <!-- JS específico da página/módulo -->
   <?php if (!empty($extra_js) && is_array($extra_js)): ?>
     <?php foreach ($extra_js as $js): ?>
-      <script src="<?= h($js) ?>"></script>
+      <script defer src="<?= h($js) ?>"></script>
     <?php endforeach; ?>
   <?php endif; ?>
 
@@ -347,3 +357,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
   </div>
 </body>
 </html>
+<?php
+if (ob_get_level() > 0) {
+  ob_end_flush();
+}

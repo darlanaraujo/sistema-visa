@@ -1,0 +1,14 @@
+-- Sistema Visa
+-- Etapa 3B / Parte 3B.1
+-- Migration 006: cadastro_tipos
+
+CREATE TABLE IF NOT EXISTS cadastro_tipos (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  slug VARCHAR(60) NOT NULL,
+  nome VARCHAR(100) NOT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'ativo',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_cadastro_tipos_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

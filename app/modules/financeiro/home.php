@@ -207,7 +207,7 @@ function br_md($iso){
     <section class="fin-panel fin-dash-panel fin-dash-chart">
       <div class="fin-panel__head">
         <div class="fin-panel__title"><i class="fa-solid fa-warehouse"></i><span>Despesas por imóveis</span></div>
-        <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/financeiro_imoveis.php')) ?>">ver</a>
+        <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/ferramentas.php')) ?>">ver</a>
       </div>
 
       <div class="fin-pie-wrap">
@@ -224,7 +224,7 @@ function br_md($iso){
     <section class="fin-panel fin-dash-panel fin-dash-chart">
       <div class="fin-panel__head">
         <div class="fin-panel__title"><i class="fa-solid fa-tags"></i><span>Despesas por categorias</span></div>
-        <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/financeiro_categorias.php')) ?>">ver</a>
+        <a class="fin-badge fin-badge--pt fin-badge--link" href="<?= h(app_url('/app/templates/ferramentas.php')) ?>">ver</a>
       </div>
 
       <div class="fin-pie-wrap">
@@ -295,13 +295,13 @@ function br_md($iso){
           <a class="fin-dash-shortcut is-rec" href="<?= h(app_url('/app/templates/financeiro_contas_receber.php')) ?>">
             <i class="fa-solid fa-hand-holding-dollar"></i><span>Contas a receber</span>
           </a>
-          <a class="fin-dash-shortcut" href="#">
+          <a class="fin-dash-shortcut" href="<?= h(app_url('/app/templates/ferramentas.php')) ?>">
             <i class="fa-solid fa-warehouse"></i><span>Imóveis</span>
           </a>
-          <a class="fin-dash-shortcut" href="#">
+          <a class="fin-dash-shortcut" href="<?= h(app_url('/app/templates/ferramentas.php')) ?>">
             <i class="fa-solid fa-tags"></i><span>Categorias</span>
           </a>
-          <a class="fin-dash-shortcut" href="#">
+          <a class="fin-dash-shortcut" href="<?= h(app_url('/app/templates/cadastros.php')) ?>">
             <i class="fa-solid fa-users"></i><span>Clientes / Fornecedores</span>
           </a>
           <a class="fin-dash-shortcut" href="<?= h(app_url('/app/templates/financeiro_relatorios.php')) ?>">

@@ -6,6 +6,9 @@
         await window.__SV_PRIVATE_BOOT__.ready();
       }
     } catch (_) {}
+    try {
+      await (window.FinStore?.ready?.() ?? window.FinStore?.init?.() ?? true);
+    } catch (_) {}
   }
 
   function ready(fn) {

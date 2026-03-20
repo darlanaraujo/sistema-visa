@@ -40,6 +40,97 @@
     return Math.max(min, Math.min(max, n));
   }
 
+  function ensureConfirmEl() {
+    let modal = document.getElementById('svConfirmModal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'svConfirmModal';
+    modal.className = 'sv-confirm';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = `
+      <div class="sv-confirm__overlay" data-sv-confirm-close></div>
+      <section class="sv-confirm__card" role="dialog" aria-modal="true" aria-labelledby="svConfirmTitle" aria-describedby="svConfirmMessage">
+        <header class="sv-confirm__head">
+          <div>
+            <div class="sv-confirm__eyebrow" id="svConfirmEyebrow">Confirmação</div>
+            <h2 class="sv-confirm__title" id="svConfirmTitle">Confirmar ação</h2>
+          </div>
+          <button class="sv-confirm__close" type="button" aria-label="Fechar" data-sv-confirm-close>
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+        <div class="sv-confirm__body">
+          <p class="sv-confirm__message" id="svConfirmMessage">Tem certeza?</p>
+        </div>
+        <footer class="sv-confirm__foot">
+          <button class="fin-btn fin-btn--ghost" type="button" data-sv-confirm-cancel>Cancelar</button>
+          <button class="fin-btn" type="button" data-sv-confirm-confirm>Confirmar</button>
+        </footer>
+      </section>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function confirm(options = {}) {
+    const modal = ensureConfirmEl();
+    const eyebrowEl = modal.querySelector('#svConfirmEyebrow');
+    const titleEl = modal.querySelector('#svConfirmTitle');
+    const messageEl = modal.querySelector('#svConfirmMessage');
+    const confirmBtn = modal.querySelector('[data-sv-confirm-confirm]');
+    const cancelBtn = modal.querySelector('[data-sv-confirm-cancel]');
+    const closeEls = modal.querySelectorAll('[data-sv-confirm-close]');
+
+    if (eyebrowEl) eyebrowEl.textContent = String(options.eyebrow || 'Confirmação');
+    if (titleEl) titleEl.textContent = String(options.title || 'Confirmar ação');
+    if (messageEl) messageEl.textContent = String(options.message || 'Tem certeza?');
+    if (confirmBtn) confirmBtn.textContent = String(options.confirmLabel || 'Confirmar');
+    if (cancelBtn) cancelBtn.textContent = String(options.cancelLabel || 'Cancelar');
+
+    return new Promise((resolve) => {
+      let closed = false;
+
+      function finish(result) {
+        if (closed) return;
+        closed = true;
+        modal.classList.add('is-closing');
+        window.setTimeout(() => {
+          modal.classList.remove('is-open', 'is-closing');
+          modal.setAttribute('aria-hidden', 'true');
+          document.removeEventListener('keydown', onKeydown);
+          closeEls.forEach((el) => el.removeEventListener('click', onCancel));
+          cancelBtn?.removeEventListener('click', onCancel);
+          confirmBtn?.removeEventListener('click', onConfirm);
+          resolve(result);
+        }, 180);
+      }
+
+      function onCancel() {
+        finish(false);
+      }
+
+      function onConfirm() {
+        finish(true);
+      }
+
+      function onKeydown(event) {
+        if (event.key === 'Escape') {
+          finish(false);
+        }
+      }
+
+      closeEls.forEach((el) => el.addEventListener('click', onCancel));
+      cancelBtn?.addEventListener('click', onCancel);
+      confirmBtn?.addEventListener('click', onConfirm);
+      document.addEventListener('keydown', onKeydown);
+
+      modal.classList.remove('is-closing');
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+    });
+  }
+
   /* =========================================================
      TOOLTIP PREMIUM (singleton)
 ========================================================= */
@@ -376,6 +467,7 @@
   }
 
   window.UIComponents = {
+    confirm,
     initTooltips,
     renderAlerts,
     escapeHtml,

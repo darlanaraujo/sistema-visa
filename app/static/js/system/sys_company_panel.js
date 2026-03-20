@@ -35,6 +35,18 @@
 
   function $(sel) { return document.querySelector(sel); }
 
+  function toast(kind, message) {
+    try {
+      if (window.Toast && typeof window.Toast[kind] === "function") {
+        window.Toast[kind](message);
+        return;
+      }
+      if (window.Toast && typeof window.Toast.show === "function") {
+        window.Toast.show(message);
+      }
+    } catch (_) {}
+  }
+
   async function apiGet(url) {
     const r = await fetch(url, { credentials: "include" });
     const j = await r.json().catch(() => null);
@@ -139,7 +151,7 @@
         location.reload();
       } catch (e) {
         console.error("[sys_company_panel] SAVE falhou:", e);
-        alert("Falha ao salvar. Verifique permissões em /app/storage.");
+        toast("danger", "Falha ao salvar. Verifique permissões em /app/storage.");
       }
     });
 
@@ -153,7 +165,7 @@
           location.reload();
         } catch (e) {
           console.error("[sys_company_panel] RESET falhou:", e);
-          alert("Falha ao restaurar padrão.");
+          toast("danger", "Falha ao restaurar padrão.");
         }
       });
     }

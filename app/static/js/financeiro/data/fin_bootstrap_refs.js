@@ -4,7 +4,6 @@
     imoveis: "fin_ref_imoveis_v1",
     categorias: "fin_ref_categorias_v1",
     formas: "fin_ref_formas_v1",
-    clientes: "fin_ref_clientes_v1",
   };
 
   function now() {
@@ -55,11 +54,6 @@
       { prefix: "FOR", nome: "Dinheiro" },
       { prefix: "FOR", nome: "Cartão" },
     ],
-    clientes: [
-      { prefix: "CLI", nome: "Cliente X" },
-      { prefix: "CLI", nome: "Cliente Y" },
-      { prefix: "CLI", nome: "Parceiro Z" },
-    ],
   };
 
   async function ensureStore(key, defaults) {
@@ -83,7 +77,6 @@
       imoveis: await ensureStore(KEYS.imoveis, DEFAULTS.imoveis),
       categorias: await ensureStore(KEYS.categorias, DEFAULTS.categorias),
       formas: await ensureStore(KEYS.formas, DEFAULTS.formas),
-      clientes: await ensureStore(KEYS.clientes, DEFAULTS.clientes),
     };
   }
 
@@ -119,7 +112,6 @@
     if (kind === "imoveis") return findOrCreateByNome(KEYS.imoveis, "IMV", nome);
     if (kind === "categorias") return findOrCreateByNome(KEYS.categorias, "CAT", nome);
     if (kind === "formas") return findOrCreateByNome(KEYS.formas, "FOR", nome);
-    if (kind === "clientes") return findOrCreateByNome(KEYS.clientes, "CLI", nome);
     return Promise.resolve(null);
   };
 

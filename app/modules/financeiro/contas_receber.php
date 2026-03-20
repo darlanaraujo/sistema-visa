@@ -1,44 +1,11 @@
 <?php
 // app/modules/financeiro/contas_receber.php
-
-$mock = [
-  [
-    'id' => 101,
-    'cliente' => 'Cliente X',
-    'valor' => 12500.00,
-    'data' => '2026-02-05',
-    'forma' => 'Boleto',
-    'processo' => 'PRC-2026-001',
-    'status' => 'open',
-    'obs' => 'Parcela 1/3',
-  ],
-  [
-    'id' => 102,
-    'cliente' => 'Cliente Y',
-    'valor' => 8900.00,
-    'data' => '2026-01-30',
-    'forma' => 'PIX Futuro',
-    'processo' => 'PRC-2026-002',
-    'status' => 'done',
-    'obs' => 'Recebido via PIX',
-  ],
-  [
-    'id' => 103,
-    'cliente' => 'Parceiro Z',
-    'valor' => 2200.00,
-    'data' => '2026-02-10',
-    'forma' => 'Depósito',
-    'processo' => '',
-    'status' => 'open',
-    'obs' => '',
-  ],
-];
 ?>
 
 <div class="fin-page" id="crPage">
   <div class="fin-head">
     <h1>Contas a Receber</h1>
-    <p>Agenda de recebimentos e lançamentos de vendas com pagamento futuro. (Mock nesta etapa — sem banco de dados)</p>
+    <p>Agenda de recebimentos e lançamentos com vínculo real à base de Cadastros do sistema.</p>
   </div>
 
   <?php include __DIR__ . '/_nav.php'; ?>
@@ -114,12 +81,11 @@ $mock = [
     <div class="fin-filters" id="crFiltersGrid">
       <div class="fin-filter">
         <label>Cliente</label>
-        <select id="crFilterCliente" data-fin-catalog="clientes">
-          <option value="">Todos</option>
-          <option value="Cliente X">Cliente X</option>
-          <option value="Cliente Y">Cliente Y</option>
-          <option value="Parceiro Z">Parceiro Z</option>
-        </select>
+        <div class="cr-lookup" data-cr-lookup="filter">
+          <input id="crFilterCliente" type="search" placeholder="Nome ou documento" autocomplete="off" />
+          <div class="cr-lookup__menu" id="crFilterClienteMenu" hidden></div>
+        </div>
+        <input id="crFilterCadastroId" type="hidden" />
       </div>
 
       <div class="fin-filter">
@@ -151,7 +117,7 @@ $mock = [
 
       <div class="fin-filter">
         <label>Buscar (Cliente / Obs.)</label>
-        <input id="crFilterSearch" type="text" placeholder="Ex: Cliente X" />
+        <input id="crFilterSearch" type="text" placeholder="Ex: contrato em aberto" />
       </div>
 
       <div class="fin-filter" style="min-width:160px">
@@ -202,10 +168,6 @@ $mock = [
     </div>
   </div>
 
-  <script>
-    window.__CR_MOCK__ = <?= json_encode($mock, JSON_UNESCAPED_UNICODE) ?>;
-  </script>
-
   <!-- Modal: Novo/Editar -->
   <div class="fin-modal" id="crModal" aria-hidden="true">
     <div class="fin-modal__card">
@@ -223,12 +185,17 @@ $mock = [
           <div class="fin-form__row">
             <div class="fin-field">
               <label>Cliente</label>
-              <select id="crCliente" data-fin-catalog="clientes" required>
-                <option value="">Selecione</option>
-                <option value="Cliente X">Cliente X</option>
-                <option value="Cliente Y">Cliente Y</option>
-                <option value="Parceiro Z">Parceiro Z</option>
-              </select>
+              <div class="cr-lookup" data-cr-lookup="form">
+                <input id="crCliente" type="search" placeholder="Nome ou documento" autocomplete="off" required />
+                <div class="cr-lookup__menu" id="crClienteMenu" hidden></div>
+              </div>
+              <input id="crCadastroId" type="hidden" />
+              <div class="cr-client-meta">
+                <div class="cr-client-meta__field">
+                  <label for="crClienteDocumento">CPF/CNPJ</label>
+                  <input id="crClienteDocumento" type="text" readonly placeholder="Preenchido ao selecionar o cadastro" />
+                </div>
+              </div>
             </div>
             <div class="fin-field">
               <label>Valor</label>

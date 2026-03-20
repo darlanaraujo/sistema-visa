@@ -11,6 +11,9 @@
         await window.__SV_PRIVATE_BOOT__.ready();
       }
     } catch (_) {}
+    try {
+      await (window.FinStore?.ready?.() ?? window.FinStore?.init?.() ?? true);
+    } catch (_) {}
   const root = document.getElementById('frPage');
   if(!root) return;
 
@@ -151,6 +154,7 @@
       .map(c => c.getAttribute('data-report-id'))
       .filter(Boolean)
     );
+    if(valid.size === 0) return;
     favorites = uniq(favorites).filter(id => valid.has(id)).slice(0, FAV_LIMIT);
     saveFavorites().catch(() => {});
   }
@@ -1975,7 +1979,6 @@
   // -----------------------------
   // Init
   // -----------------------------
-  cleanupFavorites();
   updateStarButtons();
   renderFavorites();
   applyFilters();
