@@ -52,9 +52,9 @@
 }
 
 /* prioridade visual no valor e na data quando vencida */
-#cpPage .fin-table tbody tr.is-overdue td:nth-child(2),
-#cpPage .fin-table tbody tr.is-overdue td:nth-child(4){
-  color: color-mix(in srgb, var(--fin-danger) 88%, #000) !important;
+#cpPage .fin-table tbody tr.is-overdue td:nth-child(3),
+#cpPage .fin-table tbody tr.is-overdue td:nth-child(5){
+  color: color-mix(in srgb, var(--fin-danger) 88%, var(--fin-bg-strong, var(--c-bg))) !important;
   font-weight: 900;
 }
 
@@ -69,4 +69,16 @@
 --------------------------------------------------------- */
 #cpDelModal .fin-modal__body p{
   color: var(--fin-text) !important;
+}
+
+#cpPage .fin-modal__body,
+#cpPage .fin-form,
+#cpPage .fin-form__row,
+#cpPage .fin-field{
+  overflow: visible;
+}
+
+#cpPage .fin-form__row:first-child{
+  position: relative;
+  z-index: 8;
 }

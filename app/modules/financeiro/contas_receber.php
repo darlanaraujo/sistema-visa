@@ -81,11 +81,7 @@
     <div class="fin-filters" id="crFiltersGrid">
       <div class="fin-filter">
         <label>Cliente</label>
-        <div class="cr-lookup" data-cr-lookup="filter">
-          <input id="crFilterCliente" type="search" placeholder="Nome ou documento" autocomplete="off" />
-          <div class="cr-lookup__menu" id="crFilterClienteMenu" hidden></div>
-        </div>
-        <input id="crFilterCadastroId" type="hidden" />
+        <input id="crFilterCliente" type="search" placeholder="Nome, CPF/CNPJ ou telefone" autocomplete="off" />
       </div>
 
       <div class="fin-filter">
@@ -185,28 +181,25 @@
           <div class="fin-form__row">
             <div class="fin-field">
               <label>Cliente</label>
-              <div class="cr-lookup" data-cr-lookup="form">
-                <input id="crCliente" type="search" placeholder="Nome ou documento" autocomplete="off" required />
-                <div class="cr-lookup__menu" id="crClienteMenu" hidden></div>
+              <div class="fin-cad-lookup" data-cr-lookup="form">
+                <div class="fin-cad-lookup__control">
+                  <span class="fin-cad-lookup__icon"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span>
+                  <input id="crCliente" type="search" placeholder="Nome, CPF/CNPJ ou telefone" autocomplete="off" />
+                </div>
+                <div class="fin-cad-lookup__menu" id="crClienteMenu" hidden></div>
               </div>
               <input id="crCadastroId" type="hidden" />
-              <div class="cr-client-meta">
-                <div class="cr-client-meta__field">
-                  <label for="crClienteDocumento">CPF/CNPJ</label>
-                  <input id="crClienteDocumento" type="text" readonly placeholder="Preenchido ao selecionar o cadastro" />
-                </div>
-              </div>
             </div>
             <div class="fin-field">
-              <label>Valor</label>
-              <input id="crValor" type="text" placeholder="Ex: 12500.00" required />
+              <label for="crClienteDocumento">CPF/CNPJ / Telefone</label>
+              <input id="crClienteDocumento" type="text" readonly placeholder="Preenchido ao selecionar o cadastro" />
             </div>
           </div>
 
           <div class="fin-form__row">
             <div class="fin-field">
-              <label>Vencimento / Previsão</label>
-              <input id="crData" type="date" required />
+              <label>Valor</label>
+              <input id="crValor" type="text" placeholder="Ex: 12500.00" required />
             </div>
             <div class="fin-field">
               <label>Meio de Pagamento</label>
@@ -224,8 +217,8 @@
 
           <div class="fin-form__row">
             <div class="fin-field">
-              <label>Processo (opcional)</label>
-              <input id="crProcesso" type="text" placeholder="Ex: PRC-2026-001" />
+              <label>Vencimento / Previsão</label>
+              <input id="crData" type="date" required />
             </div>
             <div class="fin-field">
               <label>Parcelas</label>
@@ -246,6 +239,17 @@
             </div>
           </div>
 
+          <div class="fin-form__row">
+            <div class="fin-field">
+              <label>Processo (opcional)</label>
+              <input id="crProcesso" type="text" placeholder="Ex: PRC-2026-001" />
+            </div>
+            <div class="fin-field">
+              <label>Produto (opcional)</label>
+              <input id="crProduto" type="text" placeholder="Preenchido quando o lançamento vier do lote" />
+            </div>
+          </div>
+
           <div class="fin-modal__actions">
             <button class="fin-btn fin-btn--ghost" id="crCancel" type="button">Cancelar</button>
             <button class="fin-btn" id="crSave" type="submit">
@@ -253,6 +257,20 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="fin-modal fin-cad-inline-modal" id="finCadastroInlineModal" aria-hidden="true">
+    <div class="fin-modal__card">
+      <div class="fin-modal__head">
+        <div class="fin-modal__title" id="finCadastroInlineTitle">Novo cadastro</div>
+        <button class="fin-modal__close" id="finCadastroInlineClose" type="button" aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="fin-modal__body">
+        <iframe class="fin-cad-inline-frame" id="finCadastroInlineFrame" src="about:blank" title="Cadastro inline"></iframe>
       </div>
     </div>
   </div>

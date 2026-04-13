@@ -35,6 +35,13 @@
   transform: translate(-50%, 0) scale(1);
 }
 
+.sv-sidebar-tip.is-left{
+  transform: translateX(6px) scale(0.98);
+}
+.sv-sidebar-tip.is-left.is-show{
+  transform: translateX(0) scale(1);
+}
+
 .sv-sidebar-tip__card{
   position: relative;
   padding: 10px 12px;
@@ -77,6 +84,18 @@
   border-left: 1px solid rgba(255,255,255,0.12);
   border-top: 1px solid rgba(255,255,255,0.12);
   border-bottom: 0;
+}
+
+.sv-sidebar-tip.is-left .sv-sidebar-tip__arrow{
+  left: auto;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+
+  border-left: 0;
+  border-bottom: 0;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.12);
 }
 
 /* =========================================================

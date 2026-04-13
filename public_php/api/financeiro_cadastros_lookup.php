@@ -29,6 +29,13 @@ $payload = array_values(array_filter(array_map(
     $nome = trim((string)($item['nome'] ?? ''));
     $razaoSocial = trim((string)($item['razaoSocial'] ?? ''));
     $documento = trim((string)($item['documento'] ?? ''));
+    $telefone = trim((string)($item['celular'] ?? ''));
+    if ($telefone === '') {
+      $telefone = trim((string)($item['whatsapp'] ?? ''));
+    }
+    if ($telefone === '') {
+      $telefone = trim((string)($item['telefone'] ?? ''));
+    }
     $displayName = $tipoPessoa === 'PJ'
       ? ($razaoSocial !== '' ? $razaoSocial : $nome)
       : ($nome !== '' ? $nome : $razaoSocial);
@@ -45,8 +52,9 @@ $payload = array_values(array_filter(array_map(
     return [
       'id' => (int)($item['id'] ?? 0),
       'label' => $displayName,
-      'searchLabel' => $documento !== '' ? ($displayName . ' • ' . $documento) : $displayName,
+      'searchLabel' => trim(implode(' • ', array_filter([$displayName, $documento, $telefone]))),
       'documento' => $documento,
+      'telefone' => $telefone,
       'tipoPessoa' => $tipoPessoa,
       'tipos' => $tipos,
       'status' => (string)($item['status'] ?? ''),

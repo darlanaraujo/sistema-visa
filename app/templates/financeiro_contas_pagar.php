@@ -7,6 +7,7 @@ $page_icon  = 'fa-solid fa-file-invoice-dollar';
 
 $extra_css = [
   app_url('/app/static/css/financeiro.css'),
+  app_url('/app/static/css/financeiro_cadastro_lookup.css'),
   app_url('/app/static/css/financeiro_contas_pagar.css'),
 ];
 
@@ -15,6 +16,7 @@ $extra_js = [
   app_url('/app/static/js/financeiro/data/fin_store.js'),
   app_url('/app/static/js/financeiro/data/fin_bootstrap_refs.js'),
   app_url('/app/static/js/financeiro/data/fin_refs_bridge.js'), // <<< ADICIONA
+  app_url('/app/static/js/financeiro/financeiro_cadastro_inline.js'),
   app_url('/app/static/js/financeiro/financeiro_contas_pagar.js'),
 ];
 

@@ -848,7 +848,7 @@ html, body{
   border:1px solid color-mix(in srgb, var(--fin-border) 75%, var(--fin-border-2));
   padding:0 12px;
   outline:none;
-  /* background:var(--fin-surface); */
+  background:var(--fin-surface);
   font-size:13px;
   font-weight:800;
   max-width:100%;

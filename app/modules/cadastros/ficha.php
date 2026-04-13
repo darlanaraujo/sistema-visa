@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../../public_php/src/Repositories/CadastroRepository
 require_once __DIR__ . '/../../../public_php/src/Repositories/ArquivoRepository.php';
 require_once __DIR__ . '/../../../public_php/src/Support/Database.php';
 require_once __DIR__ . '/_anexos_presenter.php';
+require_once __DIR__ . '/_lotes_relacionados.php';
 
 $repo = new CadastroRepository();
 $arquivoRepo = new ArquivoRepository();
@@ -15,10 +16,21 @@ $status = trim((string)($_GET['status'] ?? ''));
 $busca = trim((string)($_GET['busca'] ?? ''));
 $modo = trim((string)($_GET['modo'] ?? ''));
 $saved = trim((string)($_GET['saved'] ?? ''));
+$isEmbedMode = trim((string)($_GET['embed'] ?? '')) === '1';
 $isCadastroMode = $modo === 'cadastro';
 
 $cadastro = $id > 0 ? $repo->findById($id, 1) : null;
 $tiposDisponiveis = $repo->listTipos(true);
+$cadRelatedPurchases = [];
+$cadRelatedSales = [];
+$cadRelatedFreights = [];
+
+if (is_array($cadastro) && $id > 0) {
+  $cadLotRelationships = cad_load_lot_relationships($id, 1);
+  $cadRelatedPurchases = is_array($cadLotRelationships['compras'] ?? null) ? $cadLotRelationships['compras'] : [];
+  $cadRelatedSales = is_array($cadLotRelationships['vendas'] ?? null) ? $cadLotRelationships['vendas'] : [];
+  $cadRelatedFreights = is_array($cadLotRelationships['fretes'] ?? null) ? $cadLotRelationships['fretes'] : [];
+}
 
 $tipoMap = [
   'clientes' => ['title' => 'Clientes', 'slug' => 'cliente'],
@@ -92,6 +104,36 @@ $ufs = [
   'TO' => 'Tocantins',
 ];
 
+$veiculoModelos = [
+  '3/4',
+  'FIORINO',
+  'TOCO',
+  'VLC',
+  'BITRUCK',
+  'TRUCK',
+  'BITREM',
+  'CARRETA',
+  'CARRETA LS',
+  'RODOTREM',
+  'VANDERLEIA',
+];
+
+$veiculoCarrocerias = [
+  'BAÚ',
+  'FRIGORIFICO',
+  'REFRIGERADO',
+  'SIDER',
+  'CAÇAMBA',
+  'GRADE BAIXA',
+  'GRANELEIRO',
+  'PLATAFORMA',
+  'PRANCHA',
+  'CEGONHEIRO',
+  'GAIOLA',
+  'MUNCK',
+  'TANQUE',
+];
+
 $tipoTitulo = $tipoMap[$tipo]['title'] ?? 'Listagem';
 $tipoSlugContexto = $tipoMap[$tipo]['slug'] ?? '';
 $backQuery = array_filter([
@@ -104,8 +146,10 @@ $formActionQuery = array_filter([
   'modo' => 'cadastro',
   'id' => $id > 0 ? $id : null,
   'tipo' => $tipo !== '' ? $tipo : null,
+  'embed' => $isEmbedMode ? '1' : null,
 ], static fn ($value) => $value !== null && $value !== '');
-$formAction = app_url('/app/templates/cadastros_ficha.php' . ($formActionQuery !== [] ? '?' . http_build_query($formActionQuery) : ''));
+$formTemplatePath = $isEmbedMode ? '/app/templates/cadastros_ficha_embed.php' : '/app/templates/cadastros_ficha.php';
+$formAction = app_url($formTemplatePath . ($formActionQuery !== [] ? '?' . http_build_query($formActionQuery) : ''));
 
 function cad_ficha_field(?string $value, string $fallback = 'Não informado'): string {
   $text = trim((string)($value ?? ''));
@@ -158,6 +202,20 @@ function cad_form_next_type_slug(array $selectedSlugs, string $currentTypeSlug):
   }
 
   return '';
+}
+
+function cad_form_tipo_id_by_slug(array $tiposDisponiveis, string $slug): int {
+  foreach ($tiposDisponiveis as $tipoItem) {
+    if (trim((string)($tipoItem['slug'] ?? '')) !== $slug) {
+      continue;
+    }
+    $id = (int)($tipoItem['id'] ?? 0);
+    if ($id > 0) {
+      return $id;
+    }
+  }
+
+  return 0;
 }
 
 function cad_form_avatar_src(array $selectedSlugs): string {
@@ -219,6 +277,182 @@ function cad_form_tags_note(string $currentTypeSlug): string {
     'motorista', 'transportadora' => 'TAGS - Rotas atendidas',
     default => 'TAGS - Classificação do cadastro',
   };
+}
+
+function cad_form_section_head(string $icon, string $eyebrow, string $title, string $description = ''): string {
+  ob_start();
+  ?>
+  <div class="cad-form-section-head">
+    <div class="cad-form-section-head__icon">
+      <i class="<?= h($icon) ?>" aria-hidden="true"></i>
+    </div>
+    <div class="cad-form-section-head__copy">
+      <div class="cad-ficha-card__eyebrow"><?= h($eyebrow) ?></div>
+      <h3><?= h($title) ?></h3>
+      <?php if (trim($description) !== ''): ?>
+        <p><?= h($description) ?></p>
+      <?php endif; ?>
+    </div>
+  </div>
+  <?php
+  return (string)ob_get_clean();
+}
+
+function cad_view_section_head(string $icon, string $eyebrow, string $title, string $description = ''): string {
+  ob_start();
+  ?>
+  <div class="cad-ficha-section-head">
+    <div class="cad-ficha-section-head__icon">
+      <i class="<?= h($icon) ?>" aria-hidden="true"></i>
+    </div>
+    <div class="cad-ficha-section-head__copy">
+      <div class="cad-ficha-card__eyebrow"><?= h($eyebrow) ?></div>
+      <h3><?= h($title) ?></h3>
+      <?php if (trim($description) !== ''): ?>
+        <p><?= h($description) ?></p>
+      <?php endif; ?>
+    </div>
+  </div>
+  <?php
+  return (string)ob_get_clean();
+}
+
+function cad_form_select_options(array $options, string $selected = '', string $placeholder = 'Selecione'): string {
+  $html = '<option value="">' . h($placeholder) . '</option>';
+  foreach ($options as $option) {
+    $value = (string)$option;
+    $isSelected = $selected !== '' && $selected === $value ? ' selected' : '';
+    $html .= '<option value="' . h($value) . '"' . $isSelected . '>' . h($value) . '</option>';
+  }
+  return $html;
+}
+
+function cad_datetime_activity(string $createdAt): string {
+  $time = trim($createdAt);
+  if ($time === '') {
+    return 'Data não informada • --:--';
+  }
+
+  try {
+    $dt = new DateTimeImmutable($time);
+    $dt = $dt->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+  } catch (Throwable $e) {
+    return 'Data não informada • --:--';
+  }
+
+  return $dt->format('d/m/Y') . ' • ' . $dt->format('H:i');
+}
+
+function cad_movement_summary(array $movimentacao): string {
+  $payload = is_array($movimentacao['payloadEstrutural'] ?? null) ? $movimentacao['payloadEstrutural'] : [];
+  $nome = trim((string)($payload['nome'] ?? ''));
+  $tipo = trim((string)($payload['tipo_principal'] ?? ''));
+  $fallback = cad_ficha_field((string)($movimentacao['descricaoEvento'] ?? ''), 'Evento sem descrição');
+
+  return match ((string)($movimentacao['tipoEvento'] ?? '')) {
+    'cadastro_criado' => 'Cadastro criado' . ($nome !== '' ? ': ' . $nome : ''),
+    'cadastro_atualizado' => 'Cadastro atualizado' . ($nome !== '' ? ': ' . $nome : ''),
+    default => $fallback . ($tipo !== '' ? ' • ' . $tipo : ''),
+  };
+}
+
+function cad_widget_activity(array $movimentacao): array {
+  $meta = cad_datetime_activity((string)($movimentacao['createdAt'] ?? ''));
+  $responsavel = trim((string)($movimentacao['responsavel'] ?? ''));
+  if ($responsavel !== '') {
+    $meta .= ' • ' . $responsavel;
+  }
+
+  return [
+    'title' => cad_movement_summary($movimentacao),
+    'meta' => $meta,
+  ];
+}
+
+function cad_lot_date(?string $value, string $fallback = 'Nao informado'): string {
+  $text = trim((string)($value ?? ''));
+  if ($text === '') {
+    return $fallback;
+  }
+
+  try {
+    return (new DateTimeImmutable($text))->format('d/m/Y');
+  } catch (Throwable $e) {
+    return $fallback;
+  }
+}
+
+function cad_lot_money(float $value): string {
+  return 'R$ ' . number_format($value, 2, ',', '.');
+}
+
+function cad_lot_status_label(?string $status): string {
+  return match (trim((string)$status)) {
+    'em_estoque' => 'Em estoque',
+    'finalizado' => 'Finalizado',
+    'cancelado' => 'Cancelado',
+    default => 'Em transito',
+  };
+}
+
+function cad_lot_transport_label(?string $tipo): string {
+  return match (trim((string)$tipo)) {
+    'motorista_autonomo' => 'Motorista autonomo',
+    'transportadora' => 'Transportadora',
+    'transporte_proprio' => 'Transporte proprio',
+    'retirada_cliente' => 'Retirada pelo cliente',
+    default => 'Sem frete',
+  };
+}
+
+function cad_lot_sale_reference(array $row, array $payload): string {
+  $saleId = trim((string)($payload['sale_id'] ?? ''));
+  if ($saleId !== '') {
+    return $saleId;
+  }
+
+  $saleRef = trim((string)($payload['sale_ref'] ?? ''));
+  if ($saleRef !== '') {
+    return $saleRef;
+  }
+
+  $movementId = (int)($row['id'] ?? 0);
+  return $movementId > 0 ? 'mov:' . $movementId : '';
+}
+
+function cad_related_empty(string $text): string {
+  return '<div class="cad-empty cad-empty--compact"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span>' . h($text) . '</span></div>';
+}
+
+function cad_related_lot_table(array $columns, array $rows, string $emptyText): string {
+  ob_start();
+  if ($rows === []) {
+    echo cad_related_empty($emptyText);
+    return (string)ob_get_clean();
+  }
+  ?>
+  <div class="fin-table-wrap cad-table-wrap cad-related-table-wrap">
+    <table class="fin-table cad-table cad-related-table">
+      <thead>
+        <tr>
+          <?php foreach ($columns as $column): ?>
+            <th><?= h($column) ?></th>
+          <?php endforeach; ?>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($rows as $row): ?>
+          <tr>
+            <?php foreach ($row as $cell): ?>
+              <td><?= $cell ?></td>
+            <?php endforeach; ?>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <?php
+  return (string)ob_get_clean();
 }
 
 function cad_form_defaults(?array $cadastro, string $screenTypeSlug): array {
@@ -325,6 +559,7 @@ function cad_form_normalize_veiculos_post(array $items): array {
 $errors = [];
 $formData = cad_form_defaults(is_array($cadastro) ? $cadastro : null, $tipoSlugContexto);
 $selectedTipoIds = is_array($cadastro) ? cad_form_selected_tipo_ids(is_array($cadastro['tipos'] ?? null) ? $cadastro['tipos'] : []) : [];
+$cadastroMovimentacoes = $id > 0 ? $repo->getMovimentacoes($id, 1, 10) : [];
 
 if (!$isCadastroMode && $cadastro === null && $id <= 0) {
   $errors['view'] = 'Cadastro não encontrado';
@@ -341,6 +576,13 @@ if ($isCadastroMode && $cadastro === null && $selectedTipoIds === [] && $tipoSlu
     }
     $selectedTipoIds[] = (int)($tipoItem['id'] ?? 0);
     break;
+  }
+}
+
+if ($isEmbedMode && $tipoSlugContexto !== '') {
+  $lockedTipoId = cad_form_tipo_id_by_slug($tiposDisponiveis, $tipoSlugContexto);
+  if ($lockedTipoId > 0) {
+    $selectedTipoIds = [$lockedTipoId];
   }
 }
 
@@ -431,6 +673,13 @@ if ($isCadastroMode && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $selectedTipoIds[$idValue] = $idValue;
   }
   $selectedTipoIds = array_values($selectedTipoIds);
+  if ($isEmbedMode) {
+    $postedNextTipo = '';
+    $postedConversionOrigin = '';
+    $postedPendingTipo = '';
+    $lockedTipoId = cad_form_tipo_id_by_slug($tiposDisponiveis, $currentTypeSlug);
+    $selectedTipoIds = $lockedTipoId > 0 ? [$lockedTipoId] : [];
+  }
   $selectedSlugs = cad_form_selected_slugs($selectedTipoIds, $tiposDisponiveis);
   $nextTypeSlug = cad_form_next_type_slug($selectedSlugs, $currentTypeSlug);
   $addedSlugs = array_values(array_diff($selectedSlugs, $initialSelectedSlugs));
@@ -449,16 +698,20 @@ if ($isCadastroMode && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $formData['tipo_pessoa'] = 'PJ';
   }
 
-  if (trim($formData['documento']) === '') {
-    $errors['documento'] = 'Informe o documento principal do cadastro.';
-  }
-
   if (strtoupper($formData['tipo_pessoa']) === 'PJ') {
     if (trim($formData['razao_social']) === '') {
         $errors['razao_social'] = 'Informe a razão social.';
     }
   } elseif (trim($formData['nome']) === '') {
     $errors['nome'] = 'Informe o nome.';
+  }
+
+  if (
+    trim($formData['celular']) === '' &&
+    trim($formData['whatsapp']) === '' &&
+    trim($formData['telefone_fixo']) === ''
+  ) {
+    $errors['celular'] = 'Informe ao menos um telefone para contato.';
   }
 
   if ($selectedTipoIds === []) {
@@ -579,6 +832,17 @@ if ($isCadastroMode && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $savedFlag = 'created';
       }
 
+      $repo->addMovimentacao($targetId, [
+        'tipoEvento' => $savedFlag === 'created' ? 'cadastro_criado' : 'cadastro_atualizado',
+        'descricaoEvento' => $savedFlag === 'created' ? 'Cadastro criado.' : 'Cadastro atualizado.',
+        'responsavel' => trim((string)($_SESSION['auth_user']['name'] ?? 'Operação')),
+        'payloadEstrutural' => [
+          'nome' => (string)($savedCadastro['razaoSocial'] ?? $savedCadastro['nome'] ?? ''),
+          'tipo_principal' => $currentTypeMeta['title'] ?? '',
+          'status' => (string)($savedCadastro['status'] ?? ''),
+        ],
+      ], 1);
+
       if ($ownsTransaction && $pdo->inTransaction()) {
         $pdo->commit();
       }
@@ -586,6 +850,17 @@ if ($isCadastroMode && $_SERVER['REQUEST_METHOD'] === 'POST') {
       $listRouteTipo = $isPendingConversionFlow
         ? $currentTypeRoute
         : ($postedReturnTipo !== '' ? $postedReturnTipo : ($tipo !== '' ? $tipo : $currentTypeRoute));
+      if ($isEmbedMode) {
+        $redirectQuery = array_filter([
+          'modo' => 'cadastro',
+          'embed' => '1',
+          'id' => $targetId,
+          'tipo' => $listRouteTipo,
+          'saved' => $savedFlag,
+        ], static fn ($value) => $value !== null && $value !== '');
+        header('Location: ' . app_url('/app/templates/cadastros_ficha_embed.php?' . http_build_query($redirectQuery)));
+        exit;
+      }
       $targetConversionSlug = '';
       if ($isPendingConversionFlow) {
         $targetConversionSlug = '';
@@ -650,11 +925,25 @@ $motoristasJson = json_encode($formData['motoristas_vinculados'], JSON_UNESCAPED
 $veiculosJson = json_encode($formData['veiculos'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $anexosJson = json_encode($formData['anexos'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$inlineCadastroPayload = json_encode([
+  'id' => $id,
+  'tipo' => $currentTypeSlug,
+  'nome' => $heroNome,
+  'documento' => trim($formData['documento']) !== '' ? trim($formData['documento']) : (trim($formData['celular']) !== '' ? trim($formData['celular']) : 'Telefone não informado'),
+  'celular' => trim($formData['celular']) !== '' ? trim($formData['celular']) : trim($formData['whatsapp']),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$cadastroMovimentacoesRecentes = array_values(array_slice($cadastroMovimentacoes, 0, 8));
+$widgetActivities = array_values(array_map(
+  static fn (array $movimentacao): array => cad_widget_activity($movimentacao),
+  array_filter($cadastroMovimentacoesRecentes, static fn ($item): bool => is_array($item))
+));
+$widgetActivitiesTitle = 'Movimentações recentes';
 ?>
 
-<div class="module-page cad-page cad-view-page">
-  <div class="admin-main-layout">
-    <section class="admin-main-content">
+<div class="module-page cad-page cad-view-page<?= $isEmbedMode ? ' cad-embed-page' : '' ?>">
+  <div class="<?= $isEmbedMode ? 'cad-embed-layout' : 'admin-main-layout' ?>">
+    <section class="<?= $isEmbedMode ? 'cad-embed-content' : 'admin-main-content' ?>">
+      <?php if (!$isEmbedMode): ?>
       <div class="module-head cad-head cad-view-head">
         <div class="cad-head__topline">
           <div class="cad-head__eyebrow"><?= h($isCadastroMode ? ($id > 0 ? 'Edição de cadastro' : 'Novo cadastro') : 'Visualização detalhada') ?></div>
@@ -683,6 +972,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
         <h1><?= h($isCadastroMode ? (($id > 0 ? 'Editar ' : 'Novo ') . $currentTypeMeta['title']) : ($cadastro['nome'] ?? 'Ficha do cadastro')) ?></h1>
         <p><?= h($isCadastroMode ? $currentTypeMeta['description'] : 'Visualização completa da entidade administrativa selecionada, sem edição nesta etapa.') ?></p>
       </div>
+      <?php endif; ?>
 
       <?php if (!$isCadastroMode && (!is_array($cadastro) || !$cadastro)): ?>
         <section class="admin-block">
@@ -707,6 +997,8 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
           data-cad-form-saved="<?= h($saved) ?>"
           data-cad-current-type="<?= h($currentTypeSlug) ?>"
           data-cad-current-type-title="<?= h($currentTypeMeta['title']) ?>"
+          data-cad-embed="<?= $isEmbedMode ? '1' : '0' ?>"
+          data-cad-inline-payload='<?= h($inlineCadastroPayload ?: '{}') ?>'
           data-cad-initial-slugs='<?= h($selectedSlugsJson ?: '[]') ?>'
           data-cad-conversion-origin-title="<?= h($conversionOriginTitle) ?>"
           data-cad-tags='<?= h($tagsJson ?: '[]') ?>'
@@ -746,19 +1038,30 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
 
           <div class="cad-ficha-grid cad-sheet__sections">
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-              <div class="cad-ficha-card__eyebrow">Contexto do cadastro</div>
+              <?= cad_form_section_head('fa-solid fa-compass-drafting', 'Contexto do cadastro', 'Base estrutural do registro', 'Defina o tipo, a natureza da pessoa e o status do cadastro para orientar corretamente o restante do formulário.') ?>
               <div class="cad-form-grid cad-form-grid--two">
                 <div class="cad-form-stack">
                   <span class="cad-form-stack__label">Tipo do cadastro</span>
-                  <div class="cad-form-checkgrid">
-                    <?php foreach ($tiposDisponiveis as $tipoItem): ?>
-                      <?php $tipoId = (int)($tipoItem['id'] ?? 0); ?>
-                      <label class="cad-form-check">
-                        <input type="checkbox" name="tipo_ids[]" value="<?= h((string)$tipoId) ?>" <?= in_array($tipoId, $selectedTipoIds, true) ? 'checked' : '' ?> data-cad-type-input data-cad-type-slug="<?= h((string)($tipoItem['slug'] ?? '')) ?>">
-                        <span><?= h((string)($tipoItem['nome'] ?? 'Tipo')) ?></span>
-                      </label>
-                    <?php endforeach; ?>
-                  </div>
+                  <?php if ($isEmbedMode): ?>
+                    <?php $embedTipoId = cad_form_tipo_id_by_slug($tiposDisponiveis, $currentTypeSlug); ?>
+                    <div class="cad-embed-type">
+                      <span class="cad-embed-type__pill"><?= h($currentTypeMeta['title']) ?></span>
+                      <small>Cadastro inline com tipo travado para manter o vínculo correto no módulo de origem.</small>
+                    </div>
+                    <?php if ($embedTipoId > 0): ?>
+                      <input type="hidden" name="tipo_ids[]" value="<?= h((string)$embedTipoId) ?>">
+                    <?php endif; ?>
+                  <?php else: ?>
+                    <div class="cad-form-checkgrid">
+                      <?php foreach ($tiposDisponiveis as $tipoItem): ?>
+                        <?php $tipoId = (int)($tipoItem['id'] ?? 0); ?>
+                        <label class="cad-form-check">
+                          <input type="checkbox" name="tipo_ids[]" value="<?= h((string)$tipoId) ?>" <?= in_array($tipoId, $selectedTipoIds, true) ? 'checked' : '' ?> data-cad-type-input data-cad-type-slug="<?= h((string)($tipoItem['slug'] ?? '')) ?>">
+                          <span><?= h((string)($tipoItem['nome'] ?? 'Tipo')) ?></span>
+                        </label>
+                      <?php endforeach; ?>
+                    </div>
+                  <?php endif; ?>
                   <?php if (isset($errors['tipo_ids'])): ?><small class="cad-form-error"><?= h($errors['tipo_ids']) ?></small><?php endif; ?>
                 </div>
 
@@ -788,7 +1091,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </section>
 
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-              <div class="cad-ficha-card__eyebrow">Identificação</div>
+              <?= cad_form_section_head('fa-solid fa-id-card-clip', 'Identificação', 'Dados principais do cadastro', 'Preencha o núcleo de identificação da pessoa ou empresa. Quando aplicável, o sistema pode complementar automaticamente os dados a partir do documento.') ?>
               <?php if (in_array($currentTypeSlug, ['cliente', 'fornecedor'], true)): ?>
                 <div class="cad-form-grid cad-form-grid--three" data-cad-ident-section="pf" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'hidden' : '' ?>>
                   <label class="cad-form-field cad-field-span-2">
@@ -799,7 +1102,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
 
                   <label class="cad-form-field cad-field-span-1" data-cad-document-field="pf">
                     <span>CPF</span>
-                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" required inputmode="numeric" autocomplete="off" data-cad-live-documento data-cad-mask="documento" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'disabled' : '' ?>>
+                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" inputmode="numeric" autocomplete="off" data-cad-live-documento data-cad-mask="documento" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'disabled' : '' ?>>
                     <?php if (isset($errors['documento'])): ?><small class="cad-form-error"><?= h($errors['documento']) ?></small><?php endif; ?>
                   </label>
                 </div>
@@ -813,7 +1116,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
 
                   <label class="cad-form-field cad-form-field--special cad-field-span-1 <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'is-active' : '' ?>" data-cad-document-field="pj" data-cad-lookup-field="cnpj">
                     <span>CNPJ</span>
-                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" required inputmode="numeric" autocomplete="off" placeholder="Use para auto preenchimento" data-cad-live-documento data-cad-mask="documento" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? '' : 'disabled' ?>>
+                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" inputmode="numeric" autocomplete="off" placeholder="Use para auto preenchimento" data-cad-live-documento data-cad-mask="documento" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? '' : 'disabled' ?>>
                     <small class="cad-form-lookup-feedback" data-cad-lookup-feedback="cnpj" hidden></small>
                     <?php if (isset($errors['documento'])): ?><small class="cad-form-error"><?= h($errors['documento']) ?></small><?php endif; ?>
                   </label>
@@ -844,7 +1147,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
 
                   <label class="cad-form-field cad-form-field--special cad-field-span-1 <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'is-active' : '' ?>" data-cad-document-field="pj" data-cad-lookup-field="cnpj">
                     <span>CNPJ</span>
-                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" required inputmode="numeric" autocomplete="off" placeholder="Use para auto preenchimento" data-cad-live-documento data-cad-mask="documento" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? '' : 'disabled' ?>>
+                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" inputmode="numeric" autocomplete="off" placeholder="Use para auto preenchimento" data-cad-live-documento data-cad-mask="documento" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? '' : 'disabled' ?>>
                     <small class="cad-form-lookup-feedback" data-cad-lookup-feedback="cnpj" hidden></small>
                     <?php if (isset($errors['documento'])): ?><small class="cad-form-error"><?= h($errors['documento']) ?></small><?php endif; ?>
                   </label>
@@ -869,7 +1172,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
 
                   <label class="cad-form-field cad-form-field--special cad-field-span-1 <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'is-active' : '' ?>" data-cad-document-field data-cad-lookup-field="cnpj">
                     <span><?= h(strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'CNPJ' : 'CPF') ?></span>
-                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" required inputmode="numeric" autocomplete="off" placeholder="<?= h(strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'Use para auto preenchimento' : '') ?>" data-cad-live-documento data-cad-mask="documento">
+                    <input type="text" name="documento" value="<?= h($formData['documento']) ?>" inputmode="numeric" autocomplete="off" placeholder="<?= h(strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'Use para auto preenchimento' : '') ?>" data-cad-live-documento data-cad-mask="documento">
                     <small class="cad-form-lookup-feedback" data-cad-lookup-feedback="cnpj" hidden></small>
                     <?php if (isset($errors['documento'])): ?><small class="cad-form-error"><?= h($errors['documento']) ?></small><?php endif; ?>
                   </label>
@@ -894,7 +1197,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </section>
 
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide" <?= in_array($currentTypeSlug, ['motorista', 'transportadora'], true) && strtoupper($formData['tipo_pessoa']) !== 'PJ' ? 'hidden data-cad-motorista-company-contact' : (in_array($currentTypeSlug, ['motorista', 'transportadora'], true) ? 'data-cad-motorista-company-contact' : '') ?>>
-              <div class="cad-ficha-card__eyebrow">Contato</div>
+              <?= cad_form_section_head('fa-solid fa-address-book', 'Contato', 'Canais de comunicação', 'Centralize aqui os meios de contato mais usados pela operação, mantendo telefone, WhatsApp e e-mail organizados.') ?>
               <div class="cad-form-grid cad-form-grid--three">
                 <label class="cad-form-field">
                   <span>Contato</span>
@@ -907,10 +1210,12 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
                 <label class="cad-form-field">
                   <span>WhatsApp</span>
                   <input type="text" name="whatsapp" value="<?= h($formData['whatsapp']) ?>" inputmode="tel" autocomplete="off" data-cad-mask="telefone">
+                  <?php if (isset($errors['celular'])): ?><small class="cad-form-error"><?= h($errors['celular']) ?></small><?php endif; ?>
                 </label>
                 <label class="cad-form-field">
                   <span>Celular</span>
                   <input type="text" name="celular" value="<?= h($formData['celular']) ?>" inputmode="tel" autocomplete="off" data-cad-mask="telefone">
+                  <?php if (isset($errors['celular'])): ?><small class="cad-form-error"><?= h($errors['celular']) ?></small><?php endif; ?>
                 </label>
                 <label class="cad-form-field">
                   <span>E-mail</span>
@@ -921,7 +1226,9 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
 
             <?php if (in_array($currentTypeSlug, ['motorista', 'transportadora'], true)): ?>
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-                <div class="cad-ficha-card__eyebrow"><?= h($currentTypeSlug === 'motorista' ? 'Motorista principal' : 'Motorista principal vinculado') ?></div>
+                <?= cad_form_section_head('fa-solid fa-id-badge', $currentTypeSlug === 'motorista' ? 'Motorista principal' : 'Motorista principal vinculado', $currentTypeSlug === 'motorista' ? 'Responsável principal da operação' : 'Responsável principal da transportadora', $currentTypeSlug === 'motorista'
+                  ? 'Mesmo em cadastro simples, o motorista principal precisa estar bem identificado para manter o fluxo operacional consistente.'
+                  : 'Toda transportadora precisa ter um motorista principal claramente definido para sustentar o vínculo operacional.') ?>
                 <div class="cad-form-note">
                   <?= h($currentTypeSlug === 'motorista'
                     ? 'Os dados do motorista principal são obrigatórios em qualquer cenário. Em pessoa física, esta seção já concentra também o contato principal.'
@@ -947,7 +1254,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
                   <?php elseif ($currentTypeSlug === 'motorista'): ?>
                     <label class="cad-form-field cad-field-span-1" data-cad-document-field="pf">
                       <span>CPF</span>
-                      <input type="text" name="documento" value="<?= h($formData['documento']) ?>" required inputmode="numeric" autocomplete="off" data-cad-live-documento data-cad-mask="documento">
+                      <input type="text" name="documento" value="<?= h($formData['documento']) ?>" inputmode="numeric" autocomplete="off" data-cad-live-documento data-cad-mask="documento">
                       <?php if (isset($errors['documento'])): ?><small class="cad-form-error"><?= h($errors['documento']) ?></small><?php endif; ?>
                     </label>
                   <?php else: ?>
@@ -979,10 +1286,12 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
                     <label class="cad-form-field cad-field-span-1" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'hidden' : '' ?> data-cad-motorista-pf-contact>
                       <span>WhatsApp</span>
                       <input type="text" name="whatsapp" value="<?= h($formData['whatsapp']) ?>" inputmode="tel" autocomplete="off" data-cad-mask="telefone" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'disabled' : '' ?>>
+                      <?php if (isset($errors['celular'])): ?><small class="cad-form-error"><?= h($errors['celular']) ?></small><?php endif; ?>
                     </label>
                     <label class="cad-form-field cad-field-span-1" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'hidden' : '' ?> data-cad-motorista-pf-contact>
                       <span>Celular</span>
                       <input type="text" name="celular" value="<?= h($formData['celular']) ?>" inputmode="tel" autocomplete="off" data-cad-mask="telefone" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'disabled' : '' ?>>
+                      <?php if (isset($errors['celular'])): ?><small class="cad-form-error"><?= h($errors['celular']) ?></small><?php endif; ?>
                     </label>
                     <label class="cad-form-field cad-field-span-1" <?= strtoupper($formData['tipo_pessoa']) === 'PJ' ? 'hidden' : '' ?> data-cad-motorista-pf-contact>
                       <span>E-mail</span>
@@ -1014,7 +1323,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
               </section>
 
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-                <div class="cad-ficha-card__eyebrow"><?= h($currentTypeSlug === 'motorista' ? 'Veículo principal' : 'Veículo principal vinculado') ?></div>
+                <?= cad_form_section_head('fa-solid fa-truck-front', $currentTypeSlug === 'motorista' ? 'Veículo principal' : 'Veículo principal vinculado', 'Base veicular da operação', 'Registre o veículo principal com os dados mínimos para leitura rápida, logística e identificação do ativo.') ?>
                 <div class="cad-form-note">
                   <?= h($currentTypeSlug === 'motorista'
                     ? 'Todo cadastro de motorista precisa ter ao menos um veículo principal.'
@@ -1023,7 +1332,9 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
                 <div class="cad-form-grid cad-form-grid--three">
                   <label class="cad-form-field">
                     <span>Modelo</span>
-                    <input type="text" name="veiculos[0][modelo]" value="<?= h((string)($formData['veiculos'][0]['modelo'] ?? '')) ?>">
+                    <select name="veiculos[0][modelo]">
+                      <?= cad_form_select_options($veiculoModelos, (string)($formData['veiculos'][0]['modelo'] ?? ''), 'Selecione o modelo') ?>
+                    </select>
                   </label>
                   <label class="cad-form-field">
                     <span>Placa</span>
@@ -1035,7 +1346,9 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
                   </label>
                   <label class="cad-form-field">
                     <span>Tipo de carroceria</span>
-                    <input type="text" name="veiculos[0][tipo_carroceria]" value="<?= h((string)($formData['veiculos'][0]['tipo_carroceria'] ?? '')) ?>">
+                    <select name="veiculos[0][tipo_carroceria]">
+                      <?= cad_form_select_options($veiculoCarrocerias, (string)($formData['veiculos'][0]['tipo_carroceria'] ?? ''), 'Selecione a carroceria') ?>
+                    </select>
                   </label>
                   <label class="cad-form-field">
                     <span>Metragem</span>
@@ -1051,7 +1364,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             <?php endif; ?>
 
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-              <div class="cad-ficha-card__eyebrow">Endereço</div>
+              <?= cad_form_section_head('fa-solid fa-location-dot', 'Endereço', 'Localização e referência', 'Use CEP para autopreenchimento quando disponível e mantenha o endereço completo pronto para operação, documentação e contato.') ?>
               <div class="cad-form-grid cad-form-grid--address">
                 <label class="cad-form-field cad-form-field--special cad-field-md is-active" data-cad-lookup-field="cep">
                   <span>CEP</span>
@@ -1091,7 +1404,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </section>
 
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide" data-cad-shared-structural <?= in_array($currentTypeSlug, ['motorista', 'transportadora'], true) ? '' : 'hidden' ?>>
-              <div class="cad-ficha-card__eyebrow"><?= h($currentTypeSlug === 'motorista' ? 'Motorista secundário' : 'Motorista 2 e adicionais') ?></div>
+              <?= cad_form_section_head('fa-solid fa-users-gear', $currentTypeSlug === 'motorista' ? 'Motorista secundário' : 'Motorista 2 e adicionais', 'Equipe complementar vinculada', 'Amplie a base operacional com motoristas adicionais mantendo o mesmo padrão de leitura e organização do cadastro principal.') ?>
               <div class="cad-repeater" data-cad-repeater="motoristas">
                 <div class="cad-repeater__list" data-cad-motoristas-list></div>
                 <div class="cad-repeater__actions">
@@ -1104,7 +1417,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </section>
 
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide" data-cad-shared-structural <?= in_array($currentTypeSlug, ['motorista', 'transportadora'], true) ? '' : 'hidden' ?>>
-              <div class="cad-ficha-card__eyebrow">Veículo 2 e adicionais</div>
+              <?= cad_form_section_head('fa-solid fa-trailer', 'Veículo 2 e adicionais', 'Frota complementar', 'Use este bloco para ampliar a frota vinculada sem perder a leitura clara dos veículos operacionais do cadastro.') ?>
               <div class="cad-repeater" data-cad-repeater="veiculos">
                 <div class="cad-repeater__list" data-cad-veiculos-list></div>
                 <div class="cad-repeater__actions">
@@ -1117,7 +1430,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </section>
 
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-              <div class="cad-ficha-card__eyebrow">Anexos</div>
+              <?= cad_form_section_head('fa-solid fa-paperclip', 'Anexos', 'Documentação do cadastro', 'Associe imagens, PDFs e documentos ao registro para manter o histórico documental centralizado e pronto para consulta.') ?>
               <div
                 class="sv-attachments"
                 data-anexos-root
@@ -1155,7 +1468,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </section>
 
             <section class="cad-ficha-card cad-sheet__card <?= in_array($currentTypeSlug, ['cliente', 'fornecedor', 'motorista', 'transportadora'], true) ? 'cad-sheet__card--wide cad-sheet__section-wide' : 'cad-sheet__card--half' ?>">
-              <div class="cad-ficha-card__eyebrow">Tags estruturadas</div>
+              <?= cad_form_section_head('fa-solid fa-tags', 'Tags estruturadas', 'Classificação inteligente do cadastro', 'Use tags para classificar interesses, rotas ou especialidades e melhorar cruzamentos futuros no sistema.') ?>
               <div class="cad-tag-editor" data-cad-tags-editor>
                 <div class="cad-tag-editor__inputrow">
                   <input type="text" data-cad-tags-input placeholder="Digite uma tag e clique em adicionar">
@@ -1168,7 +1481,7 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </section>
 
             <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-              <div class="cad-ficha-card__eyebrow">Informações adicionais</div>
+              <?= cad_form_section_head('fa-solid fa-note-sticky', 'Informações adicionais', 'Observações complementares', 'Registre contexto livre, exceções e recados operacionais que não se encaixam nos campos estruturados.') ?>
               <label class="cad-form-field">
                 <span>Observações</span>
                 <textarea name="observacoes" rows="6"><?= h($formData['observacoes']) ?></textarea>
@@ -1233,7 +1546,9 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
               <div class="cad-form-grid cad-form-grid--three">
                 <label class="cad-form-field">
                   <span>Modelo</span>
-                  <input type="text" name="veiculos[__INDEX__][modelo]" value="">
+                  <select name="veiculos[__INDEX__][modelo]">
+                    <?= cad_form_select_options($veiculoModelos, '', 'Selecione o modelo') ?>
+                  </select>
                 </label>
                 <label class="cad-form-field">
                   <span>Placa</span>
@@ -1245,7 +1560,9 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
                 </label>
                 <label class="cad-form-field">
                   <span>Tipo de carroceria</span>
-                  <input type="text" name="veiculos[__INDEX__][tipo_carroceria]" value="">
+                  <select name="veiculos[__INDEX__][tipo_carroceria]">
+                    <?= cad_form_select_options($veiculoCarrocerias, '', 'Selecione a carroceria') ?>
+                  </select>
                 </label>
                 <label class="cad-form-field">
                   <span>Metragem</span>
@@ -1273,9 +1590,15 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             <span class="admin-card-meta cad-list-count"><span><i class="fa-solid fa-badge-check" aria-hidden="true"></i><?= h(cad_ficha_status((string)($cadastro['status'] ?? 'ativo'))) ?></span></span>
           </div>
           <div class="admin-block-body">
-            <div class="cad-ficha-grid cad-ficha-grid--intro">
-              <article class="cad-ficha-card cad-ficha-card--hero">
-                <div class="cad-ficha-card__eyebrow">Cadastro central</div>
+            <div class="cad-sheet__hero-row cad-view-hero-row">
+              <aside class="cad-sheet__avatar-col">
+                <div class="cad-sheet__avatar cad-view-hero__avatar" aria-hidden="true">
+                  <img src="<?= h($avatarSrc) ?>" alt="Avatar do cadastro">
+                </div>
+              </aside>
+
+              <article class="cad-ficha-card cad-ficha-card--hero cad-view-hero">
+                <div class="cad-modal__eyebrow">Cadastro central</div>
                 <h3><?= h((string)($cadastro['razaoSocial'] ?? $cadastro['nome'] ?? '')) ?></h3>
                 <p><?= h(cad_ficha_tipo_pessoa((string)($cadastro['tipoPessoa'] ?? 'PF'))) ?></p>
 
@@ -1285,10 +1608,28 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
                   </span>
                   <span class="cad-ficha-pill"><i class="fa-solid fa-id-card-clip" aria-hidden="true"></i><?= h(cad_ficha_field((string)($cadastro['documento'] ?? ''), 'Documento não informado')) ?></span>
                 </div>
-              </article>
 
-              <article class="cad-ficha-card">
-                <div class="cad-ficha-kv">
+                <div class="cad-view-hero__metrics">
+                  <div class="cad-view-hero__metric">
+                    <span><i class="fa-solid fa-user-tag" aria-hidden="true"></i>Tipo principal</span>
+                    <strong><?= h($currentTypeMeta['title']) ?></strong>
+                  </div>
+                  <div class="cad-view-hero__metric">
+                    <span><i class="fa-solid fa-phone" aria-hidden="true"></i>Contato rápido</span>
+                    <strong><?= h(cad_ficha_field((string)($cadastro['celular'] ?? $cadastro['whatsapp'] ?? ''), 'Não informado')) ?></strong>
+                  </div>
+                  <div class="cad-view-hero__metric">
+                    <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i>Cidade</span>
+                    <strong><?= h(cad_ficha_field((string)($cadastro['cidade'] ?? ''), 'Não informada')) ?></strong>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div class="cad-ficha-grid cad-ficha-grid--intro">
+              <article class="cad-ficha-card cad-ficha-card--soft cad-sheet__section-wide">
+                <?= cad_view_section_head('fa-solid fa-building-user', 'Identificação', 'Núcleo principal do cadastro', 'Leitura resumida dos dados mais importantes da pessoa ou empresa, mantendo a identificação central acessível logo na abertura da ficha.') ?>
+                <div class="cad-ficha-kv cad-ficha-kv--two">
                   <div class="cad-ficha-kv__item">
                     <span class="cad-ficha-kv__label">Nome</span>
                     <strong class="cad-ficha-kv__value"><?= h(cad_ficha_field((string)($cadastro['nome'] ?? ''))) ?></strong>
@@ -1317,7 +1658,8 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
           </div>
           <div class="admin-block-body">
             <div class="cad-ficha-grid">
-              <article class="cad-ficha-card">
+              <article class="cad-ficha-card cad-ficha-card--soft">
+                <?= cad_view_section_head('fa-solid fa-phone-volume', 'Contato', 'Canais de comunicação do cadastro', 'Consolida os principais meios de contato para operação, tratativas comerciais e relacionamento com o cadastro.') ?>
                 <div class="cad-ficha-kv cad-ficha-kv--two">
                   <div class="cad-ficha-kv__item">
                     <span class="cad-ficha-kv__label">Contato</span>
@@ -1351,7 +1693,8 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
           </div>
           <div class="admin-block-body">
             <div class="cad-ficha-grid">
-              <article class="cad-ficha-card">
+              <article class="cad-ficha-card cad-ficha-card--soft">
+                <?= cad_view_section_head('fa-solid fa-map-location-dot', 'Endereço', 'Localização e referência', 'Apresenta o endereço cadastral com leitura rápida para operação, documentação e logística.') ?>
                 <div class="cad-ficha-kv cad-ficha-kv--two">
                   <div class="cad-ficha-kv__item">
                     <span class="cad-ficha-kv__label">CEP</span>
@@ -1393,7 +1736,8 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
           </div>
           <div class="admin-block-body">
             <div class="cad-ficha-grid">
-              <article class="cad-ficha-card">
+              <article class="cad-ficha-card cad-ficha-card--soft">
+                <?= cad_view_section_head('fa-solid fa-tags', 'Classificação', 'Tipos e agrupamentos do cadastro', 'Mostra como este registro está classificado no sistema, facilitando a leitura do papel operacional e dos vínculos existentes.') ?>
                 <div class="cad-ficha-pillrow">
                   <?php $tipos = is_array($cadastro['tipos'] ?? null) ? $cadastro['tipos'] : []; ?>
                   <?php if ($tipos === []): ?>
@@ -1409,13 +1753,99 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
           </div>
         </section>
 
+        <?php
+          $purchaseRows = array_map(static function (array $row): array {
+            $loteHref = app_url('/app/templates/lotes.php?lote=' . (int)($row['loteId'] ?? 0));
+            return [
+              '<a class="cad-related-link" href="' . h($loteHref) . '">' . h(cad_ficha_field((string)($row['processo'] ?? ''), 'Sem processo')) . '</a>',
+              h(cad_ficha_field((string)($row['titulo'] ?? ''), 'Lote sem titulo')),
+              h(cad_lot_date((string)($row['data'] ?? ''))),
+              h(cad_lot_money((float)($row['custoTotal'] ?? 0))),
+              h(cad_lot_money((float)($row['compra'] ?? 0))),
+            ];
+          }, $cadRelatedPurchases);
+
+          $salesRows = array_map(static function (array $row): array {
+            $loteHref = app_url('/app/templates/lotes.php?lote=' . (int)($row['loteId'] ?? 0));
+            $valorLiquido = (float)($row['valorBruto'] ?? 0) - (float)($row['valorDevolvido'] ?? 0);
+            return [
+              '<a class="cad-related-link" href="' . h($loteHref) . '">' . h(cad_ficha_field((string)($row['processo'] ?? ''), 'Sem processo')) . '</a>',
+              h(cad_ficha_field((string)($row['produto'] ?? ''), 'Produto nao informado')),
+              h(cad_lot_date((string)($row['data'] ?? ''))),
+              h(cad_lot_money($valorLiquido)),
+              h(cad_ficha_field((string)($row['forma'] ?? ''), 'Nao informada')),
+            ];
+          }, $cadRelatedSales);
+
+          $freightRows = array_map(static function (array $row): array {
+            $loteHref = app_url('/app/templates/lotes.php?lote=' . (int)($row['loteId'] ?? 0));
+            $localidade = trim((string)($row['cidade'] ?? ''));
+            $estado = trim((string)($row['estado'] ?? ''));
+            if ($localidade !== '' && $estado !== '') {
+              $localidade .= ' / ' . $estado;
+            } elseif ($localidade === '' && $estado !== '') {
+              $localidade = $estado;
+            }
+            return [
+              '<a class="cad-related-link" href="' . h($loteHref) . '">' . h(cad_ficha_field((string)($row['processo'] ?? ''), 'Sem processo')) . '</a>',
+              h(cad_ficha_field((string)($row['titulo'] ?? ''), 'Lote sem titulo')),
+              h(cad_lot_date((string)($row['data'] ?? ''))),
+              h(cad_ficha_field($localidade, 'Nao informada')),
+              h(cad_lot_money((float)($row['totalFrete'] ?? 0))),
+            ];
+          }, $cadRelatedFreights);
+        ?>
+
         <section class="admin-block">
           <div class="admin-block-head">
-            <h2 class="admin-block-title"><i class="fa-solid fa-file-lines" aria-hidden="true"></i><span>Informações adicionais</span></h2>
+            <h2 class="admin-block-title"><i class="fa-solid fa-box-archive" aria-hidden="true"></i><span>Relacionamentos com lotes</span></h2>
           </div>
           <div class="admin-block-body">
             <div class="cad-ficha-grid">
-              <article class="cad-ficha-card">
+              <article class="cad-ficha-card cad-ficha-card--soft cad-sheet__card--wide cad-sheet__section-wide">
+                <?= cad_view_section_head('fa-solid fa-cart-flatbed', 'Compras em lotes', 'Lotes adquiridos com este cadastro', 'Mostra os processos em que este cadastro apareceu como origem da compra, com link direto para a ficha do lote.') ?>
+                <?= cad_related_lot_table(
+                  ['Processo', 'Lote', 'Data', 'Valor pago', 'Custo total'],
+                  $purchaseRows,
+                  'Nenhuma compra em lotes foi encontrada para este cadastro.'
+                ) ?>
+              </article>
+            </div>
+
+            <div class="cad-ficha-grid">
+              <article class="cad-ficha-card cad-ficha-card--soft cad-sheet__card--wide cad-sheet__section-wide">
+                <?= cad_view_section_head('fa-solid fa-bag-shopping', 'Vendas em lotes', 'Vendas vinculadas a este cadastro', 'Lista as vendas oriundas dos lotes, trazendo processo, produto, valor liquido e link direto para o processo relacionado.') ?>
+                <?= cad_related_lot_table(
+                  ['Processo', 'Produto', 'Data', 'Valor liquido', 'Forma'],
+                  $salesRows,
+                  'Nenhuma venda em lotes foi encontrada para este cadastro.'
+                ) ?>
+              </article>
+            </div>
+
+            <?php if (in_array($currentTypeSlug, ['motorista', 'transportadora'], true) || $freightRows !== []): ?>
+              <div class="cad-ficha-grid">
+                <article class="cad-ficha-card cad-ficha-card--soft cad-sheet__card--wide cad-sheet__section-wide">
+                  <?= cad_view_section_head('fa-solid fa-truck-fast', 'Fretes em lotes', 'Fretes relacionados a este cadastro', 'Apresenta os lotes em que este cadastro atuou como motorista ou transportadora, com acesso rapido ao processo.') ?>
+                  <?= cad_related_lot_table(
+                    ['Processo', 'Lote', 'Data', 'Cidade da coleta', 'Total frete'],
+                    $freightRows,
+                    'Nenhum frete em lotes foi encontrado para este cadastro.'
+                  ) ?>
+                </article>
+              </div>
+            <?php endif; ?>
+          </div>
+        </section>
+
+      <section class="admin-block">
+        <div class="admin-block-head">
+          <h2 class="admin-block-title"><i class="fa-solid fa-file-lines" aria-hidden="true"></i><span>Informações adicionais</span></h2>
+        </div>
+          <div class="admin-block-body">
+            <div class="cad-ficha-grid">
+              <article class="cad-ficha-card cad-ficha-card--soft">
+                <?= cad_view_section_head('fa-solid fa-note-sticky', 'Informações adicionais', 'Observações e histórico do registro', 'Reúne observações livres e referências de criação/atualização para manter o contexto completo do cadastro.') ?>
                 <div class="cad-ficha-kv">
                   <div class="cad-ficha-kv__item">
                     <span class="cad-ficha-kv__label">Observacoes</span>
@@ -1434,11 +1864,14 @@ $selectedSlugsJson = json_encode($initialSelectedSlugs, JSON_UNESCAPED_UNICODE |
             </div>
           </div>
         </section>
+
       <?php endif; ?>
     </section>
 
-    <aside class="admin-main-widgets">
-      <?php require __DIR__ . '/../../templates/partials/admin_main_widgets.php'; ?>
-    </aside>
+    <?php if (!$isEmbedMode): ?>
+      <aside class="admin-main-widgets">
+        <?php require __DIR__ . '/../../templates/partials/admin_main_widgets.php'; ?>
+      </aside>
+    <?php endif; ?>
   </div>
 </div>

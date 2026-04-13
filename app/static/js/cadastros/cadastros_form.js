@@ -37,6 +37,7 @@
     const modo = current.searchParams.get("modo");
     const id = current.searchParams.get("id");
     const tipo = current.searchParams.get("tipo");
+    const embed = current.searchParams.get("embed");
     const returnTipo = document.querySelector("[data-cad-form] input[name='return_tipo']")?.value || "";
     if (modo !== "cadastro") return null;
 
@@ -44,6 +45,7 @@
     next.searchParams.set("modo", "cadastro");
     if (id) next.searchParams.set("id", id);
     if (tipo || returnTipo) next.searchParams.set("tipo", tipo || returnTipo);
+    if (embed === "1") next.searchParams.set("embed", "1");
     return next.pathname + next.search;
   }
 
@@ -71,6 +73,14 @@
 
   function apiUrl(path) {
     return `${appBase()}${path}`;
+  }
+
+  function postInlineState(payload) {
+    if (window.parent && window.parent !== window) {
+      try {
+        window.parent.postMessage(payload, window.location.origin);
+      } catch (_) {}
+    }
   }
 
   function formatDocumento(value, tipoPessoa = "PF") {
@@ -136,6 +146,10 @@
       .replace(",", ".");
   }
 
+  function normalizeUpperTextValue(value) {
+    return String(value || "").toLocaleUpperCase("pt-BR");
+  }
+
   function applyMask(input) {
     const kind = String(input.getAttribute("data-cad-mask") || "");
     if (kind === "documento") {
@@ -154,6 +168,23 @@
     } else if (kind === "decimal") {
       input.value = formatDecimal(input.value);
     }
+  }
+
+  function shouldForceUppercase(field) {
+    if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)) {
+      return false;
+    }
+
+    const type = String(field.getAttribute("type") || "text").toLowerCase();
+    if (["email", "hidden", "search", "password", "date", "number"].includes(type)) {
+      return false;
+    }
+
+    if (field.hasAttribute("data-cad-mask")) {
+      return false;
+    }
+
+    return true;
   }
 
   function resolveAvatar(selectedSlugs) {
@@ -193,7 +224,11 @@
     const pjFields = Array.from(form.querySelectorAll("[data-cad-pj-field]"));
     const structuralBlocks = Array.from(form.querySelectorAll("[data-cad-shared-structural]"));
     const maskedInputs = Array.from(form.querySelectorAll("[data-cad-mask]"));
+    const upperFields = Array.from(form.querySelectorAll("input, textarea")).filter((field) => shouldForceUppercase(field));
+    const emailFields = Array.from(form.querySelectorAll('input[type="email"], input[name="email"], input[name$="[email]"]'));
     const saved = String(form.getAttribute("data-cad-form-saved") || "");
+    const isEmbed = String(form.getAttribute("data-cad-embed") || "0") === "1";
+    const inlinePayload = safeJson(form.getAttribute("data-cad-inline-payload"), {});
     const tagList = form.querySelector("[data-cad-tags-list]");
     const tagInput = form.querySelector("[data-cad-tags-input]");
     const tagAddButton = form.querySelector("[data-cad-tags-add]");
@@ -227,6 +262,8 @@
     const bairroInput = form.querySelector('input[name="bairro"]');
     const cidadeInput = form.querySelector('input[name="cidade"]');
     const estadoSelect = form.querySelector('select[name="estado"]');
+    const whatsappInput = form.querySelector('input[name="whatsapp"]');
+    const celularInput = form.querySelector('input[name="celular"]');
     const razaoSocialInputs = Array.from(form.querySelectorAll('input[name="razao_social"]'));
     const nomeFantasiaInputs = Array.from(form.querySelectorAll('input[name="nome_fantasia"]'));
     const inscricaoEstadualInputs = Array.from(form.querySelectorAll('input[name="inscricao_estadual"]'));
@@ -264,10 +301,16 @@
     function markDirty() {
       if (isSubmitting || isApplyingLookup) return;
       isDirty = true;
+      if (isEmbed) {
+        postInlineState({ type: "sv:inline-cadastro-state", dirty: true });
+      }
     }
 
     function clearDirty() {
       isDirty = false;
+      if (isEmbed) {
+        postInlineState({ type: "sv:inline-cadastro-state", dirty: false });
+      }
     }
 
     function activeLookupField(name) {
@@ -333,6 +376,33 @@
       field.dispatchEvent(new Event("change", { bubbles: true }));
       isApplyingLookup = false;
       return true;
+    }
+
+    function syncPhoneMirror(source, target, sourceName) {
+      if (!source || !target || target.disabled) return;
+      const sourceValue = String(source.value || "").trim();
+      const targetValue = String(target.value || "").trim();
+      const mirroredFrom = String(target.dataset.cadMirroredFrom || "");
+
+      if (sourceValue === "") {
+        if (mirroredFrom === sourceName) {
+          target.value = "";
+          target.dataset.cadMirroredFrom = "";
+          target.dispatchEvent(new Event("input", { bubbles: true }));
+          target.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        return;
+      }
+
+      if (targetValue === "" || mirroredFrom === sourceName) {
+        target.value = sourceValue;
+        target.dataset.cadMirroredFrom = sourceName;
+        if (target.hasAttribute("data-cad-mask")) {
+          applyMask(target);
+        }
+        target.dispatchEvent(new Event("input", { bubbles: true }));
+        target.dispatchEvent(new Event("change", { bubbles: true }));
+      }
     }
 
     async function fetchLookup(path, queryKey, value) {
@@ -428,12 +498,17 @@
         applied += applyLookupValue(activeLookupField("razao_social"), payload?.data?.razao_social) ? 1 : 0;
         applied += applyLookupValue(activeLookupField("nome_fantasia"), payload?.data?.nome_fantasia) ? 1 : 0;
         applied += applyLookupValue(activeLookupField("inscricao_estadual"), payload?.data?.inscricao_estadual) ? 1 : 0;
+        applied += applyLookupValue(cepInput, payload?.data?.cep ? formatCep(payload.data.cep) : "") ? 1 : 0;
+        applied += applyLookupValue(enderecoInput, payload?.data?.endereco) ? 1 : 0;
+        applied += applyLookupValue(bairroInput, payload?.data?.bairro) ? 1 : 0;
+        applied += applyLookupValue(cidadeInput, payload?.data?.cidade) ? 1 : 0;
+        applied += applyLookupValue(estadoSelect, payload?.data?.estado) ? 1 : 0;
         lookupState.cnpj.lastAutoValue = cnpj;
 
         if (applied > 0) {
           markDirty();
           updateHero();
-          setLookupFeedback("cnpj", "Dados jurídicos preenchidos automaticamente.", "success");
+          setLookupFeedback("cnpj", "Dados do CNPJ preenchidos automaticamente.", "success");
           toast("success", "CNPJ consultado com sucesso.");
         } else {
           setLookupFeedback("cnpj", "CNPJ consultado. Os campos manuais foram preservados.", "success");
@@ -1023,6 +1098,59 @@
       input.addEventListener("blur", () => applyMask(input));
     });
 
+    upperFields.forEach((field) => {
+      field.addEventListener("input", () => {
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        const nextValue = normalizeUpperTextValue(field.value);
+        if (field.value === nextValue) return;
+        field.value = nextValue;
+        if (typeof start === "number" && typeof end === "number") {
+          field.setSelectionRange(start, end);
+        }
+      });
+      field.value = normalizeUpperTextValue(field.value);
+    });
+
+    emailFields.forEach((field) => {
+      field.addEventListener("input", () => {
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        const nextValue = String(field.value || "").toLowerCase();
+        if (field.value === nextValue) return;
+        field.value = nextValue;
+        if (typeof start === "number" && typeof end === "number") {
+          field.setSelectionRange(start, end);
+        }
+      });
+      field.value = String(field.value || "").toLowerCase();
+    });
+
+    if (whatsappInput && celularInput) {
+      whatsappInput.addEventListener("input", () => syncPhoneMirror(whatsappInput, celularInput, "whatsapp"));
+      celularInput.addEventListener("input", () => syncPhoneMirror(celularInput, whatsappInput, "celular"));
+      whatsappInput.addEventListener("change", () => syncPhoneMirror(whatsappInput, celularInput, "whatsapp"));
+      celularInput.addEventListener("change", () => syncPhoneMirror(celularInput, whatsappInput, "celular"));
+      whatsappInput.addEventListener("input", () => {
+        if (String(celularInput.dataset.cadMirroredFrom || "") !== "whatsapp") return;
+        celularInput.dataset.cadMirroredFrom = "whatsapp";
+      });
+      celularInput.addEventListener("input", () => {
+        if (String(whatsappInput.dataset.cadMirroredFrom || "") !== "celular") return;
+        whatsappInput.dataset.cadMirroredFrom = "celular";
+      });
+      whatsappInput.addEventListener("blur", () => {
+        if (String(celularInput.value || "").trim() !== "" && String(celularInput.value || "").trim() !== String(whatsappInput.value || "").trim()) {
+          celularInput.dataset.cadMirroredFrom = "";
+        }
+      });
+      celularInput.addEventListener("blur", () => {
+        if (String(whatsappInput.value || "").trim() !== "" && String(whatsappInput.value || "").trim() !== String(celularInput.value || "").trim()) {
+          whatsappInput.dataset.cadMirroredFrom = "";
+        }
+      });
+    }
+
     bindManualEditProtection([
       enderecoInput,
       bairroInput,
@@ -1114,7 +1242,7 @@
       if (link.target === "_blank" || link.hasAttribute("download")) return;
       const href = link.getAttribute("href") || "";
       if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
-      if (!isDirty || isSubmitting) return;
+      if (!isEmbed && (!isDirty || isSubmitting)) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -1122,6 +1250,10 @@
       const allowed = await confirmDiscard();
       if (allowed) {
         clearDirty();
+        if (isEmbed) {
+          postInlineState({ type: "sv:inline-cadastro-request-close" });
+          return;
+        }
         window.location.href = link.href;
       }
     }, true);
@@ -1132,6 +1264,7 @@
     syncMotoristaButton();
     updateHero();
     updatePessoaFields();
+    clearDirty();
 
     if (saved === "conversion_pending") {
       clearDirty();
@@ -1153,6 +1286,23 @@
       if (canonical) {
         window.history.replaceState({}, document.title, canonical);
       }
+    }
+
+    if (isEmbed && (saved === "created" || saved === "updated") && window.parent && window.parent !== window) {
+      try {
+        const payload = {
+          id: Number(inlinePayload?.id || 0),
+          tipo: String(inlinePayload?.tipo || currentType || ""),
+          nome: String(inlinePayload?.nome || heroTitle?.textContent || ""),
+          documento: String(inlinePayload?.documento || heroDocumento?.textContent || ""),
+          celular: String(inlinePayload?.celular || form.querySelector('input[name="celular"]')?.value || form.querySelector('input[name="whatsapp"]')?.value || ""),
+        };
+        window.parent.postMessage({
+          type: "sv:inline-cadastro-saved",
+          cadastro: payload,
+          saved,
+        }, window.location.origin);
+      } catch (_) {}
     }
   }
 

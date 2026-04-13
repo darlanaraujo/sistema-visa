@@ -163,6 +163,7 @@ $mock = [
         <thead>
           <tr>
             <th>Conta</th>
+            <th>Cadastro</th>
             <th>Valor</th>
             <th>Imóvel</th>
             <th>Venc.</th>
@@ -194,6 +195,24 @@ $mock = [
       <div class="fin-modal__body">
         <form class="fin-form" id="cpForm" action="javascript:void(0)">
           <input type="hidden" id="cpId" />
+          <input type="hidden" id="cpCadastroId" />
+
+          <div class="fin-form__row">
+            <div class="fin-field">
+              <label>Cadastro</label>
+              <div class="fin-cad-lookup" data-cp-lookup="form">
+                <div class="fin-cad-lookup__control">
+                  <span class="fin-cad-lookup__icon"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span>
+                  <input id="cpCadastro" type="search" placeholder="Nome, CPF/CNPJ ou telefone" autocomplete="off" />
+                </div>
+                <div class="fin-cad-lookup__menu" id="cpCadastroMenu" hidden></div>
+              </div>
+            </div>
+            <div class="fin-field">
+              <label for="cpCadastroDocumento">CPF/CNPJ / Telefone</label>
+              <input id="cpCadastroDocumento" type="text" readonly placeholder="Opcional para lançamentos sem vínculo" />
+            </div>
+          </div>
 
           <div class="fin-form__row">
             <div class="fin-field">
@@ -250,6 +269,20 @@ $mock = [
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="fin-modal fin-cad-inline-modal" id="finCadastroInlineModal" aria-hidden="true">
+    <div class="fin-modal__card">
+      <div class="fin-modal__head">
+        <div class="fin-modal__title" id="finCadastroInlineTitle">Novo cadastro</div>
+        <button class="fin-modal__close" id="finCadastroInlineClose" type="button" aria-label="Fechar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="fin-modal__body">
+        <iframe class="fin-cad-inline-frame" id="finCadastroInlineFrame" src="about:blank" title="Cadastro inline"></iframe>
       </div>
     </div>
   </div>

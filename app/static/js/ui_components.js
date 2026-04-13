@@ -190,6 +190,10 @@
   }
 
   function getPlacement(el) {
+    const explicit = (el.getAttribute('data-tip-place') || '').trim().toLowerCase();
+    if (explicit === 'left') return 'left';
+    if (explicit === 'bottom') return 'bottom';
+
     // Dentro da topbar => abaixo
     if (el.closest?.('.topbar')) return 'bottom';
     return 'right';
@@ -205,6 +209,7 @@
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
     tip.style.marginTop = `-${Math.round(tip.offsetHeight / 2)}px`;
+    tip.style.marginLeft = `0px`;
   }
 
   function positionTooltipBottom(tip, el) {
@@ -224,6 +229,20 @@
     tip.style.left = `${cx}px`;
     tip.style.top = `${top}px`;
     tip.style.marginTop = `0px`;
+    tip.style.marginLeft = `0px`;
+  }
+
+  function positionTooltipLeft(tip, el) {
+    const r = el.getBoundingClientRect();
+    const gap = 12;
+
+    const top = Math.round(r.top + (r.height / 2));
+    const left = Math.round(r.left - gap);
+
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+    tip.style.marginTop = `-${Math.round(tip.offsetHeight / 2)}px`;
+    tip.style.marginLeft = `-${Math.round(tip.offsetWidth)}px`;
   }
 
   function initTooltips({ sidebarEl } = {}) {
@@ -240,7 +259,7 @@
 
     function hideNow() {
       clearHide();
-      tip.classList.remove('is-show', 'is-below');
+      tip.classList.remove('is-show', 'is-below', 'is-left');
       currentEl = null;
     }
 
@@ -262,6 +281,7 @@
 
       const placement = getPlacement(el);
       tip.classList.toggle('is-below', placement === 'bottom');
+      tip.classList.toggle('is-left', placement === 'left');
 
       currentEl = el;
 
@@ -271,6 +291,8 @@
       // Posiciona
       if (placement === 'bottom') {
         positionTooltipBottom(tip, el);
+      } else if (placement === 'left') {
+        positionTooltipLeft(tip, el);
       } else {
         positionTooltipRight(tip, el);
       }
@@ -279,6 +301,7 @@
       window.setTimeout(() => {
         if (!currentEl || currentEl !== el) return;
         if (placement === 'bottom') positionTooltipBottom(tip, el);
+        else if (placement === 'left') positionTooltipLeft(tip, el);
         else positionTooltipRight(tip, el);
       }, 0);
     }
@@ -313,6 +336,7 @@
 
       const placement = getPlacement(currentEl);
       if (placement === 'bottom') positionTooltipBottom(tip, currentEl);
+      else if (placement === 'left') positionTooltipLeft(tip, currentEl);
       else positionTooltipRight(tip, currentEl);
     }, true);
 
@@ -330,6 +354,7 @@
 
       const placement = getPlacement(currentEl);
       if (placement === 'bottom') positionTooltipBottom(tip, currentEl);
+      else if (placement === 'left') positionTooltipLeft(tip, currentEl);
       else positionTooltipRight(tip, currentEl);
     }, true);
 
@@ -339,6 +364,7 @@
 
       const placement = getPlacement(currentEl);
       if (placement === 'bottom') positionTooltipBottom(tip, currentEl);
+      else if (placement === 'left') positionTooltipLeft(tip, currentEl);
       else positionTooltipRight(tip, currentEl);
     });
 

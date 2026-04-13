@@ -1,11 +1,11 @@
 {
-    "system_name": "Sistema Visa Remoções",
-    "company": "Visa Remoções",
+    "system_name": "SISTEMA VISA REMOÇÕES",
+    "company": "VISA REMOÇÕES",
     "cnpj": "17.686.570/0001-80",
-    "tagline": "Sistema Financeiro • Relatórios",
+    "tagline": "SISTEMA FINANCEIRO • RELATÓRIOS",
     "site": "visaremocoes.com.br",
     "logo": "/sistema-visa/app/static/img/logo.png",
     "favicon": "/sistema-visa/app/static/img/favicon.png",
     "report_logo": "/sistema-visa/app/static/img/favicon.png",
-    "report_footer_note": "Documento gerado automaticamente pelo Sistema Visa Remoções."
+    "report_footer_note": "Documento gerado automaticamente pelo SISTEMA VISA REMOÇÕES."
 }

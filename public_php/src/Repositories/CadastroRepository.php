@@ -78,12 +78,27 @@ final class CadastroRepository {
     $term = $this->normalizeText((string)($filters['term'] ?? ''));
     if ($term !== '') {
       $normalizedDocumento = $this->normalizeDocumento($term);
-      $where[] = '(
-        c.nome LIKE :term
-        OR REPLACE(REPLACE(REPLACE(REPLACE(c.documento, ".", ""), "-", ""), "/", ""), " ", "") LIKE :documento_term
-      )';
-      $params[':term'] = '%' . $term . '%';
-      $params[':documento_term'] = '%' . $normalizedDocumento . '%';
+      $termWhere = [
+        'c.nome LIKE :nome_term',
+        'c.razao_social LIKE :razao_term',
+        'c.nome_fantasia LIKE :fantasia_term',
+      ];
+      $params[':nome_term'] = '%' . $term . '%';
+      $params[':razao_term'] = '%' . $term . '%';
+      $params[':fantasia_term'] = '%' . $term . '%';
+
+      if ($normalizedDocumento !== '') {
+        $termWhere[] = 'REPLACE(REPLACE(REPLACE(REPLACE(c.documento, ".", ""), "-", ""), "/", ""), " ", "") LIKE :documento_term';
+        $termWhere[] = 'REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(c.telefone, ""), ".", ""), "-", ""), "/", ""), " ", "") LIKE :telefone_term';
+        $termWhere[] = 'REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(c.whatsapp, ""), ".", ""), "-", ""), "/", ""), " ", "") LIKE :whatsapp_term';
+        $termWhere[] = 'REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(c.celular, ""), ".", ""), "-", ""), "/", ""), " ", "") LIKE :celular_term';
+        $params[':documento_term'] = '%' . $normalizedDocumento . '%';
+        $params[':telefone_term'] = '%' . $normalizedDocumento . '%';
+        $params[':whatsapp_term'] = '%' . $normalizedDocumento . '%';
+        $params[':celular_term'] = '%' . $normalizedDocumento . '%';
+      }
+
+      $where[] = '(' . implode(' OR ', $termWhere) . ')';
     }
 
     $tipo = $this->normalizeText((string)($filters['tipo'] ?? ''));
@@ -676,6 +691,128 @@ final class CadastroRepository {
     return $this->getTags($cadastroId, $companyId);
   }
 
+  public function getMovimentacoes(int $cadastroId, int $companyId = 1, int $limit = 20): array {
+    if ($cadastroId <= 0 || !$this->existsCadastro($cadastroId, $companyId)) {
+      return [];
+    }
+
+    $stmt = Database::connection()->prepare(
+      sprintf(
+        'SELECT m.*
+           FROM cadastro_movimentacoes m
+          WHERE m.company_id = :company_id
+            AND m.cadastro_id = :cadastro_id
+          ORDER BY m.created_at DESC, m.id DESC
+          LIMIT %d',
+        $this->normalizeLimit($limit)
+      )
+    );
+    $stmt->execute([
+      ':company_id' => $companyId,
+      ':cadastro_id' => $cadastroId,
+    ]);
+
+    $rows = $stmt->fetchAll();
+    if (!is_array($rows) || !$rows) {
+      return $this->buildFallbackMovimentacoesForCadastro($cadastroId, $companyId, $this->normalizeLimit($limit));
+    }
+
+    return array_values(array_filter(array_map(
+      fn ($row) => is_array($row) ? $this->hydrateMovimentacao($row) : null,
+      $rows
+    )));
+  }
+
+  public function listRecentMovimentacoes(int $companyId = 1, int $limit = 12): array {
+    $stmt = Database::connection()->prepare(
+      sprintf(
+        'SELECT m.*, c.nome, c.razao_social
+           FROM cadastro_movimentacoes m
+           INNER JOIN cadastros c
+                   ON c.id = m.cadastro_id
+          WHERE m.company_id = :company_id
+          ORDER BY m.created_at DESC, m.id DESC
+          LIMIT %d',
+        $this->normalizeLimit($limit)
+      )
+    );
+    $stmt->execute([
+      ':company_id' => $companyId,
+    ]);
+
+    $rows = $stmt->fetchAll();
+    if (!is_array($rows) || !$rows) {
+      return $this->buildFallbackRecentMovimentacoes($companyId, $this->normalizeLimit($limit));
+    }
+
+    return array_values(array_filter(array_map(function ($row) {
+      if (!is_array($row)) {
+        return null;
+      }
+      $item = $this->hydrateMovimentacao($row);
+      $item['cadastroNome'] = (string)($row['razao_social'] ?? '') !== ''
+        ? (string)$row['razao_social']
+        : (string)($row['nome'] ?? '');
+      return $item;
+    }, $rows)));
+  }
+
+  public function addMovimentacao(int $cadastroId, array $payload, int $companyId = 1): ?array {
+    if ($cadastroId <= 0 || !$this->existsCadastro($cadastroId, $companyId)) {
+      return null;
+    }
+
+    $data = $this->normalizeMovimentacaoPayload($payload);
+    $stmt = Database::connection()->prepare(
+      'INSERT INTO cadastro_movimentacoes (
+         company_id,
+         cadastro_id,
+         tipo_evento,
+         descricao_evento,
+         payload_estrutural,
+         data_evento,
+         responsavel
+       ) VALUES (
+         :company_id,
+         :cadastro_id,
+         :tipo_evento,
+         :descricao_evento,
+         :payload_estrutural,
+         :data_evento,
+         :responsavel
+       )'
+    );
+    $stmt->execute([
+      ':company_id' => $companyId,
+      ':cadastro_id' => $cadastroId,
+      ':tipo_evento' => $data['tipo_evento'],
+      ':descricao_evento' => $data['descricao_evento'],
+      ':payload_estrutural' => $data['payload_estrutural'],
+      ':data_evento' => $data['data_evento'],
+      ':responsavel' => $data['responsavel'],
+    ]);
+
+    $movimentacaoId = (int)Database::connection()->lastInsertId();
+    if ($movimentacaoId <= 0) {
+      return null;
+    }
+
+    $fetch = Database::connection()->prepare(
+      'SELECT m.*
+         FROM cadastro_movimentacoes m
+        WHERE m.id = :id
+          AND m.company_id = :company_id
+        LIMIT 1'
+    );
+    $fetch->execute([
+      ':id' => $movimentacaoId,
+      ':company_id' => $companyId,
+    ]);
+    $row = $fetch->fetch();
+
+    return is_array($row) && $row ? $this->hydrateMovimentacao($row) : null;
+  }
+
   public function tagsMatch(string $left, string $right, int $prefixLength = 4): bool {
     $leftTokens = $this->normalizeTagComparableTokens($left);
     $rightTokens = $this->normalizeTagComparableTokens($right);
@@ -980,6 +1117,147 @@ final class CadastroRepository {
     return $payload;
   }
 
+  private function hydrateMovimentacao(array $row): array {
+    $payload = null;
+    $rawPayload = $row['payload_estrutural'] ?? null;
+    if (is_string($rawPayload) && trim($rawPayload) !== '') {
+      $decoded = json_decode($rawPayload, true);
+      $payload = is_array($decoded) ? $decoded : null;
+    } elseif (is_array($rawPayload)) {
+      $payload = $rawPayload;
+    }
+
+    return [
+      'id' => (int)($row['id'] ?? 0),
+      'cadastroId' => (int)($row['cadastro_id'] ?? 0),
+      'tipoEvento' => (string)($row['tipo_evento'] ?? ''),
+      'descricaoEvento' => (string)($row['descricao_evento'] ?? ''),
+      'payloadEstrutural' => $payload,
+      'dataEvento' => (string)($row['data_evento'] ?? ''),
+      'responsavel' => (string)($row['responsavel'] ?? ''),
+      'createdAt' => (string)($row['created_at'] ?? ''),
+    ];
+  }
+
+  private function buildFallbackMovimentacoesForCadastro(int $cadastroId, int $companyId, int $limit): array {
+    $stmt = Database::connection()->prepare(
+      'SELECT c.id, c.nome, c.razao_social, c.status, c.created_at, c.updated_at
+         FROM cadastros c
+        WHERE c.id = :cadastro_id
+          AND c.company_id = :company_id
+        LIMIT 1'
+    );
+    $stmt->execute([
+      ':cadastro_id' => $cadastroId,
+      ':company_id' => $companyId,
+    ]);
+    $row = $stmt->fetch();
+    if (!is_array($row) || !$row) {
+      return [];
+    }
+
+    return array_slice($this->buildFallbackEntriesFromCadastroRow($row), 0, $limit);
+  }
+
+  private function buildFallbackRecentMovimentacoes(int $companyId, int $limit): array {
+    $stmt = Database::connection()->prepare(
+      sprintf(
+        'SELECT c.id, c.nome, c.razao_social, c.status, c.created_at, c.updated_at
+           FROM cadastros c
+          WHERE c.company_id = :company_id
+          ORDER BY COALESCE(c.updated_at, c.created_at) DESC, c.id DESC
+          LIMIT %d',
+        max($limit, 12)
+      )
+    );
+    $stmt->execute([
+      ':company_id' => $companyId,
+    ]);
+
+    $rows = $stmt->fetchAll();
+    if (!is_array($rows) || !$rows) {
+      return [];
+    }
+
+    $items = [];
+    foreach ($rows as $row) {
+      if (!is_array($row)) {
+        continue;
+      }
+      foreach ($this->buildFallbackEntriesFromCadastroRow($row) as $entry) {
+        $items[] = $entry;
+      }
+    }
+
+    usort($items, static function (array $left, array $right): int {
+      $leftTime = strtotime((string)($left['createdAt'] ?? '')) ?: 0;
+      $rightTime = strtotime((string)($right['createdAt'] ?? '')) ?: 0;
+      if ($leftTime === $rightTime) {
+        return strcmp((string)($right['id'] ?? ''), (string)($left['id'] ?? ''));
+      }
+      return $rightTime <=> $leftTime;
+    });
+
+    return array_slice($items, 0, $limit);
+  }
+
+  private function buildFallbackEntriesFromCadastroRow(array $row): array {
+    $cadastroId = (int)($row['id'] ?? 0);
+    if ($cadastroId <= 0) {
+      return [];
+    }
+
+    $cadastroNome = trim((string)($row['razao_social'] ?? '')) !== ''
+      ? trim((string)$row['razao_social'])
+      : trim((string)($row['nome'] ?? ''));
+    $status = trim((string)($row['status'] ?? 'ativo'));
+    $createdAt = trim((string)($row['created_at'] ?? ''));
+    $updatedAt = trim((string)($row['updated_at'] ?? ''));
+
+    $items = [];
+    if ($createdAt !== '') {
+      $items[] = [
+        'id' => 'fallback-created-' . $cadastroId,
+        'cadastroId' => $cadastroId,
+        'tipoEvento' => 'cadastro_criado',
+        'descricaoEvento' => 'Cadastro criado.',
+        'payloadEstrutural' => [
+          'nome' => $cadastroNome,
+          'status' => $status,
+        ],
+        'dataEvento' => $createdAt,
+        'responsavel' => '',
+        'createdAt' => $createdAt,
+        'cadastroNome' => $cadastroNome,
+      ];
+    }
+
+    if ($updatedAt !== '' && $updatedAt !== $createdAt) {
+      $items[] = [
+        'id' => 'fallback-updated-' . $cadastroId,
+        'cadastroId' => $cadastroId,
+        'tipoEvento' => 'cadastro_atualizado',
+        'descricaoEvento' => 'Cadastro atualizado.',
+        'payloadEstrutural' => [
+          'nome' => $cadastroNome,
+          'status' => $status,
+        ],
+        'dataEvento' => $updatedAt,
+        'responsavel' => '',
+        'createdAt' => $updatedAt,
+        'cadastroNome' => $cadastroNome,
+      ];
+    }
+
+    usort($items, static function (array $left, array $right): int {
+      $leftTime = strtotime((string)($left['createdAt'] ?? '')) ?: 0;
+      $rightTime = strtotime((string)($right['createdAt'] ?? '')) ?: 0;
+      return $rightTime <=> $leftTime;
+    });
+
+    return $items;
+  }
+
   private function hydrateTipo(array $row): array {
     return [
       'id' => (int)($row['id'] ?? 0),
@@ -995,43 +1273,44 @@ final class CadastroRepository {
       $tipoPessoa = 'PF';
     }
 
-    $nomeInformado = $this->normalizeText((string)($payload['nome'] ?? ''));
-    $razaoSocialInformada = $this->normalizeText((string)($payload['razao_social'] ?? $payload['razaoSocial'] ?? ''));
+    $nomeInformado = $this->normalizeUpperText((string)($payload['nome'] ?? ''));
+    $razaoSocialInformada = $this->normalizeUpperText((string)($payload['razao_social'] ?? $payload['razaoSocial'] ?? ''));
     $nome = $tipoPessoa === 'PJ'
       ? ($nomeInformado !== '' ? $nomeInformado : $razaoSocialInformada)
       : ($nomeInformado !== '' ? $nomeInformado : $razaoSocialInformada);
     $razaoSocial = $tipoPessoa === 'PJ'
       ? ($razaoSocialInformada !== '' ? $razaoSocialInformada : ($nome !== '' ? $nome : null))
       : ($razaoSocialInformada !== '' ? $razaoSocialInformada : null);
-    $documento = $this->normalizeText((string)($payload['documento'] ?? ''));
+    $documento = $this->normalizeNullableText($payload['documento'] ?? null);
     $telefone = $this->normalizeNullableText($payload['telefone'] ?? null);
     $telefoneSecundario = $this->normalizeNullableText($payload['telefone_secundario'] ?? $payload['telefoneSecundario'] ?? null);
     $telefoneFixo = $this->normalizeNullableText($payload['telefone_fixo'] ?? $payload['telefoneFixo'] ?? null);
     $whatsapp = $this->normalizeNullableText($payload['whatsapp'] ?? null);
     $celular = $this->normalizeNullableText($payload['celular'] ?? null);
+    $telefoneBase = $celular ?? $whatsapp ?? $telefoneFixo ?? $telefone;
 
     return [
       'tipo_pessoa' => $tipoPessoa,
       'nome' => $nome,
       'razao_social' => $razaoSocial,
-      'nome_fantasia' => $this->normalizeNullableText($payload['nome_fantasia'] ?? $payload['nomeFantasia'] ?? null),
+      'nome_fantasia' => $this->normalizeNullableText($payload['nome_fantasia'] ?? $payload['nomeFantasia'] ?? null, true),
       'documento' => $documento,
       'inscricao_estadual' => $this->normalizeNullableText($payload['inscricao_estadual'] ?? $payload['inscricaoEstadual'] ?? null, true),
-      'telefone' => $telefone !== null ? $telefone : ($celular ?? $whatsapp ?? $telefoneFixo),
+      'telefone' => $telefone !== null ? $telefone : $telefoneBase,
       'telefone_secundario' => $telefoneSecundario !== null ? $telefoneSecundario : ($whatsapp ?? $telefoneFixo),
-      'contato' => $this->normalizeNullableText($payload['contato'] ?? null),
+      'contato' => $this->normalizeNullableText($payload['contato'] ?? null, true),
       'telefone_fixo' => $telefoneFixo,
-      'whatsapp' => $whatsapp,
-      'celular' => $celular !== null ? $celular : $telefone,
-      'email' => $this->normalizeNullableText($payload['email'] ?? null),
+      'whatsapp' => $whatsapp !== null ? $whatsapp : ($celular ?? $telefoneBase),
+      'celular' => $celular !== null ? $celular : ($whatsapp ?? $telefoneBase),
+      'email' => $this->normalizeNullableEmail($payload['email'] ?? null),
       'cep' => $this->normalizeNullableText($payload['cep'] ?? null),
-      'endereco' => $this->normalizeNullableText($payload['endereco'] ?? null),
-      'numero' => $this->normalizeNullableText($payload['numero'] ?? null),
-      'complemento' => $this->normalizeNullableText($payload['complemento'] ?? null),
-      'bairro' => $this->normalizeNullableText($payload['bairro'] ?? null),
-      'cidade' => $this->normalizeNullableText($payload['cidade'] ?? null),
+      'endereco' => $this->normalizeNullableText($payload['endereco'] ?? null, true),
+      'numero' => $this->normalizeNullableText($payload['numero'] ?? null, true),
+      'complemento' => $this->normalizeNullableText($payload['complemento'] ?? null, true),
+      'bairro' => $this->normalizeNullableText($payload['bairro'] ?? null, true),
+      'cidade' => $this->normalizeNullableText($payload['cidade'] ?? null, true),
       'estado' => $this->normalizeNullableText($payload['estado'] ?? null, true),
-      'observacoes' => $this->normalizeNullableText($payload['observacoes'] ?? $payload['observacao'] ?? null),
+      'observacoes' => $this->normalizeNullableText($payload['observacoes'] ?? $payload['observacao'] ?? null, true),
       'status' => $this->normalizeStatus((string)($payload['status'] ?? 'ativo')),
     ];
   }
@@ -1062,6 +1341,35 @@ final class CadastroRepository {
     }
   }
 
+  private function normalizeMovimentacaoPayload(array $payload): array {
+    $tipoEvento = $this->normalizeText((string)($payload['tipo_evento'] ?? $payload['tipoEvento'] ?? ''));
+    if ($tipoEvento === '') {
+      throw new InvalidArgumentException('Tipo de evento da movimentação é obrigatório.');
+    }
+
+    $descricaoEvento = $this->normalizeText((string)($payload['descricao_evento'] ?? $payload['descricaoEvento'] ?? ''));
+    if ($descricaoEvento === '') {
+      throw new InvalidArgumentException('Descrição da movimentação é obrigatória.');
+    }
+
+    $payloadEstrutural = null;
+    if (array_key_exists('payload_estrutural', $payload) || array_key_exists('payloadEstrutural', $payload)) {
+      $raw = $payload['payload_estrutural'] ?? $payload['payloadEstrutural'];
+      if (is_array($raw)) {
+        $json = json_encode($raw, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $payloadEstrutural = $json !== false ? $json : null;
+      }
+    }
+
+    return [
+      'tipo_evento' => $tipoEvento,
+      'descricao_evento' => $this->upper($descricaoEvento),
+      'payload_estrutural' => $payloadEstrutural,
+      'data_evento' => $this->normalizeNullableText($payload['data_evento'] ?? $payload['dataEvento'] ?? null) ?? date('Y-m-d H:i:s'),
+      'responsavel' => $this->normalizeNullableText($payload['responsavel'] ?? null, true),
+    ];
+  }
+
   private function normalizeMotoristaDetalhesPayload(array $payload): array {
     return [
       'cpf' => $this->normalizeNullableText($payload['cpf'] ?? null),
@@ -1082,14 +1390,14 @@ final class CadastroRepository {
       }
 
       $normalized[] = [
-        'nome' => $nome,
+        'nome' => $this->upper($nome),
         'cpf' => $this->normalizeNullableText($item['cpf'] ?? null),
         'cnh' => $this->normalizeNullableText($item['cnh'] ?? null, true),
-        'contato' => $this->normalizeNullableText($item['contato'] ?? null),
+        'contato' => $this->normalizeNullableText($item['contato'] ?? null, true),
         'telefone_fixo' => $this->normalizeNullableText($item['telefone_fixo'] ?? $item['telefoneFixo'] ?? null),
         'whatsapp' => $this->normalizeNullableText($item['whatsapp'] ?? null),
         'celular' => $this->normalizeNullableText($item['celular'] ?? null),
-        'email' => $this->normalizeNullableText($item['email'] ?? null),
+        'email' => $this->normalizeNullableEmail($item['email'] ?? null),
         'principal' => !empty($item['principal']) ? 1 : 0,
       ];
     }
@@ -1111,12 +1419,12 @@ final class CadastroRepository {
       }
 
       $normalized[] = [
-        'modelo' => $modelo,
+        'modelo' => $this->upper($modelo),
         'placa' => strtoupper($placa),
         'placa_adicional' => $this->normalizeNullableText($item['placa_adicional'] ?? $item['placaAdicional'] ?? null, true),
-        'tipo_carroceria' => $this->normalizeNullableText($item['tipo_carroceria'] ?? $item['tipoCarroceria'] ?? null),
-        'metragem' => $this->normalizeNullableText($item['metragem'] ?? null),
-        'peso_carga' => $this->normalizeNullableText($item['peso_carga'] ?? $item['pesoCarga'] ?? null),
+        'tipo_carroceria' => $this->normalizeNullableText($item['tipo_carroceria'] ?? $item['tipoCarroceria'] ?? null, true),
+        'metragem' => $this->normalizeNullableText($item['metragem'] ?? null, true),
+        'peso_carga' => $this->normalizeNullableText($item['peso_carga'] ?? $item['pesoCarga'] ?? null, true),
       ];
     }
 
@@ -1143,7 +1451,7 @@ final class CadastroRepository {
       }
 
       $items[$slug] = [
-        'nome' => $nome,
+        'nome' => $this->upper($nome),
         'slug' => $slug,
       ];
     }
@@ -1242,13 +1550,33 @@ final class CadastroRepository {
     return trim(preg_replace('/\s+/', ' ', $value) ?? '');
   }
 
+  private function normalizeUpperText(string $value): string {
+    $text = $this->normalizeText($value);
+    return $text !== '' ? $this->upper($text) : '';
+  }
+
   private function normalizeNullableText(mixed $value, bool $uppercase = false): ?string {
     $text = $this->normalizeText((string)($value ?? ''));
     if ($text === '') {
       return null;
     }
 
-    return $uppercase ? strtoupper($text) : $text;
+    return $uppercase ? $this->upper($text) : $text;
+  }
+
+  private function normalizeNullableEmail(mixed $value): ?string {
+    $text = $this->normalizeText((string)($value ?? ''));
+    if ($text === '') {
+      return null;
+    }
+
+    return strtolower($text);
+  }
+
+  private function upper(string $value): string {
+    return function_exists('mb_strtoupper')
+      ? mb_strtoupper($value, 'UTF-8')
+      : strtoupper($value);
   }
 
   private function normalizeDocumento(string $value): string {

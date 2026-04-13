@@ -32,6 +32,7 @@
 
     const els = {
       page: el("ftPage"),
+      activityFeed: el("ftActivityFeed"),
 
       // CRUD list
       modal: el("ftModal"),
@@ -139,18 +140,44 @@
       return String(s || "").replace(/\s+/g, " ").trim();
     }
 
-    const LOWER_WORDS = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "por", "com", "a", "o"]);
+    function upperPT(s) {
+      return normalizeSpaces(s).toLocaleUpperCase("pt-BR");
+    }
+
+    function activityDateTime(createdAt) {
+      const obj = createdAt ? new Date(createdAt) : null;
+      if (!obj || Number.isNaN(obj.getTime())) return "Data não informada • --:--";
+      return `${obj.toLocaleDateString("pt-BR")} • ${obj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+    }
+
+    function movementSummary(entry) {
+      const payload = entry && typeof entry === "object" && entry.payloadEstrutural && typeof entry.payloadEstrutural === "object"
+        ? entry.payloadEstrutural
+        : {};
+      const scope = String(entry?.scope || "Ferramentas");
+      const name = String(payload.name || payload.nome || "").trim();
+      const fallback = String(entry?.descricaoEvento || "Movimentação registrada");
+
+      switch (String(entry?.tipoEvento || "")) {
+        case "item_criado":
+          return `Item criado em ${scope}: ${name || "Registro sem nome"}`;
+        case "item_editado":
+          return `Item editado em ${scope}: ${name || "Registro sem nome"}`;
+        case "item_status":
+          return `Status atualizado em ${scope}: ${name || "Registro sem nome"}`;
+        case "item_excluido":
+          return `Item excluído em ${scope}: ${name || "Registro sem nome"}`;
+        case "personalizacao_salva":
+          return "Personalização do sistema atualizada";
+        case "personalizacao_restaurada":
+          return "Personalização do sistema restaurada para o padrão";
+        default:
+          return fallback;
+      }
+    }
+
     function titleCasePT(s) {
-      const raw = normalizeSpaces(s);
-      if (!raw) return "";
-      const parts = raw.toLowerCase().split(" ");
-      return parts
-        .map((w, i) => {
-          if (!w) return "";
-          if (i > 0 && LOWER_WORDS.has(w)) return w;
-          return w.charAt(0).toUpperCase() + w.slice(1);
-        })
-        .join(" ");
+      return upperPT(s);
     }
 
     // -----------------------------
@@ -165,6 +192,58 @@
         return window.FerStore.tools.save(ns, list);
       }
       return false;
+    }
+
+    function currentUserName() {
+      try {
+        const user = window.BaseStore?.user?.get ? window.BaseStore.user.get() : {};
+        return upperPT(user?.name || user?.nome || "") || "OPERAÇÃO";
+      } catch (_) {
+        return "OPERAÇÃO";
+      }
+    }
+
+    async function logMovement(tipoEvento, descricaoEvento, payloadEstrutural = {}, scope = "") {
+      try {
+        if (!window.FerStore?.movements?.add) return false;
+        return await window.FerStore.movements.add({
+          scope: scope || currentTitle || currentNs || "Ferramentas",
+          tipoEvento,
+          descricaoEvento,
+          responsavel: currentUserName(),
+          payloadEstrutural,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (_) {
+        return false;
+      }
+    }
+
+    async function renderActivityFeed() {
+      if (!els.activityFeed || !window.FerStore?.movements?.list) return;
+      const feed = await window.FerStore.movements.list(8);
+      const bootstrapFeed = Array.isArray(window.__FT_RECENT_MOVEMENTS__) ? window.__FT_RECENT_MOVEMENTS__ : [];
+      const sourceFeed = (Array.isArray(feed) && feed.length) ? feed : bootstrapFeed;
+      if (!Array.isArray(sourceFeed) || !sourceFeed.length) {
+        els.activityFeed.innerHTML = '<div class="ft-activity__empty">Ainda não há movimentações registradas em Ferramentas.</div>';
+        return;
+      }
+
+      els.activityFeed.innerHTML = sourceFeed.map((entry) => {
+        const resp = normalizeSpaces(entry?.responsavel || "");
+        const meta = resp
+          ? `${activityDateTime(entry?.createdAt || "")} • ${resp}`
+          : activityDateTime(entry?.createdAt || "");
+        return `
+          <div class="ft-activity__item">
+            <div class="ft-activity__dot" aria-hidden="true"></div>
+            <div class="ft-activity__content">
+              <strong>${escapeHtml(movementSummary(entry))}</strong>
+              <span>${escapeHtml(meta)}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
     function isHexColor(v) {
@@ -216,7 +295,11 @@
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json || json.ok !== true) {
-        throw new Error(json?.hint || json?.error || "REQUEST_FAILED");
+        const rawError = String(json?.hint || json?.error || "REQUEST_FAILED");
+        if (rawError === "UNAUTHENTICATED") {
+          throw new Error("Sessão não autenticada para atualizar os dados da empresa.");
+        }
+        throw new Error(rawError);
       }
       return json.data;
     }
@@ -448,12 +531,12 @@
           companyName: titleCasePT(els.sysCompanyName?.value || "") || getDefaultCompanyName(),
           cnpj: normalizeCnpj(els.sysCnpj?.value || ""),
           razao: titleCasePT(els.sysRazao?.value || ""),
-          slogan: normalizeSpaces(els.sysSlogan?.value || ""),
-          notes: normalizeSpaces(els.sysNotes?.value || ""),
+          slogan: upperPT(els.sysSlogan?.value || ""),
+          notes: upperPT(els.sysNotes?.value || ""),
         },
         contact: {
           site: normalizeSpaces(els.sysSite?.value || ""),
-          email: normalizeSpaces(els.sysEmail?.value || ""),
+          email: normalizeSpaces(els.sysEmail?.value || "").toLowerCase(),
           phone: normalizeSpaces(els.sysPhone?.value || ""),
           whats: normalizeSpaces(els.sysWhats?.value || ""),
         },
@@ -511,7 +594,7 @@
         company: companyName || getDefaultCompanyName(),
         cnpj: prettyCnpj(els.sysCnpj?.value || ""),
         site: normalizeSpaces(els.sysSite?.value || ""),
-        tagline: normalizeSpaces(els.sysSlogan?.value || ""),
+        tagline: upperPT(els.sysSlogan?.value || ""),
         logo: sysLogoDataUrl || getDefaultLogoUrl(),
         favicon: sysFavDataUrl || getDefaultFaviconUrl(),
         report_logo: sysFavDataUrl || getDefaultFaviconUrl(),
@@ -872,7 +955,14 @@
       if (act === "toggle") {
         item.active = !item.active;
         await upsert(item);
+        await logMovement(
+          "item_status",
+          item.active ? "Item ativado." : "Item desativado.",
+          { id: item.id, name: item.name, active: item.active, namespace: currentNs },
+          currentTitle || currentNs
+        );
         render();
+        renderActivityFeed();
         item.active ? tSuccess("Item ativado.") : tWarning("Item desativado.");
         return;
       }
@@ -922,7 +1012,14 @@
         tDanger("Não foi possível salvar o item.");
         return;
       }
+      await logMovement(
+        isEdit ? "item_editado" : "item_criado",
+        isEdit ? "Alterações salvas." : "Item cadastrado.",
+        { id, name: nameRaw, active, namespace: currentNs },
+        currentTitle || currentNs
+      );
       render();
+      renderActivityFeed();
       closeFormModal();
 
       tSuccess(isEdit ? "Alterações salvas." : "Item cadastrado.");
@@ -933,13 +1030,21 @@
     els.delCancel?.addEventListener("click", closeDelModal);
     els.delConfirm?.addEventListener("click", async () => {
       if (!pendingDeleteId) return;
+      const item = items.find((x) => String(x.id) === String(pendingDeleteId));
       const ok = await removeById(pendingDeleteId);
       if (!ok) {
         tDanger("Não foi possível excluir o item.");
         return;
       }
+      await logMovement(
+        "item_excluido",
+        "Item excluído.",
+        { id: pendingDeleteId, name: item?.name || "", namespace: currentNs },
+        currentTitle || currentNs
+      );
       closeDelModal();
       render();
+      renderActivityFeed();
       tSuccess("Item excluído.");
     });
 
@@ -1096,27 +1201,33 @@
 
       try {
         if (shouldRestoreDefaults) {
-          const [globalOk, userOk] = await Promise.all([
+          const [globalOk, userOk, companyResult] = await Promise.all([
             removeGlobalSysPrefs(),
             removeUserSysPrefs(),
-            apiPostJson(COMPANY_API.reset, {}),
+            apiPostJson(COMPANY_API.reset, {}).then(() => ({ ok: true })).catch((error) => ({ ok: false, error })),
           ]);
           if (!globalOk || !userOk) {
             tDanger("Não foi possível restaurar a personalização.");
             return;
           }
+          if (!companyResult.ok) {
+            tWarning(String(companyResult.error?.message || "Tema restaurado, mas os dados da empresa não puderam ser atualizados."));
+          }
         } else {
           const companyPatch = buildCompanyPatchFromForm();
           const globalPayload = buildGlobalSysPrefsPayload();
           const userPayload = buildUserSysPrefsPayload();
-          const [globalOk, userOk] = await Promise.all([
+          const [globalOk, userOk, companyResult] = await Promise.all([
             saveGlobalSysPrefs(globalPayload),
             saveUserSysPrefs(userPayload),
-            apiPostJson(COMPANY_API.save, companyPatch),
+            apiPostJson(COMPANY_API.save, companyPatch).then(() => ({ ok: true })).catch((error) => ({ ok: false, error })),
           ]);
           if (!globalOk || !userOk) {
             tDanger("Não foi possível salvar a personalização.");
             return;
+          }
+          if (!companyResult.ok) {
+            tWarning(String(companyResult.error?.message || "Cores aplicadas, mas os dados da empresa não puderam ser atualizados."));
           }
         }
       } catch (err) {
@@ -1125,6 +1236,13 @@
       }
 
       pendingSysResetToDefault = false;
+      await logMovement(
+        shouldRestoreDefaults ? "personalizacao_restaurada" : "personalizacao_salva",
+        shouldRestoreDefaults ? "Personalização restaurada para o padrão." : "Personalização salva.",
+        { modo: shouldRestoreDefaults ? "reset" : "save" },
+        "Personalização"
+      );
+      renderActivityFeed();
       closeSysModal();
       tSuccess(shouldRestoreDefaults ? "Personalização restaurada para o padrão." : "Personalização salva.");
     });
@@ -1142,6 +1260,11 @@
       });
     });
 
+    window.addEventListener(window.FerStore?.EVT || "fin:change", () => {
+      renderActivityFeed();
+    });
+
+    renderActivityFeed();
     tShow("Ferramentas pronto (CRUD via SysStore).");
   });
 })();

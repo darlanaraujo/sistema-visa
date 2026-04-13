@@ -23,10 +23,9 @@
     let rows = [];
     let viewMonth = new Date();
     let pendingDeleteId = null;
-    const cadastroLookupSeq = { form: 0, filter: 0 };
+    const cadastroLookupSeq = { form: 0 };
     let cadastroCatalog = [];
-    let filterCadastroCatalog = [];
-    const cadastroLookupTimers = { form: null, filter: null };
+    const cadastroLookupTimers = { form: null };
 
     const el = (id) => document.getElementById(id);
 
@@ -40,8 +39,6 @@
       count: el("crCount"),
 
       filterCliente: el("crFilterCliente"),
-      filterCadastroId: el("crFilterCadastroId"),
-      filterClienteMenu: el("crFilterClienteMenu"),
       filterStatus: el("crFilterStatus"),
       filterForma: el("crFilterForma"),
       filterProcesso: el("crFilterProcesso"),
@@ -67,6 +64,7 @@
       data: el("crData"),
       forma: el("crForma"),
       processo: el("crProcesso"),
+      produto: el("crProduto"),
       parcelas: el("crParcelas"),
 
       delModal: el("crDelModal"),
@@ -183,8 +181,16 @@
       return normalizeSpaces(String(item?.documento || ""));
     }
 
+    function cadastroPhone(item) {
+      return normalizeSpaces(String(item?.telefone || ""));
+    }
+
+    function cadastroMeta(item) {
+      return cadastroDocument(item) || cadastroPhone(item);
+    }
+
     function lookupMenu(target) {
-      return target === "filter" ? els.filterClienteMenu : els.clienteMenu;
+      return els.clienteMenu;
     }
 
     function lookupInput(target) {
@@ -199,23 +205,12 @@
     }
 
     function setSelectedCadastro(target, item) {
-      if (target === "filter") {
-        if (els.filterCadastroId) els.filterCadastroId.value = item ? String(item.id || "") : "";
-        if (els.filterCliente) els.filterCliente.value = item ? cadastroDisplayName(item) : "";
-        return;
-      }
-
       if (els.cadastroId) els.cadastroId.value = item ? String(item.id || "") : "";
       if (els.cliente) els.cliente.value = item ? cadastroDisplayName(item) : "";
-      if (els.clienteDocumento) els.clienteDocumento.value = item ? cadastroDocument(item) : "";
+      if (els.clienteDocumento) els.clienteDocumento.value = item ? cadastroMeta(item) : "";
     }
 
     function clearSelectedCadastroState(target) {
-      if (target === "filter") {
-        if (els.filterCadastroId) els.filterCadastroId.value = "";
-        return;
-      }
-
       if (els.cadastroId) els.cadastroId.value = "";
       if (els.clienteDocumento) els.clienteDocumento.value = "";
     }
@@ -229,7 +224,8 @@
         const searchLabel = normalizeLookupText(cadastroSearchLabel(item));
         const displayName = normalizeLookupText(cadastroDisplayName(item));
         const documento = normalizeDigits(item?.documento || "");
-        return searchLabel.includes(text) || displayName.includes(text) || (digits !== "" && documento.includes(digits));
+        const telefone = normalizeDigits(item?.telefone || "");
+        return searchLabel.includes(text) || displayName.includes(text) || (digits !== "" && (documento.includes(digits) || telefone.includes(digits)));
       });
     }
 
@@ -245,16 +241,36 @@
 
       const list = filterCadastroItems(items, cleanedTerm).slice(0, 8);
       if (!list.length) {
-        menu.innerHTML = '<div class="cr-lookup__empty">Nenhum cadastro encontrado.</div>';
+        if (target === "form") {
+          menu.innerHTML = `
+            <button class="fin-cad-lookup__item fin-cad-lookup__create" type="button" data-cr-create-cadastro="cliente">
+              <span class="fin-cad-lookup__item-icon"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
+              <span class="fin-cad-lookup__item-body">
+                <strong class="fin-cad-lookup__name">Cadastro não encontrado</strong>
+                <span class="fin-cad-lookup__meta">Clique aqui para cadastrar um novo cliente sem sair do Financeiro.</span>
+              </span>
+            </button>
+          `;
+          menu.hidden = false;
+          const createBtn = menu.querySelector("[data-cr-create-cadastro]");
+          createBtn?.addEventListener("click", () => {
+            window.FinCadastroInline?.open?.("cliente", "Novo cliente");
+          });
+          return;
+        }
+        menu.innerHTML = '<div class="fin-cad-lookup__empty">Nenhum cadastro encontrado.</div>';
         menu.hidden = false;
         return;
       }
 
       menu.innerHTML = list
         .map((item, index) => `
-          <button class="cr-lookup__item" type="button" data-cr-option="${escapeHtml(String(index))}">
-            <span class="cr-lookup__name">${escapeHtml(cadastroDisplayName(item))}</span>
-            <span class="cr-lookup__meta">${escapeHtml(cadastroDocument(item) || "Documento não informado")}</span>
+          <button class="fin-cad-lookup__item" type="button" data-cr-option="${escapeHtml(String(index))}">
+            <span class="fin-cad-lookup__item-icon"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span>
+            <span class="fin-cad-lookup__item-body">
+              <strong class="fin-cad-lookup__name">${escapeHtml(cadastroDisplayName(item))}</strong>
+              <span class="fin-cad-lookup__meta">${escapeHtml(cadastroMeta(item) || "Telefone não informado")}</span>
+            </span>
           </button>
         `)
         .join("");
@@ -283,12 +299,13 @@
         const searchLabel = normalizeLookupText(cadastroSearchLabel(item));
         const displayName = normalizeLookupText(cadastroDisplayName(item));
         const documento = normalizeDigits(item?.documento || "");
-        return searchLabel === text || displayName === text || (digits !== "" && documento === digits);
+        const telefone = normalizeDigits(item?.telefone || "");
+        return searchLabel === text || displayName === text || (digits !== "" && (documento === digits || telefone === digits));
       }) || null;
     }
 
     async function fetchCadastros(target, term = "") {
-      const seqKey = target === "filter" ? "filter" : "form";
+      const seqKey = "form";
       const sequence = ++cadastroLookupSeq[seqKey];
       const url = new URL(apiUrl("/public_php/api/financeiro_cadastros_lookup.php"), window.location.origin);
       if (String(term || "").trim() !== "") {
@@ -312,17 +329,13 @@
 
     async function refreshCadastroCatalog(target, term = "") {
       const items = await fetchCadastros(target, term);
-      if (target === "filter") {
-        filterCadastroCatalog = items;
-      } else {
-        cadastroCatalog = items;
-      }
+      cadastroCatalog = items;
       renderCadastroMenu(target, items, term);
       return items;
     }
 
     function scheduleCadastroCatalogRefresh(target, term = "", immediate = false) {
-      const timerKey = target === "filter" ? "filter" : "form";
+      const timerKey = "form";
       if (cadastroLookupTimers[timerKey]) {
         window.clearTimeout(cadastroLookupTimers[timerKey]);
       }
@@ -340,7 +353,7 @@
         return null;
       }
 
-      const currentCatalog = target === "filter" ? filterCadastroCatalog : cadastroCatalog;
+      const currentCatalog = cadastroCatalog;
       let selected = findCadastroByText(currentCatalog, rawValue);
       if (!selected) {
         try {
@@ -352,10 +365,10 @@
       }
 
       if (!selected) {
-        if (target !== "filter" && els.clienteDocumento) {
-          els.clienteDocumento.value = "";
-        }
-        return null;
+      if (els.clienteDocumento) {
+        els.clienteDocumento.value = "";
+      }
+      return null;
       }
 
       setSelectedCadastro(target, selected);
@@ -373,40 +386,28 @@
     // ---------------------------
     // Normalização (texto + valor) — igual padrão do pagar
     // ---------------------------
-    const LOWER_WORDS = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "por", "com", "a", "o"]);
-
     function normalizeSpaces(s) {
       return String(s || "").replace(/\s+/g, " ").trim();
     }
 
-    function titleCasePT(s) {
-      const raw = normalizeSpaces(s);
-      if (!raw) return "";
-      const parts = raw.toLowerCase().split(" ");
-      return parts
-        .map((w, i) => {
-          if (!w) return "";
-          if (i > 0 && LOWER_WORDS.has(w)) return w;
-          return w.charAt(0).toUpperCase() + w.slice(1);
-        })
-        .join(" ");
+    function upperPT(s) {
+      return normalizeSpaces(s).toLocaleUpperCase("pt-BR");
     }
 
     function normalizeCliente(s) {
-      return titleCasePT(s);
+      return upperPT(s);
     }
 
     function normalizeForma(s) {
-      return titleCasePT(s);
+      return upperPT(s);
     }
 
     function normalizeProcesso(s) {
-      const str = normalizeSpaces(s);
-      return str ? str.toUpperCase() : "";
+      return upperPT(s);
     }
 
     function normalizeObs(s) {
-      return normalizeSpaces(s);
+      return upperPT(s);
     }
 
     function clampParcelas(n) {
@@ -575,6 +576,19 @@
       return parc;
     }
 
+    function processoCellHtml(r) {
+      const text = processoCellText(r);
+      if (!text) return "";
+
+      const loteId = Number(r?.loteId || 0);
+      if (!Number.isFinite(loteId) || loteId <= 0) {
+        return escapeHtml(text);
+      }
+
+      const href = `${appBase()}/app/templates/lotes.php?lote=${encodeURIComponent(String(loteId))}`;
+      return `<a class="cr-process-link" href="${escapeHtml(href)}">${escapeHtml(text)}</a>`;
+    }
+
     // ---------------------------
     // Normalização de registro
     // ---------------------------
@@ -587,12 +601,14 @@
       return {
         id: base.id ?? uid(),
         cliente: normalizeCliente(base.cliente ?? ""),
+        loteId: Number(base.loteId ?? base.lote_id ?? 0) || null,
         cadastroId: Number.isFinite(cadastroId) && cadastroId > 0 ? cadastroId : null,
-        clienteDocumento: normalizeSpaces(base.clienteDocumento ?? base.cliente_documento ?? ""),
+        clienteDocumento: upperPT(base.clienteDocumento ?? base.cliente_documento ?? ""),
         valor: Number(base.valor || 0),
         data: String(base.data || ""),
         forma: normalizeForma(base.forma ?? ""),
         processo: normalizeProcesso(base.processo ?? ""),
+        produto: upperPT(base.produto ?? ""),
         obs: normalizeObs(base.obs ?? (totalParcelas > 1 ? `Parcela ${parcelaAtual}/${totalParcelas}` : "")),
         totalParcelas,
         parcelaAtual,
@@ -683,7 +699,6 @@
     // ---------------------------
     function applyFilters(list) {
       const cliente = (els.filterCliente?.value || "").trim();
-      const cadastroId = Number(els.filterCadastroId?.value || 0);
       const status = (els.filterStatus?.value || "").trim();
       const forma = (els.filterForma?.value || "").trim();
       const processo = (els.filterProcesso?.value || "").trim().toLowerCase();
@@ -692,7 +707,6 @@
       return list
         .filter((r) => sameMonth(r.data, viewMonth))
         .filter((r) => {
-          if (cadastroId > 0) return Number(r.cadastroId || 0) === cadastroId;
           if (!cliente) return true;
           const byName = String(r.cliente || "").toLowerCase();
           const byDoc = normalizeDigits(r.clienteDocumento || "");
@@ -782,7 +796,7 @@
               <td class="t-right">${moneyBR(r.valor)}</td>
               <td class="t-center">${escapeHtml(toBRDate(r.data))}</td>
               <td class="t-center">${escapeHtml(r.forma)}</td>
-              <td class="t-center">${escapeHtml(processoCellText(r))}</td>
+              <td class="t-center">${processoCellHtml(r)}</td>
               <td class="t-center">${statusIcon}</td>
               <td class="t-center">
                 <div class="fin-actions-row">
@@ -861,6 +875,7 @@
         id: item.cadastroId,
         label: item.cliente,
         documento: item.clienteDocumento,
+        telefone: item.clienteDocumento,
       } : null);
       if (els.valor) els.valor.value = item?.valor ?? "";
       if (els.data) els.data.value = item?.data ?? "";
@@ -872,6 +887,7 @@
       }
 
       if (els.processo) els.processo.value = item?.processo ?? "";
+      if (els.produto) els.produto.value = item?.produto ?? "";
       if (els.parcelas) {
         const total = clampParcelas(item?.totalParcelas || 1);
         els.parcelas.value = String(total);
@@ -929,35 +945,7 @@
       if (els[k]) els[k].addEventListener("change", render);
     });
     if (els.filterCliente) {
-      els.filterCliente.addEventListener("focus", () => {
-        closeCadastroMenu("filter");
-      });
-      els.filterCliente.addEventListener("input", () => {
-        clearSelectedCadastroState("filter");
-        const term = String(els.filterCliente.value || "").trim();
-        if (!term) {
-          closeCadastroMenu("filter");
-        } else {
-          scheduleCadastroCatalogRefresh("filter", term);
-        }
-        render();
-      });
-      els.filterCliente.addEventListener("change", async () => {
-        await resolveCadastroSelection(els.filterCliente, els.filterCadastroId, "filter");
-        render();
-      });
-      els.filterCliente.addEventListener("blur", async () => {
-        window.setTimeout(async () => {
-          await resolveCadastroSelection(els.filterCliente, els.filterCadastroId, "filter");
-          closeCadastroMenu("filter");
-          render();
-        }, 120);
-      });
-    }
-    if (els.filterCliente) {
-      els.filterCliente.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeCadastroMenu("filter");
-      });
+      els.filterCliente.addEventListener("input", render);
     }
     if (els.filterProcesso) els.filterProcesso.addEventListener("input", render);
     if (els.filterSearch) els.filterSearch.addEventListener("input", render);
@@ -965,12 +953,10 @@
     if (els.clear)
       els.clear.addEventListener("click", () => {
         if (els.filterCliente) els.filterCliente.value = "";
-        if (els.filterCadastroId) els.filterCadastroId.value = "";
         if (els.filterStatus) els.filterStatus.value = "";
         if (els.filterForma) els.filterForma.value = "";
         if (els.filterProcesso) els.filterProcesso.value = "";
         if (els.filterSearch) els.filterSearch.value = "";
-        closeCadastroMenu("filter");
         tShow("Filtros limpos.");
         render();
       });
@@ -1015,9 +1001,6 @@
     document.addEventListener("click", (e) => {
       const target = e.target;
       if (!(target instanceof Element)) return;
-      if (!target.closest('[data-cr-lookup="filter"]')) {
-        closeCadastroMenu("filter");
-      }
       if (!target.closest('[data-cr-lookup="form"]')) {
         closeCadastroMenu("form");
       }
@@ -1071,12 +1054,13 @@
         const payload = {
           id,
           cadastroId: Number(els.cadastroId?.value || existing?.cadastroId || 0) || null,
-          cliente: cadastroDisplayName(selectedCadastro) || existing?.cliente || "",
-          clienteDocumento: normalizeSpaces(selectedCadastro?.documento || existing?.clienteDocumento || ""),
+          cliente: cadastroDisplayName(selectedCadastro) || normalizeCliente(els.cliente?.value || "") || existing?.cliente || "",
+          clienteDocumento: normalizeSpaces(cadastroMeta(selectedCadastro) || existing?.clienteDocumento || ""),
           valor: parseMoneyInput(els.valor?.value || ""),
           data: els.data?.value || "",
           forma: normalizeForma(els.forma?.value || ""),
           processo: normalizeProcesso(els.processo?.value || ""),
+          produto: normalizeSpaces(els.produto?.value || ""),
           status: isEdit ? existing?.status || "open" : "open",
           createdAt: existing?.createdAt || Date.now(),
           totalParcelas,
@@ -1087,12 +1071,9 @@
 
         payload.obs = payload.totalParcelas > 1 ? `Parcela ${payload.parcelaAtual}/${payload.totalParcelas}` : "";
 
-        if (!payload.cadastroId || !payload.cliente || !payload.data || !payload.forma) {
+        if (!payload.data || !payload.forma) {
           tDanger("Preencha os campos obrigatórios.");
-          if (!payload.cadastroId && els.cliente) {
-            els.cliente.focus();
-            tWarning("Selecione um cadastro ativo da base real.");
-          }
+          if (!payload.data && els.data) els.data.focus();
           return;
         }
 
@@ -1152,8 +1133,32 @@
     // Init
     // ---------------------------
     attachMoneyGuards(els.valor);
+    attachTextNormalization(els.cliente, normalizeCliente);
+    attachTextNormalization(els.clienteDocumento, upperPT);
     attachTextNormalization(els.forma, normalizeForma);
     attachTextNormalization(els.processo, normalizeProcesso);
+    attachTextNormalization(els.produto, upperPT);
+    attachTextNormalization(els.obs, normalizeObs);
+
+    window.addEventListener("fin:inline-cadastro-saved", (event) => {
+      const item = event.detail || {};
+      const id = String(item.id || "");
+      if (!id) return;
+
+      const nextEntry = {
+        id: Number(item.id || 0),
+        label: String(item.nome || item.razaoSocial || ""),
+        searchLabel: [item.nome || item.razaoSocial || "", item.documento || "", item.celular || item.whatsapp || item.telefone || ""].filter(Boolean).join(" • "),
+        documento: String(item.documento || ""),
+        telefone: String(item.celular || item.whatsapp || item.telefone || ""),
+      };
+
+      const existingIndex = cadastroCatalog.findIndex((entry) => String(entry.id || "") === id);
+      if (existingIndex >= 0) cadastroCatalog.splice(existingIndex, 1, nextEntry);
+      else cadastroCatalog.unshift(nextEntry);
+
+      setSelectedCadastro("form", nextEntry);
+    });
 
     await loadStorage();
     viewMonth = new Date();

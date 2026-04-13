@@ -57,23 +57,34 @@ while (count($widgetDays) % 7 !== 0) {
   ];
 }
 
-$widgetActivities = [
+$widgetActivities = $widgetActivities ?? [
   ['title' => 'Atualização de cadastro pendente', 'meta' => 'Hoje • Placeholder visual'],
   ['title' => 'Revisão de documentos aguardando etapa futura', 'meta' => 'Amanhã • Sem integração'],
   ['title' => 'Novo atalho administrativo previsto', 'meta' => 'Próxima iteração'],
 ];
 
-$widgetShortcuts = [
+$widgetShortcuts = $widgetShortcuts ?? [
   ['label' => 'Ferramentas', 'icon' => 'fa-solid fa-screwdriver-wrench', 'href' => app_url('/app/templates/ferramentas.php')],
   ['label' => 'Cadastros', 'icon' => 'fa-solid fa-id-card', 'href' => app_url('/app/templates/cadastros.php')],
   ['label' => 'Financeiro', 'icon' => 'fa-solid fa-coins', 'href' => app_url('/app/templates/financeiro.php')],
   ['label' => 'Configurações', 'icon' => 'fa-solid fa-sliders', 'href' => '#'],
 ];
+
+$widgetCalendarTitle = $widgetCalendarTitle ?? 'Calendário';
+$widgetCalendarNote = $widgetCalendarNote ?? 'Visão mensal';
+$widgetActivitiesTitle = $widgetActivitiesTitle ?? 'Atividades recentes';
+$widgetShortcutsTitle = $widgetShortcutsTitle ?? 'Atalhos administrativos';
+$widgetCollapsible = (bool)($widgetCollapsible ?? false);
 ?>
 
-<section class="admin-block">
+<section class="admin-block<?= $widgetCollapsible ? ' lot-mobile-collapsible' : '' ?>">
   <div class="admin-block-head">
-    <h3 class="admin-block-title"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>Calendário</span></h3>
+    <h3 class="admin-block-title"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span><?= h($widgetCalendarTitle) ?></span></h3>
+    <?php if ($widgetCollapsible): ?>
+      <button class="fin-icon-btn fin-icon-btn--sm lot-mobile-toggle" type="button" data-lot-mobile-toggle aria-expanded="true" title="Alternar seção">
+        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+      </button>
+    <?php endif; ?>
   </div>
   <div class="admin-block-body">
     <div class="admin-widget-calendar">
@@ -81,7 +92,7 @@ $widgetShortcuts = [
         <div class="admin-widget-calendar-month">
           <?= h($widgetMonthLabel[(int)$widgetMonth->format('n')] . ' ' . $widgetMonth->format('Y')) ?>
         </div>
-        <div class="admin-widget-calendar-note">Visão mensal</div>
+        <div class="admin-widget-calendar-note"><?= h($widgetCalendarNote) ?></div>
       </div>
 
       <div class="admin-widget-calendar-grid" aria-label="Calendário administrativo mensal">
@@ -102,28 +113,50 @@ $widgetShortcuts = [
   </div>
 </section>
 
-<section class="admin-block">
+<section class="admin-block<?= $widgetCollapsible ? ' lot-mobile-collapsible' : '' ?>">
   <div class="admin-block-head">
-    <h3 class="admin-block-title"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>Atividades recentes</span></h3>
+    <h3 class="admin-block-title"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span><?= h($widgetActivitiesTitle) ?></span></h3>
+    <?php if ($widgetCollapsible): ?>
+      <button class="fin-icon-btn fin-icon-btn--sm lot-mobile-toggle" type="button" data-lot-mobile-toggle aria-expanded="true" title="Alternar seção">
+        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+      </button>
+    <?php endif; ?>
   </div>
   <div class="admin-block-body">
-    <div class="admin-widget-activity-list">
-      <?php foreach ($widgetActivities as $activity): ?>
+    <?php if ($widgetActivities !== []): ?>
+      <div class="admin-widget-activity-list">
+        <?php foreach ($widgetActivities as $activity): ?>
+          <div class="admin-widget-activity-item">
+            <span class="admin-widget-activity-dot" aria-hidden="true"></span>
+            <div class="admin-widget-activity-content">
+              <p class="admin-widget-activity-title"><?= h((string)($activity['title'] ?? 'Atividade')) ?></p>
+              <div class="admin-widget-activity-meta"><?= h((string)($activity['meta'] ?? '')) ?></div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <div class="admin-widget-activity-list">
         <div class="admin-widget-activity-item">
           <span class="admin-widget-activity-dot" aria-hidden="true"></span>
           <div class="admin-widget-activity-content">
-            <p class="admin-widget-activity-title"><?= h($activity['title']) ?></p>
-            <div class="admin-widget-activity-meta"><?= h($activity['meta']) ?></div>
+            <p class="admin-widget-activity-title">Nenhuma atividade recente</p>
+            <div class="admin-widget-activity-meta">Sem movimentações registradas no recorte atual.</div>
           </div>
         </div>
-      <?php endforeach; ?>
-    </div>
+      </div>
+    <?php endif; ?>
   </div>
 </section>
 
-<section class="admin-block">
+<section class="admin-block<?= $widgetCollapsible ? ' lot-mobile-collapsible' : '' ?>">
   <div class="admin-block-head">
-    <h3 class="admin-block-title"><i class="fa-solid fa-bolt" aria-hidden="true"></i><span>Atalhos administrativos</span></h3>
+    <h3 class="admin-block-title"><i class="fa-solid fa-bolt" aria-hidden="true"></i><span><?= h($widgetShortcutsTitle) ?></span></h3>
+    <?php if ($widgetCollapsible): ?>
+      <button class="fin-icon-btn fin-icon-btn--sm lot-mobile-toggle" type="button" data-lot-mobile-toggle aria-expanded="true" title="Alternar seção">
+        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+      </button>
+    <?php endif; ?>
   </div>
   <div class="admin-block-body">
     <div class="admin-widget-shortcuts">

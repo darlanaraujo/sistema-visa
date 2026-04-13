@@ -1,6 +1,70 @@
 <?php
 // app/modules/ferramentas/home.php
 
+require_once __DIR__ . '/../../../public_php/src/Support/Database.php';
+
+function ft_activity_datetime(string $createdAt): string {
+  $time = trim($createdAt);
+  if ($time === '') {
+    return 'Data não informada • --:--';
+  }
+
+  try {
+    $dt = new DateTimeImmutable($time);
+    $dt = $dt->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+  } catch (Throwable $e) {
+    return 'Data não informada • --:--';
+  }
+
+  return $dt->format('d/m/Y') . ' • ' . $dt->format('H:i');
+}
+
+function ft_movement_summary(array $entry): string {
+  $payload = is_array($entry['payloadEstrutural'] ?? null) ? $entry['payloadEstrutural'] : [];
+  $scope = trim((string)($entry['scope'] ?? 'Ferramentas'));
+  $name = trim((string)($payload['name'] ?? $payload['nome'] ?? ''));
+  $fallback = trim((string)($entry['descricaoEvento'] ?? 'Movimentação registrada'));
+
+  return match ((string)($entry['tipoEvento'] ?? '')) {
+    'item_criado' => 'Item criado em ' . $scope . ': ' . ($name !== '' ? $name : 'Registro sem nome'),
+    'item_editado' => 'Item editado em ' . $scope . ': ' . ($name !== '' ? $name : 'Registro sem nome'),
+    'item_status' => 'Status atualizado em ' . $scope . ': ' . ($name !== '' ? $name : 'Registro sem nome'),
+    'item_excluido' => 'Item excluído em ' . $scope . ': ' . ($name !== '' ? $name : 'Registro sem nome'),
+    'personalizacao_salva' => 'Personalização do sistema atualizada',
+    'personalizacao_restaurada' => 'Personalização do sistema restaurada para o padrão',
+    default => $fallback,
+  };
+}
+
+function ft_load_recent_movements(int $companyId = 1, int $limit = 8): array {
+  try {
+    $stmt = Database::connection()->prepare(
+      'SELECT value_json
+         FROM store
+        WHERE company_id = :company_id
+          AND store_key = :store_key
+        LIMIT 1'
+    );
+    $stmt->execute([
+      ':company_id' => $companyId,
+      ':store_key' => 'tools_movements_v1',
+    ]);
+    $row = $stmt->fetch();
+    if (!is_array($row) || !isset($row['value_json'])) {
+      return [];
+    }
+
+    $decoded = json_decode((string)$row['value_json'], true);
+    if (!is_array($decoded)) {
+      return [];
+    }
+
+    return array_values(array_slice(array_filter($decoded, static fn ($item): bool => is_array($item)), 0, $limit));
+  } catch (Throwable $e) {
+    return [];
+  }
+}
+
 $groups = [
   [
     'key'   => 'financeiro',
@@ -41,15 +105,51 @@ $entryCount = 0;
 foreach ($groups as $group) {
   $entryCount += count($group['items'] ?? []);
 }
+
+$ftRecentMovements = ft_load_recent_movements(1, 8);
+$ftRecentMovementsJson = json_encode($ftRecentMovements, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$widgetActivities = array_values(array_map(static function (array $entry): array {
+  $responsavel = trim((string)($entry['responsavel'] ?? ''));
+  $meta = ft_activity_datetime((string)($entry['createdAt'] ?? ''));
+  if ($responsavel !== '') {
+    $meta .= ' • ' . $responsavel;
+  }
+
+  return [
+    'title' => ft_movement_summary($entry),
+    'meta' => $meta,
+  ];
+}, array_filter($ftRecentMovements, static fn ($item): bool => is_array($item))));
+$widgetActivitiesTitle = 'Movimentações recentes';
 ?>
 
 <div class="fin-page ft-page" id="ftPage">
   <div class="admin-main-layout">
     <section class="admin-main-content">
-      <div class="fin-head">
-        <h1>Ferramentas</h1>
-        <p>Cadastros de apoio e personalização administrativa organizados por módulo.</p>
-      </div>
+      <section class="ft-hero">
+        <div class="ft-hero__media" aria-hidden="true">
+          <img src="<?= h(app_url('/app/static/img/img-ferramentas.png')) ?>" alt="" class="ft-hero__img">
+        </div>
+        <div class="ft-hero__copy">
+          <span class="ft-hero__eyebrow">Centro administrativo</span>
+          <h1>Ferramentas</h1>
+          <p>Cadastros auxiliares e personalização do ambiente organizados por módulo, com o mesmo padrão visual das áreas mais novas do sistema.</p>
+          <div class="ft-hero__stats" aria-label="Resumo das ferramentas">
+            <div class="ft-hero__stat">
+              <span>Grupos ativos</span>
+              <strong><?= h((string)$groupCount) ?></strong>
+            </div>
+            <div class="ft-hero__stat">
+              <span>Entradas disponíveis</span>
+              <strong><?= h((string)$entryCount) ?></strong>
+            </div>
+            <div class="ft-hero__stat">
+              <span>Status</span>
+              <strong>Fluxo preservado</strong>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section class="admin-block">
         <div class="admin-block-head">
@@ -92,7 +192,7 @@ foreach ($groups as $group) {
         <div class="admin-block-body">
           <div class="ft-grid">
             <?php foreach($groups as $g): ?>
-              <section class="admin-card">
+              <section class="admin-card ft-card-shell">
                 <span class="admin-card-icon" aria-hidden="true"><i class="<?= h($g['icon']) ?>"></i></span>
 
                 <div class="admin-card-body">
@@ -132,7 +232,7 @@ foreach ($groups as $group) {
 
   <!-- MODAL CRUD (LISTA) -->
   <div class="fin-modal" id="ftModal" aria-hidden="true">
-    <div class="fin-modal__card">
+    <div class="fin-modal__card ft-modal-card">
       <div class="fin-modal__head">
         <div class="fin-modal__title" id="ftModalTitle">Cadastro</div>
         <button class="fin-modal__close" id="ftModalClose" type="button" aria-label="Fechar">
@@ -140,7 +240,7 @@ foreach ($groups as $group) {
         </button>
       </div>
 
-      <div class="fin-modal__body">
+      <div class="fin-modal__body ft-modal-body">
         <div class="ft-modal-top">
           <div class="ft-modal-hint" id="ftModalHint"></div>
           <button class="fin-btn" id="ftNew" type="button">
@@ -170,7 +270,7 @@ foreach ($groups as $group) {
 
   <!-- MODAL FORM (NOVO/EDITAR) -->
   <div class="fin-modal" id="ftFormModal" aria-hidden="true">
-    <div class="fin-modal__card">
+    <div class="fin-modal__card ft-modal-card ft-modal-card--form">
       <div class="fin-modal__head">
         <div class="fin-modal__title" id="ftFormTitle">Novo item</div>
         <button class="fin-modal__close" id="ftFormClose" type="button" aria-label="Fechar">
@@ -178,29 +278,45 @@ foreach ($groups as $group) {
         </button>
       </div>
 
-      <div class="fin-modal__body">
+      <div class="fin-modal__body ft-modal-body">
         <form class="fin-form" id="ftForm">
           <input type="hidden" id="ftId" value="">
 
-          <div class="fin-field">
-            <label for="ftName">Nome</label>
-            <input id="ftName" type="text" placeholder="Ex: Galpão A" autocomplete="off" />
-          </div>
+          <section class="ft-modal-hero ft-modal-hero--compact">
+            <div class="ft-modal-hero__icon" aria-hidden="true"><i class="fa-solid fa-pen-ruler"></i></div>
+            <div class="ft-modal-hero__copy">
+              <span class="ft-modal-hero__eyebrow">Cadastro auxiliar</span>
+              <h3>Registro rápido de ferramenta</h3>
+              <p>Cadastre ou ajuste itens de apoio sem sair do módulo, preservando o namespace técnico usado pelo sistema.</p>
+            </div>
+          </section>
 
-          <div class="fin-form__row">
-            <div class="fin-field">
-              <label for="ftActive">Ativo</label>
-              <select id="ftActive">
-                <option value="1">Sim</option>
-                <option value="0">Não</option>
-              </select>
+          <section class="ft-form-card">
+            <div class="ft-form-card__head">
+              <h3><i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Dados principais</span></h3>
+              <p>Defina o nome de exibição, o status e confira o namespace técnico que será mantido pelo sistema.</p>
             </div>
 
-            <div class="fin-field">
-              <label>Namespace</label>
-              <input id="ftNsView" type="text" disabled />
+            <div class="ft-form-grid">
+              <div class="fin-field ft-form-grid__wide">
+                <label for="ftName">Nome</label>
+                <input id="ftName" type="text" placeholder="Ex: Galpão A" autocomplete="off" />
+              </div>
+
+              <div class="fin-field">
+                <label for="ftActive">Ativo</label>
+                <select id="ftActive">
+                  <option value="1">Sim</option>
+                  <option value="0">Não</option>
+                </select>
+              </div>
+
+              <div class="fin-field">
+                <label>Namespace</label>
+                <input id="ftNsView" type="text" disabled />
+              </div>
             </div>
-          </div>
+          </section>
 
           <div class="fin-modal__actions">
             <button class="fin-btn fin-btn--ghost" id="ftCancel" type="button">Cancelar</button>
@@ -213,7 +329,7 @@ foreach ($groups as $group) {
 
   <!-- MODAL DELETE -->
   <div class="fin-modal" id="ftDelModal" aria-hidden="true">
-    <div class="fin-modal__card" style="max-width:520px;">
+    <div class="fin-modal__card ft-modal-card" style="max-width:520px;">
       <div class="fin-modal__head">
         <div class="fin-modal__title">Excluir item</div>
         <button class="fin-modal__close" id="ftDelClose" type="button" aria-label="Fechar">
@@ -221,8 +337,15 @@ foreach ($groups as $group) {
         </button>
       </div>
 
-      <div class="fin-modal__body">
-        <p style="margin:0; font-weight:800;">Tem certeza que deseja excluir este item?</p>
+      <div class="fin-modal__body ft-modal-body">
+        <section class="ft-modal-hero ft-modal-hero--danger">
+          <div class="ft-modal-hero__icon" aria-hidden="true"><i class="fa-solid fa-trash"></i></div>
+          <div class="ft-modal-hero__copy">
+            <span class="ft-modal-hero__eyebrow">Ação irreversível</span>
+            <h3>Excluir item</h3>
+            <p>Tem certeza que deseja excluir este item? Essa ação remove o cadastro auxiliar da lista atual.</p>
+          </div>
+        </section>
 
         <div class="fin-modal__actions">
           <button class="fin-btn fin-btn--ghost" id="ftDelCancel" type="button">Cancelar</button>
@@ -236,7 +359,7 @@ foreach ($groups as $group) {
 
   <!-- MODAL: PERSONALIZAÇÃO DO SISTEMA -->
   <div class="fin-modal" id="ftSysModal" aria-hidden="true">
-    <div class="fin-modal__card" style="max-width:980px;">
+    <div class="fin-modal__card ft-modal-card ft-modal-card--sys" style="max-width:980px;">
       <div class="fin-modal__head">
         <div class="fin-modal__title">
           <i class="fa-solid fa-sliders" style="margin-right:8px;"></i>Personalização do Sistema
@@ -246,17 +369,28 @@ foreach ($groups as $group) {
         </button>
       </div>
 
-      <div class="fin-modal__body">
+      <div class="fin-modal__body ft-modal-body">
         <form class="fin-form" id="ftSysForm" action="javascript:void(0)">
 
+          <section class="ft-modal-hero">
+            <div class="ft-modal-hero__icon" aria-hidden="true"><i class="fa-solid fa-sliders"></i></div>
+            <div class="ft-modal-hero__copy">
+              <span class="ft-modal-hero__eyebrow">Configuração do ambiente</span>
+              <h3>Personalização do sistema</h3>
+              <p>Ajuste identidade, marca, contato e tema do ambiente administrativo sem afetar a lógica operacional do projeto.</p>
+            </div>
+          </section>
+
           <!-- Identidade -->
-          <div class="fin-panel">
-            <div class="fin-panel__head">
-              <div class="fin-panel__title"><i class="fa-solid fa-id-card"></i><span>Identidade</span></div>
+          <div class="fin-panel ft-panel">
+            <div class="fin-panel__head ft-panel__head">
+              <div class="fin-panel__title ft-panel__title"><i class="fa-solid fa-id-card"></i><span>Identidade</span></div>
             </div>
 
             <div class="fin-panel__body" style="padding:12px;">
-              <div class="fin-form__row">
+              <p class="ft-panel__intro">Os dados abaixo alimentam a identidade textual do sistema e a forma como a empresa aparece em relatórios e telas internas.</p>
+
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label for="ftSysSystemName">Nome do sistema</label>
                   <input id="ftSysSystemName" type="text" placeholder="Ex: Sistema Visa" autocomplete="off" />
@@ -267,7 +401,7 @@ foreach ($groups as $group) {
                 </div>
               </div>
 
-              <div class="fin-form__row">
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label for="ftSysCnpj">CNPJ</label>
                   <input id="ftSysCnpj" type="text" placeholder="Ex: 00.000.000/0001-00" inputmode="numeric" />
@@ -278,7 +412,7 @@ foreach ($groups as $group) {
                 </div>
               </div>
 
-              <div class="fin-form__row">
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field" style="min-width:260px;">
                   <label for="ftSysSlogan">Slogan (opcional)</label>
                   <input id="ftSysSlogan" type="text" placeholder="Ex: Operação ágil e segura" autocomplete="off" />
@@ -292,13 +426,15 @@ foreach ($groups as $group) {
           </div>
 
           <!-- Contato -->
-          <div class="fin-panel">
-            <div class="fin-panel__head">
-              <div class="fin-panel__title"><i class="fa-solid fa-phone"></i><span>Contato</span></div>
+          <div class="fin-panel ft-panel">
+            <div class="fin-panel__head ft-panel__head">
+              <div class="fin-panel__title ft-panel__title"><i class="fa-solid fa-phone"></i><span>Contato</span></div>
             </div>
 
             <div class="fin-panel__body" style="padding:12px;">
-              <div class="fin-form__row">
+              <p class="ft-panel__intro">Mantenha os canais institucionais organizados para uso futuro em cabeçalhos, relatórios e comunicações administrativas.</p>
+
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label for="ftSysSite">Site</label>
                   <input id="ftSysSite" type="text" placeholder="Ex: https://visaremocoes.com.br" autocomplete="off" />
@@ -309,7 +445,7 @@ foreach ($groups as $group) {
                 </div>
               </div>
 
-              <div class="fin-form__row">
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label for="ftSysPhone">Telefone</label>
                   <input id="ftSysPhone" type="text" placeholder="Ex: (62) 99999-9999" inputmode="tel" />
@@ -323,14 +459,16 @@ foreach ($groups as $group) {
           </div>
 
           <!-- Marca -->
-          <div class="fin-panel">
-            <div class="fin-panel__head">
-              <div class="fin-panel__title"><i class="fa-solid fa-image"></i><span>Marca</span></div>
+          <div class="fin-panel ft-panel">
+            <div class="fin-panel__head ft-panel__head">
+              <div class="fin-panel__title ft-panel__title"><i class="fa-solid fa-image"></i><span>Marca</span></div>
               <span class="fin-badge fin-badge--pt">local (por navegador)</span>
             </div>
 
             <div class="fin-panel__body" style="padding:12px;">
-              <div class="fin-form__row">
+              <p class="ft-panel__intro">Os arquivos de marca ficam salvos no navegador atual e ajudam a personalizar relatórios, cabeçalhos e identificação visual do ambiente.</p>
+
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label>Logo (PNG/JPG)</label>
                   <input id="ftSysLogoFile" type="file" accept="image/png,image/jpeg,image/webp" />
@@ -363,14 +501,16 @@ foreach ($groups as $group) {
           </div>
 
           <!-- Tema -->
-          <div class="fin-panel">
-            <div class="fin-panel__head">
-              <div class="fin-panel__title"><i class="fa-solid fa-palette"></i><span>Tema</span></div>
+          <div class="fin-panel ft-panel">
+            <div class="fin-panel__head ft-panel__head">
+              <div class="fin-panel__title ft-panel__title"><i class="fa-solid fa-palette"></i><span>Tema</span></div>
               <span class="fin-badge fin-badge--pt" style="opacity:.85;">aplica no navegador</span>
             </div>
 
             <div class="fin-panel__body" style="padding:12px;">
-              <div class="fin-form__row">
+              <p class="ft-panel__intro">Use esta área para controlar aparência, compactação das tabelas e paleta principal do ambiente administrativo.</p>
+
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label for="ftSysThemeMode">Modo</label>
                   <select id="ftSysThemeMode">
@@ -394,7 +534,7 @@ foreach ($groups as $group) {
               </div>
 
 
-              <div class="fin-form__row">
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label for="ftSysAccentPreset">Cor do sistema (preset)</label>
                   <select id="ftSysAccentPreset">
@@ -417,7 +557,7 @@ foreach ($groups as $group) {
                 </div>
               </div>
 
-              <div class="fin-form__row">
+              <div class="fin-form__row ft-form-grid ft-form-grid--two">
                 <div class="fin-field">
                   <label>Cor de Pagamentos</label>
                   <div class="ft-colorline">
@@ -436,7 +576,7 @@ foreach ($groups as $group) {
 
               </div>
 
-              <div class="fin-form__row">
+              <div class="fin-form__row ft-form-grid ft-form-grid--three">
                 <div class="fin-field">
                   <label for="ftSysCurrency">Moeda</label>
                   <select id="ftSysCurrency">
@@ -480,3 +620,7 @@ foreach ($groups as $group) {
     </div>
   </div>
 </div>
+
+<script>
+  window.__FT_RECENT_MOVEMENTS__ = <?= $ftRecentMovementsJson ?: '[]' ?>;
+</script>

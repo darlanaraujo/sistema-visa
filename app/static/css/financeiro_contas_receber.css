@@ -54,7 +54,7 @@
 /* prioridade visual no valor e na data */
 #crPage .fin-table tbody tr.is-overdue td:nth-child(2),
 #crPage .fin-table tbody tr.is-overdue td:nth-child(3){
-  color: color-mix(in srgb, var(--fin-success) 88%, #000) !important;
+  color: color-mix(in srgb, var(--fin-success) 88%, var(--fin-bg-strong, var(--c-bg))) !important;
   font-weight: 900;
 }
 
@@ -108,8 +108,8 @@
   padding: 10px;
   border-radius: 18px;
   border: 1px solid var(--fin-border-2);
-  background: color-mix(in srgb, var(--fin-surface) 96%, white);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+  background: color-mix(in srgb, var(--fin-surface) 96%, var(--fin-bg, var(--c-bg)));
+  box-shadow: var(--shadow-soft-2);
 }
 
 #crPage .cr-lookup__menu[hidden]{
@@ -123,7 +123,7 @@
   min-width: 0;
   align-content: start;
   border: 1px solid color-mix(in srgb, var(--fin-border-2) 92%, transparent);
-  background: color-mix(in srgb, var(--fin-surface-2) 82%, white);
+  background: color-mix(in srgb, var(--fin-surface-2) 82%, var(--fin-bg, var(--c-bg)));
   border-radius: 14px;
   padding: 12px 14px;
   display: grid;
@@ -141,7 +141,7 @@
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--fin-blue) 34%, var(--fin-border-2));
   background: color-mix(in srgb, var(--fin-blue) 8%, var(--fin-surface));
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.10);
+  box-shadow: var(--shadow-soft);
 }
 
 #crPage .cr-lookup__name{
@@ -156,7 +156,7 @@
 #crPage .cr-lookup__meta,
 #crPage .cr-lookup__empty{
   font-size: .9rem;
-  color: var(--fin-text-soft);
+  color: var(--c-muted);
 }
 
 #crPage .cr-lookup__meta{
@@ -178,6 +178,16 @@
   align-items: end;
 }
 
+#crPage .cr-process-link{
+  color: var(--fin-blue);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+#crPage .cr-process-link:hover{
+  text-decoration: underline;
+}
+
 #crPage .cr-client-meta__field{
   display: grid;
   gap: 6px;
@@ -190,26 +200,12 @@
 }
 
 #crPage .cr-client-meta__field input[readonly]{
-  background: color-mix(in srgb, var(--fin-surface-2) 88%, white);
+  background: color-mix(in srgb, var(--fin-surface-2) 88%, var(--fin-bg, var(--c-bg)));
   color: var(--fin-text);
 }
 
 #crPage .cr-client-meta__action{
   white-space: nowrap;
-}
-
-html[data-theme="dark"] #crPage .cr-lookup__menu{
-  background: color-mix(in srgb, var(--fin-surface) 94%, #0b1220);
-  box-shadow: 0 22px 42px rgba(0, 0, 0, 0.34);
-}
-
-html[data-theme="dark"] #crPage .cr-lookup__item{
-  background: color-mix(in srgb, var(--fin-surface-2) 82%, #101828);
-}
-
-html[data-theme="dark"] #crPage .cr-lookup__item:hover,
-html[data-theme="dark"] #crPage .cr-lookup__item:focus-visible{
-  background: color-mix(in srgb, var(--fin-blue) 14%, var(--fin-surface));
 }
 
 @media (max-width: 720px){

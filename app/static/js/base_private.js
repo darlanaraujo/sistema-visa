@@ -823,6 +823,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const path = window.location.pathname;
 
     if (path.includes('/financeiro')) return 'financeiro';
+    if (path.includes('/cadastros')) return 'cadastros';
     if (path.includes('/lotes.php')) return 'lotes';
     if (path.includes('/relatorios.php')) return 'relatorios';
     if (path.includes('/dashboard.php')) return 'dashboard';
@@ -978,6 +979,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     closeAlerts();
   });
+
+  window.addEventListener('sv:alerts:refresh', () => {
+    alertsCache.clear();
+    loadAlerts().catch(() => {});
+  });
+
+  window.addEventListener('fin:change', () => {
+    alertsCache.clear();
+    loadAlerts().catch(() => {});
+  });
+
+  loadAlerts().catch(() => {});
 
   // ESC fecha
   document.addEventListener('keydown', (e) => {

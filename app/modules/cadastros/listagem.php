@@ -4,6 +4,7 @@
 require_once __DIR__ . '/../../../public_php/src/Repositories/CadastroRepository.php';
 require_once __DIR__ . '/../../../public_php/src/Repositories/ArquivoRepository.php';
 require_once __DIR__ . '/_anexos_presenter.php';
+require_once __DIR__ . '/_lotes_relacionados.php';
 
 $repo = new CadastroRepository();
 $arquivoRepo = new ArquivoRepository();
@@ -48,6 +49,7 @@ $resultadosDetalhados = array_values(array_map(
     }
 
     $detalhado['anexos'] = cad_present_anexos($arquivoRepo->listByEntity('cadastros', $id, 1));
+    $detalhado['lotesRelacionados'] = cad_load_lot_relationships($id, 1);
     return $detalhado;
   },
   $resultados
@@ -77,6 +79,38 @@ function cad_tipo_badges(array $tipos): string {
 
 $cadastroJson = json_encode($resultadosDetalhados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $avatarJson = json_encode($avatarMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$cadastroRecentMovements = $repo->listRecentMovimentacoes(1, 8);
+$widgetActivities = array_values(array_map(static function (array $movimentacao): array {
+  $cadastroNome = trim((string)($movimentacao['cadastroNome'] ?? ''));
+  $descricao = trim((string)($movimentacao['descricaoEvento'] ?? ''));
+  $title = $descricao !== '' ? $descricao : 'Movimentação registrada';
+  if ($cadastroNome !== '') {
+    $title .= ' • ' . $cadastroNome;
+  }
+
+  $createdAt = trim((string)($movimentacao['createdAt'] ?? ''));
+  $responsavel = trim((string)($movimentacao['responsavel'] ?? ''));
+  if ($createdAt === '') {
+    $meta = 'Data não informada • --:--';
+  } else {
+    try {
+      $dt = new DateTimeImmutable($createdAt);
+      $dt = $dt->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+      $meta = $dt->format('d/m/Y') . ' • ' . $dt->format('H:i');
+    } catch (Throwable $e) {
+      $meta = 'Data não informada • --:--';
+    }
+  }
+  if ($responsavel !== '') {
+    $meta .= ' • ' . $responsavel;
+  }
+
+  return [
+    'title' => $title,
+    'meta' => $meta,
+  ];
+}, array_filter($cadastroRecentMovements, static fn ($item): bool => is_array($item))));
+$widgetActivitiesTitle = 'Movimentações recentes';
 ?>
 
 <div class="module-page cad-page cad-list-page">
@@ -278,27 +312,69 @@ $avatarJson = json_encode($avatarMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SL
                 <h3 id="cadModalHeroTitle">Cadastro</h3>
                 <p id="cadModalHeroSubtitle">Visualização detalhada do cadastro selecionado.</p>
                 <div class="cad-ficha-pillrow" id="cadModalPills"></div>
+                <div class="cad-view-hero__metrics cad-view-hero__metrics--modal">
+                  <div class="cad-view-hero__metric">
+                    <span><i class="fa-solid fa-user-tag" aria-hidden="true"></i>Tipo principal</span>
+                    <strong id="cadModalMetricTipo">-</strong>
+                  </div>
+                  <div class="cad-view-hero__metric">
+                    <span><i class="fa-solid fa-phone" aria-hidden="true"></i>Contato rápido</span>
+                    <strong id="cadModalMetricContato">-</strong>
+                  </div>
+                  <div class="cad-view-hero__metric">
+                    <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i>Cidade</span>
+                    <strong id="cadModalMetricCidade">-</strong>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div class="cad-ficha-grid cad-sheet__sections">
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-                <div class="cad-ficha-card__eyebrow">Identificação</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-id-card-clip" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Identificação</div>
+                    <h3>Dados centrais do cadastro</h3>
+                    <p>Leitura rápida dos dados principais da pessoa ou empresa selecionada.</p>
+                  </div>
+                </div>
                 <dl class="cad-sheet__grid cad-sheet__grid--two" id="cadModalIdentificacaoRows"></dl>
               </section>
 
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-                <div class="cad-ficha-card__eyebrow">Contato</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-address-book" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Contato</div>
+                    <h3>Canais de comunicação</h3>
+                    <p>Telefone, WhatsApp, celular e e-mail organizados em uma leitura operacional.</p>
+                  </div>
+                </div>
                 <dl class="cad-sheet__grid cad-sheet__grid--two" id="cadModalContatoRows"></dl>
               </section>
 
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-                <div class="cad-ficha-card__eyebrow">Endereço</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Endereço</div>
+                    <h3>Localização e referência</h3>
+                    <p>Endereço cadastral completo para leitura rápida e apoio operacional.</p>
+                  </div>
+                </div>
                 <dl class="cad-sheet__grid cad-sheet__grid--two" id="cadModalEnderecoRows"></dl>
               </section>
 
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-                <div class="cad-ficha-card__eyebrow">Classificação</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-tags" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Classificação</div>
+                    <h3>Tipos e agrupamentos</h3>
+                    <p>Mostra como o cadastro está classificado e associado dentro do sistema.</p>
+                  </div>
+                </div>
                 <dl class="cad-sheet__grid" id="cadModalClassificacaoRows"></dl>
               </section>
 
@@ -308,23 +384,63 @@ $avatarJson = json_encode($avatarMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SL
               </section>
 
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide" id="cadModalVeiculosCard" hidden>
-                <div class="cad-ficha-card__eyebrow">Veículos</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-truck-front" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Veículos</div>
+                    <h3>Base veicular</h3>
+                    <p>Estrutura de veículos vinculados ao cadastro operacional.</p>
+                  </div>
+                </div>
                 <div class="cad-modal-stack" id="cadModalVeiculosRows"></div>
               </section>
 
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide" id="cadModalAnexosCard">
-                <div class="cad-ficha-card__eyebrow">Anexos</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-paperclip" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Anexos</div>
+                    <h3>Documentação vinculada</h3>
+                    <p>Arquivos, imagens e documentos relacionados ao cadastro.</p>
+                  </div>
+                </div>
                 <div class="sv-attachments__empty" id="cadModalAnexosEmpty">Nenhum anexo vinculado a este cadastro.</div>
                 <div class="sv-attachments__grid" id="cadModalAnexosRows"></div>
               </section>
 
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide" id="cadModalTagsCard">
-                <div class="cad-ficha-card__eyebrow">Tags estruturadas</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Tags estruturadas</div>
+                    <h3>Classificação inteligente</h3>
+                    <p>Tags e agrupamentos que ajudam a cruzar o cadastro com outros módulos.</p>
+                  </div>
+                </div>
                 <div class="cad-modal-tags" id="cadModalTagsRows"></div>
               </section>
 
+              <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide" id="cadModalLotesCard" hidden>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-box-archive" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Relacionamentos com lotes</div>
+                    <h3>Compras, vendas e fretes vinculados</h3>
+                    <p>Leitura resumida dos processos em que este cadastro aparece ligado ao módulo de lotes.</p>
+                  </div>
+                </div>
+                <div class="cad-modal-stack" id="cadModalLotesRows"></div>
+              </section>
+
               <section class="cad-ficha-card cad-sheet__card cad-sheet__card--wide cad-sheet__section-wide">
-                <div class="cad-ficha-card__eyebrow">Informações adicionais</div>
+                <div class="cad-ficha-section-head">
+                  <div class="cad-ficha-section-head__icon"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i></div>
+                  <div class="cad-ficha-section-head__copy">
+                    <div class="cad-ficha-card__eyebrow">Informações adicionais</div>
+                    <h3>Observações complementares</h3>
+                    <p>Resumo livre do contexto e observações relevantes do cadastro.</p>
+                  </div>
+                </div>
                 <dl class="cad-sheet__grid">
                   <div class="cad-sheet__row cad-sheet__row--long">
                     <dt>Observações</dt>

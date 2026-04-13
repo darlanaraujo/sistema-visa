@@ -303,7 +303,7 @@ button{
 }
 
 .module-head h1{
-  margin: 0 0 6px 0;
+  margin: 14px 0 10px;
   font-size: 22px;
   color: var(--c-text);
 }

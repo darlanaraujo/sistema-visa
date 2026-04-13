@@ -1,0 +1,2 @@
+ALTER TABLE cadastros
+  MODIFY COLUMN documento VARCHAR(20) NULL;

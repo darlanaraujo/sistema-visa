@@ -1,0 +1,195 @@
+/* app/static/css/financeiro_cadastro_lookup.css */
+
+.fin-cad-lookup{
+  position: relative;
+}
+
+.fin-cad-lookup__control{
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  border: 1px solid var(--fin-border-2);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--fin-surface) 96%, var(--fin-bg, var(--c-bg)));
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.fin-cad-lookup__control:focus-within{
+  border-color: color-mix(in srgb, var(--fin-blue) 34%, var(--fin-border-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fin-blue) 16%, transparent), var(--shadow-soft);
+}
+
+.fin-cad-lookup__icon{
+  flex: 0 0 52px;
+  width: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fin-blue);
+  font-size: 1.1rem;
+}
+
+.fin-cad-lookup__control input{
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: var(--fin-surface, var(--c-surface)) !important;
+  color: var(--fin-text);
+  height: 50px;
+  padding: 0 16px 0 0 !important;
+}
+
+.fin-cad-lookup__control input::placeholder{
+  color: color-mix(in srgb, var(--fin-muted) 92%, transparent);
+}
+
+.fin-cad-lookup__menu{
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid var(--fin-border-2);
+  background: color-mix(in srgb, var(--fin-surface) 96%, var(--fin-bg, var(--c-bg)));
+  box-shadow: var(--shadow-soft-2);
+}
+
+.fin-cad-lookup__menu[hidden]{
+  display: none;
+}
+
+.fin-cad-lookup__item{
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+  border: 1px solid color-mix(in srgb, var(--fin-border-2) 92%, transparent);
+  background: color-mix(in srgb, var(--fin-surface-2) 88%, var(--fin-bg, var(--c-bg)));
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  color: var(--fin-text);
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.fin-cad-lookup__item:hover,
+.fin-cad-lookup__item:focus-visible{
+  outline: none;
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--fin-blue) 34%, var(--fin-border-2));
+  background: color-mix(in srgb, var(--fin-blue) 8%, var(--fin-surface));
+  box-shadow: var(--shadow-soft);
+}
+
+.fin-cad-lookup__item-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--fin-blue) 10%, var(--fin-surface));
+  border: 1px solid color-mix(in srgb, var(--fin-blue) 20%, var(--fin-border-2));
+  color: var(--fin-blue);
+  font-size: 1.05rem;
+}
+
+.fin-cad-lookup__item-body{
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  align-content: start;
+  text-align: left;
+}
+
+.fin-cad-lookup__name{
+  font-weight: 800;
+  line-height: 1.2;
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fin-cad-lookup__meta{
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  font-size: .92rem;
+  color: color-mix(in srgb, var(--fin-text) 68%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fin-cad-lookup__empty{
+  padding: 10px 12px;
+  color: color-mix(in srgb, var(--fin-text) 72%, transparent);
+  font-size: .92rem;
+}
+
+.fin-cad-lookup__create{
+  color: var(--fin-blue);
+  font-weight: 800;
+}
+
+.fin-cad-meta{
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.fin-cad-meta__field{
+  display: grid;
+  gap: 6px;
+}
+
+.fin-cad-meta__field label{
+  font-size: .84rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--fin-text) 66%, transparent);
+}
+
+.fin-cad-meta__field input[readonly]{
+  background: color-mix(in srgb, var(--fin-surface-2) 88%, var(--fin-bg, var(--c-bg)));
+  color: var(--fin-text);
+}
+
+.fin-cad-inline-modal .fin-modal__card{
+  max-width: 1100px;
+  width: min(1100px, calc(100vw - 48px));
+  height: min(92vh, 920px);
+  padding: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.fin-cad-inline-modal .fin-modal__body{
+  padding: 0;
+  min-height: 0;
+}
+
+.fin-cad-inline-frame{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}

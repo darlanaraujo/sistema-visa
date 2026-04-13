@@ -481,6 +481,9 @@
 .admin-widget-activity-list{
   display: grid;
   gap: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .admin-widget-activity-item{

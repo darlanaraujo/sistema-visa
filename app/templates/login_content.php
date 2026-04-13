@@ -52,6 +52,6 @@
   </div>
 
   <div class="login-footer">
-    Desenvolvido por <a href="https://grupoi9.com.br" target="_blank" rel="noopener">Darlan P. Araujo</a>
+    Desenvolvido por <a href="https://auralabs.dev.br" target="_blank" rel="noopener">AuraLabs - Estúdio Criativo</a>
   </div>
 </div>

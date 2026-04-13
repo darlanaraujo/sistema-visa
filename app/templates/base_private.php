@@ -255,7 +255,7 @@ $page_icon  = $page_icon  ?? 'fa-solid fa-gauge-high';
         <div class="private-footer__inner">
           <span>
             Desenvolvido por
-            <a href="https://grupoi9.com.br" target="_blank" rel="noopener noreferrer">Darlan P. Araujo</a> • © <?= date('Y') ?> • 
+            <a href="https://auralabs.dev.br" target="_blank" rel="noopener noreferrer">AuraLabs - Estúdio Criativo</a> • © <?= date('Y') ?> • 
             <strong><?= h($corp['system_name'] ?? 'Sistema Visa Remoções') ?></strong>
           </span>
         </div>

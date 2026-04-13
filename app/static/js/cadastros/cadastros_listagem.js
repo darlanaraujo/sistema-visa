@@ -384,6 +384,129 @@
       el.innerHTML = rows.join("");
     }
 
+    function money(value) {
+      try {
+        return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      } catch (_) {
+        return String(value || "R$ 0,00");
+      }
+    }
+
+    function lotStatusLabel(value) {
+      const status = String(value || "").trim();
+      if (status === "em_estoque") return "Em estoque";
+      if (status === "finalizado") return "Finalizado";
+      if (status === "cancelado") return "Cancelado";
+      return "Em transito";
+    }
+
+    function lotDate(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "Nao informado";
+      try {
+        const date = new Date(raw.length <= 10 ? `${raw}T12:00:00` : raw);
+        if (Number.isNaN(date.getTime())) return "Nao informado";
+        return date.toLocaleDateString("pt-BR");
+      } catch (_) {
+        return "Nao informado";
+      }
+    }
+
+    function transportLabel(value) {
+      const type = String(value || "").trim();
+      if (type === "motorista_autonomo") return "Motorista autonomo";
+      if (type === "transportadora") return "Transportadora";
+      if (type === "transporte_proprio") return "Transporte proprio";
+      if (type === "retirada_cliente") return "Retirada pelo cliente";
+      return "Sem frete";
+    }
+
+    function lotHref(loteId) {
+      if (typeof window.appUrl === "function") {
+        return window.appUrl(`/app/templates/lotes.php?lote=${encodeURIComponent(String(loteId || ""))}`);
+      }
+      return `/app/templates/lotes.php?lote=${encodeURIComponent(String(loteId || ""))}`;
+    }
+
+    function renderLotRelationships(item) {
+      const card = document.getElementById("cadModalLotesCard");
+      const host = document.getElementById("cadModalLotesRows");
+      if (!card || !host) return;
+
+      const rel = item?.lotesRelacionados && typeof item.lotesRelacionados === "object"
+        ? item.lotesRelacionados
+        : {};
+      const compras = Array.isArray(rel.compras) ? rel.compras : [];
+      const vendas = Array.isArray(rel.vendas) ? rel.vendas : [];
+      const fretes = Array.isArray(rel.fretes) ? rel.fretes : [];
+
+      function table(title, emptyText, columns, rows) {
+        if (!rows.length) {
+          return `
+            <section class="cad-modal-block">
+              <div class="cad-modal-block__title">${escapeHtml(title)}</div>
+              <div class="cad-modal-empty">${escapeHtml(emptyText)}</div>
+            </section>
+          `;
+        }
+
+        return `
+          <section class="cad-modal-block">
+            <div class="cad-modal-block__title">${escapeHtml(title)}</div>
+            <div class="fin-table-wrap cad-table-wrap cad-related-table-wrap">
+              <table class="fin-table cad-table cad-related-table">
+                <thead>
+                  <tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr>
+                </thead>
+                <tbody>
+                  ${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        `;
+      }
+
+      const purchaseRows = compras.map((row) => ([
+        `<a class="cad-related-link" href="${escapeHtml(lotHref(row?.loteId || 0))}" target="_blank" rel="noopener">${escapeHtml(text(row?.processo, "Sem processo"))}</a>`,
+        escapeHtml(text(row?.titulo, "Lote sem titulo")),
+        escapeHtml(lotDate(row?.data)),
+        escapeHtml(money(row?.custoTotal || row?.compra || 0)),
+        escapeHtml(money(row?.compra || 0)),
+      ]));
+
+      const salesRows = vendas.map((row) => {
+        const liquido = Number(row?.valorBruto || 0) - Number(row?.valorDevolvido || 0);
+        return [
+          `<a class="cad-related-link" href="${escapeHtml(lotHref(row?.loteId || 0))}" target="_blank" rel="noopener">${escapeHtml(text(row?.processo, "Sem processo"))}</a>`,
+          escapeHtml(text(row?.produto, "Produto nao informado")),
+          escapeHtml(lotDate(row?.data)),
+          escapeHtml(text(row?.forma, "Nao informada")),
+          escapeHtml(money(liquido)),
+        ];
+      });
+
+      const freightRows = fretes.map((row) => ([
+        `<a class="cad-related-link" href="${escapeHtml(lotHref(row?.loteId || 0))}" target="_blank" rel="noopener">${escapeHtml(text(row?.processo, "Sem processo"))}</a>`,
+        escapeHtml(text(row?.titulo, "Lote sem titulo")),
+        escapeHtml(lotDate(row?.data)),
+        escapeHtml(
+          [text(row?.cidade, ""), text(row?.estado, "")]
+            .filter(Boolean)
+            .join(" / ") || "Nao informada"
+        ),
+        escapeHtml(money(row?.totalFrete || 0)),
+      ]));
+
+      host.innerHTML = [
+        table("Compras em lotes", "Nenhuma compra em lotes foi encontrada para este cadastro.", ["Processo", "Lote", "Data", "Custo total", "Valor pago"], purchaseRows),
+        table("Vendas em lotes", "Nenhuma venda em lotes foi encontrada para este cadastro.", ["Processo", "Produto", "Data", "Forma", "Valor liquido"], salesRows),
+        table("Fretes em lotes", "Nenhum frete em lotes foi encontrado para este cadastro.", ["Processo", "Lote", "Data", "Cidade da coleta", "Total frete"], freightRows),
+      ].join("");
+
+      card.hidden = false;
+    }
+
     function renderTags(item) {
       const tagCard = document.getElementById("cadModalTagsCard");
       const host = document.getElementById("cadModalTagsRows");
@@ -600,6 +723,9 @@
         const identificacaoRows = [];
         const modalTitle = document.getElementById("cadViewModalTitle");
         const observacoesEl = document.getElementById("cadModalObservacoes");
+        const metricTipo = document.getElementById("cadModalMetricTipo");
+        const metricContato = document.getElementById("cadModalMetricContato");
+        const metricCidade = document.getElementById("cadModalMetricCidade");
 
         if (modalTitle) {
           modalTitle.textContent = `Ficha de ${displayName(item)}`;
@@ -609,6 +735,17 @@
           heroSubtitle.textContent = type === "cliente" || type === "fornecedor"
             ? `Cadastro em modo de visualização (${tipoPessoaLabel(item.tipoPessoa)}).`
             : `Cadastro operacional em modo de visualização (${tipoPessoaLabel(item.tipoPessoa)}).`;
+        }
+        if (metricTipo) {
+          metricTipo.textContent = tipos.length
+            ? tipos.map((tipoItem) => String(tipoItem?.nome || "")).filter(Boolean).join(" • ")
+            : "Sem tipo associado";
+        }
+        if (metricContato) {
+          metricContato.textContent = text(item.celular || item.whatsapp || item.telefoneFixo, "Não informado");
+        }
+        if (metricCidade) {
+          metricCidade.textContent = cidadeEstado || "Não informado";
         }
 
         if (type === "cliente" || type === "fornecedor") {
@@ -671,6 +808,7 @@
         renderVehicles(item, type);
         renderAttachments(item);
         renderTags(item);
+        renderLotRelationships(item);
 
         if (modalAvatar) {
           const label = displayName(item);

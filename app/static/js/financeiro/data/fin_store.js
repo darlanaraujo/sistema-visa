@@ -38,6 +38,10 @@
     return String(s ?? "").trim().replace(/\s+/g, " ");
   }
 
+  function normalizeUpperStr(s) {
+    return normalizeStr(s).toLocaleUpperCase("pt-BR");
+  }
+
   function uid(prefix = "ID") {
     return `${prefix}-${now()}-${Math.floor(Math.random() * 1000)}`;
   }
@@ -179,10 +183,13 @@
   function normalizeCP(r) {
     return {
       id: String(r?.id || uid("CP")),
-      conta: normalizeStr(r?.conta),
+      cadastroId: Number(r?.cadastroId || r?.cadastro_id || 0) || null,
+      cadastro: normalizeUpperStr(r?.cadastro),
+      cadastroDocumento: normalizeUpperStr(r?.cadastroDocumento || r?.cadastro_documento),
+      conta: normalizeUpperStr(r?.conta),
       valor: Number(r?.valor || 0),
-      imovel: normalizeStr(r?.imovel),
-      categoria: normalizeStr(r?.categoria),
+      imovel: normalizeUpperStr(r?.imovel),
+      categoria: normalizeUpperStr(r?.categoria),
       data: String(r?.data || ""),
       fixa: Boolean(r?.fixa),
       status: r?.status === "done" ? "done" : "open",
@@ -206,14 +213,16 @@
 
     return {
       id: String(r?.id || uid("CR")),
+      loteId: Number(r?.loteId || r?.lote_id || 0) || null,
       cadastroId: Number(r?.cadastroId || r?.cadastro_id || 0) || null,
-      cliente: normalizeStr(r?.cliente),
-      clienteDocumento: normalizeStr(r?.clienteDocumento || r?.cliente_documento),
+      cliente: normalizeUpperStr(r?.cliente),
+      clienteDocumento: normalizeUpperStr(r?.clienteDocumento || r?.cliente_documento),
+      produto: normalizeUpperStr(r?.produto),
       valor: Number(r?.valor || 0),
       data: String(r?.data || ""),
-      forma: normalizeStr(r?.forma),
-      processo: normalizeStr(r?.processo),
-      obs: normalizeStr(r?.obs),
+      forma: normalizeUpperStr(r?.forma),
+      processo: normalizeUpperStr(r?.processo),
+      obs: normalizeUpperStr(r?.obs),
       totalParcelas,
       parcelaAtual,
       grupoParcelaId: normalizeStr(r?.grupoParcelaId),
