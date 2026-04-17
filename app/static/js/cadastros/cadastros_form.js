@@ -1,10 +1,10 @@
 // app/static/js/cadastros/cadastros_form.js
 (function () {
   const AVATAR_MAP = {
-    cliente: "/app/static/img/avatar-cliente.png",
-    fornecedor: "/app/static/img/avatar-fornecedor.png",
-    motorista: "/app/static/img/avatar-motorista.png",
-    transportadora: "/app/static/img/avatar-transportadora.png",
+    cliente: null,
+    fornecedor: null,
+    motorista: null,
+    transportadora: null,
   };
 
   function toast(kind, message) {
@@ -74,6 +74,11 @@
   function apiUrl(path) {
     return `${appBase()}${path}`;
   }
+
+  Object.keys(AVATAR_MAP).forEach((tipo) => {
+    const path = `/app/static/img/avatar-${tipo}.png`;
+    AVATAR_MAP[tipo] = (typeof window.appUrl === "function") ? window.appUrl(path) : apiUrl(path);
+  });
 
   function postInlineState(payload) {
     if (window.parent && window.parent !== window) {

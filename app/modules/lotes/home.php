@@ -5,6 +5,8 @@ require_once __DIR__ . '/../../../public_php/src/Repositories/LoteRepository.php
 require_once __DIR__ . '/../../../public_php/src/Repositories/CadastroRepository.php';
 require_once __DIR__ . '/../../../public_php/src/Repositories/ArquivoRepository.php';
 require_once __DIR__ . '/../cadastros/_anexos_presenter.php';
+require_once __DIR__ . '/_public_helpers.php';
+require_once __DIR__ . '/_payment_helpers.php';
 
 $loteRepo = new LoteRepository();
 $cadastroRepo = new CadastroRepository();
@@ -344,10 +346,13 @@ function lot_redirect_global(string $kind, string $message, array $params = []):
   exit;
 }
 
-function lot_redirect_with_flash(int $loteId, string $kind, string $message, string $anchor = ''): never {
+function lot_redirect_with_flash(int $loteId, string $kind, string $message, string $anchor = '', string $openModal = ''): never {
   $params = ['lote' => $loteId];
   $params['timeline_kind'] = $kind;
   $params['timeline_msg'] = $message;
+  if ($openModal !== '') {
+    $_SESSION['lot_open_modal'] = $openModal;
+  }
   header('Location: ' . lot_module_url($params) . ($anchor !== '' ? '#' . $anchor : ''));
   exit;
 }
@@ -1438,6 +1443,7 @@ function lot_render_dashboard_card(array $lote): void {
       <div class="lot-board-card__chips">
         <span class="lot-status-chip <?= h(lot_status_chip_class((string)($lote['statusMacro'] ?? ''))) ?>"><?= h((string)($lote['statusLabel'] ?? '')) ?></span>
         <span class="lot-priority-chip"><?= h((string)($lote['priorityLabel'] ?? '')) ?></span>
+        <span class="lot-priority-chip"><?= h((string)($lote['purchasePaymentLabel'] ?? 'Pagamento pendente')) ?></span>
         <?php if (trim((string)($lote['cancelamentoStatusLabel'] ?? '')) !== ''): ?>
           <span class="lot-priority-chip"><?= h((string)($lote['cancelamentoStatusLabel'] ?? '')) ?></span>
         <?php endif; ?>
@@ -1460,6 +1466,7 @@ function lot_render_dashboard_card(array $lote): void {
       <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i><?= h((string)($lote['cidadeEstado'] !== '' ? $lote['cidadeEstado'] : 'Local não informado')) ?></span>
       <span><i class="fa-solid fa-route" aria-hidden="true"></i><?= h((string)($lote['etapaLabel'] ?? 'Etapa não definida')) ?></span>
       <span><i class="fa-solid fa-calendar-day" aria-hidden="true"></i><?= h(lot_date((string)($lote['dataCompra'] ?? ''))) ?></span>
+      <span><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i><?= h((string)($lote['purchasePaymentLabel'] ?? 'Pagamento pendente')) ?></span>
       <?php if (trim((string)($lote['cancelamentoStatusLabel'] ?? '')) !== ''): ?>
         <span><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i><?= h((string)($lote['cancelamentoStatusLabel'] ?? '')) ?></span>
       <?php endif; ?>
@@ -1485,6 +1492,15 @@ function lot_render_dashboard_card(array $lote): void {
         <strong class="<?= ((float)($lote['resultadoParcial'] ?? 0) < 0) ? 'is-negative' : 'is-positive' ?>">
           <?= h(lot_money((float)($lote['resultadoParcial'] ?? 0))) ?>
         </strong>
+      </div>
+
+      <div class="lot-board-card__number">
+        <span><i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i>Pagamento da compra</span>
+        <?php if ((float)($lote['purchasePaymentOpenAmount'] ?? 0) > 0): ?>
+          <strong class="is-negative"><?= h(lot_money((float)($lote['purchasePaymentOpenAmount'] ?? 0))) ?></strong>
+        <?php else: ?>
+          <strong><?= h((string)($lote['purchasePaymentLabel'] ?? 'Compra paga')) ?></strong>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -1534,6 +1550,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_create_su
   $dataCompra = trim((string)($_POST['data_compra'] ?? ''));
   $valorSalvado = (float)lot_decimal_input($_POST['valor_salvado'] ?? 0, 2);
   $valorPagoCompra = (float)lot_decimal_input($_POST['valor_pago_compra'] ?? 0, 2);
+  $statusPagamentoCompra = lot_purchase_payment_normalize_status((string)($_POST['status_pagamento_compra'] ?? 'pendente'));
+  $dataPagamentoCompra = trim((string)($_POST['data_pagamento_compra'] ?? ''));
   $nomeLocal = lot_upper_text((string)($_POST['nome_local'] ?? ''));
   $endereco = lot_upper_text((string)($_POST['endereco'] ?? ''));
   $cidade = lot_upper_text((string)($_POST['cidade'] ?? ''));
@@ -1590,6 +1608,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_create_su
   if ($dataCompra === '') {
     $createRedirect('warning', 'Informe a data de compra do lote.');
   }
+  if ($statusPagamentoCompra === 'pago' && $dataPagamentoCompra === '') {
+    $dataPagamentoCompra = $dataCompra !== '' ? $dataCompra : date('Y-m-d');
+  }
 
   try {
     $created = $loteRepo->create([
@@ -1621,6 +1642,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_create_su
     if ($novoId <= 0) {
       throw new RuntimeException('Lote não retornou id após o cadastro.');
     }
+
+    lot_purchase_payment_save_config($novoId, [
+      'status' => $statusPagamentoCompra,
+      'paidAt' => $dataPagamentoCompra,
+    ], 1);
 
     $loteRepo->addMovimentacao($novoId, [
       'tipo_evento' => 'timeline_compra_conclusao',
@@ -1659,7 +1685,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_process_u
   $loadedLote = $postedLoteId > 0 ? $loteRepo->findById($postedLoteId, 1, true) : null;
 
   if (!is_array($loadedLote)) {
-    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível localizar o lote para atualizar os dados do processo.', 'lotProcessDataAnchor');
+    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível localizar o lote para atualizar os dados do processo.', '', 'detail-edit');
   }
 
   $generalNotes = lot_strip_labeled_lines((string)($loadedLote['observacoesGerais'] ?? ''), ['Sinistro:']);
@@ -1670,20 +1696,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_process_u
   $payload['data_compra'] = trim((string)($_POST['data_compra'] ?? ''));
   $payload['valor_original_lote'] = (float)lot_decimal_input($_POST['valor_salvado'] ?? 0, 2);
   $payload['valor_pago_compra'] = (float)lot_decimal_input($_POST['valor_pago_compra'] ?? 0, 2);
+  $paymentStatus = lot_purchase_payment_normalize_status((string)($_POST['status_pagamento_compra'] ?? 'pendente'));
+  $paymentPaidAt = trim((string)($_POST['data_pagamento_compra'] ?? ''));
   $payload['observacoes_gerais'] = lot_build_general_notes(lot_upper_text((string)($_POST['numero_sinistro'] ?? '')), lot_upper_text($generalNotes));
 
   if (trim((string)$payload['numero_processo']) === '') {
-    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe o número do processo para continuar.', 'lotProcessDataAnchor');
+    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe o número do processo para continuar.', '', 'detail-edit');
   }
   if (trim((string)$payload['titulo_lote']) === '') {
-    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe o título do lote para continuar.', 'lotProcessDataAnchor');
+    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe o título do lote para continuar.', '', 'detail-edit');
+  }
+  if ($paymentStatus === 'pago' && $paymentPaidAt === '') {
+    $paymentPaidAt = trim((string)$payload['data_compra']) !== '' ? trim((string)$payload['data_compra']) : date('Y-m-d');
   }
 
   try {
     $loteRepo->update($postedLoteId, $payload, 1);
-    lot_redirect_with_flash($postedLoteId, 'success', 'Identificação do processo e valores iniciais atualizados com sucesso.', 'lotProcessDataAnchor');
+    lot_purchase_payment_save_config($postedLoteId, [
+      'status' => $paymentStatus,
+      'paidAt' => $paymentPaidAt,
+    ], 1);
+    lot_redirect_with_flash($postedLoteId, 'success', 'Identificação do processo e valores iniciais atualizados com sucesso.');
   } catch (Throwable $e) {
-    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível atualizar os dados principais do lote.', 'lotProcessDataAnchor');
+    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível atualizar os dados principais do lote.', '', 'detail-edit');
   }
 }
 
@@ -1692,7 +1727,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_storage_u
   $loadedLote = $postedLoteId > 0 ? $loteRepo->findById($postedLoteId, 1, true) : null;
 
   if (!is_array($loadedLote)) {
-    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível localizar o lote para atualizar o local de armazenagem.', 'lotStorageDataAnchor');
+    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível localizar o lote para atualizar o local de armazenagem.', '', 'detail-edit');
   }
 
   $localNotes = lot_strip_structured_local_lines((string)($loadedLote['observacoesLocal'] ?? ''));
@@ -1725,9 +1760,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_storage_u
 
   try {
     $loteRepo->update($postedLoteId, $payload, 1);
-    lot_redirect_with_flash($postedLoteId, 'success', 'Local de armazenagem e custos locais atualizados com sucesso.', 'lotStorageDataAnchor');
+    lot_redirect_with_flash($postedLoteId, 'success', 'Local de armazenagem e custos locais atualizados com sucesso.');
   } catch (Throwable $e) {
-    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível atualizar o local de armazenagem deste lote.', 'lotStorageDataAnchor');
+    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível atualizar o local de armazenagem deste lote.', '', 'detail-edit');
   }
 }
 
@@ -2020,6 +2055,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_notes_upd
     lot_redirect_with_flash($postedLoteId, 'success', 'Observações do processo atualizadas com sucesso.', 'lotNotesAnchor');
   } catch (Throwable $e) {
     lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível atualizar as observações deste lote.', 'lotNotesAnchor');
+  }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_public_submit'] ?? '')) === '1') {
+  $postedLoteId = (int)($_POST['lote_id'] ?? 0);
+  $loadedLote = $postedLoteId > 0 ? $loteRepo->findById($postedLoteId, 1, true) : null;
+  $publicAction = trim((string)($_POST['public_action'] ?? 'publish'));
+
+  if (!is_array($loadedLote)) {
+    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível localizar o lote para atualizar a ficha pública.', 'lotPanelAnchor');
+  }
+
+  try {
+    if ($publicAction === 'disable') {
+      lot_public_save_config($postedLoteId, ['published' => false], 1);
+      lot_redirect_with_flash($postedLoteId, 'success', 'Ficha pública desativada com sucesso.', 'lotPanelAnchor');
+    }
+
+    $config = lot_public_save_config($postedLoteId, ['published' => true], 1);
+    if (trim((string)($config['token'] ?? '')) === '') {
+      throw new RuntimeException('Não foi possível gerar o link público do lote.');
+    }
+    lot_redirect_with_flash($postedLoteId, 'success', 'Ficha pública ativada com sucesso.', 'lotPanelAnchor');
+  } catch (Throwable $e) {
+    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível atualizar a ficha pública deste lote.', 'lotPanelAnchor');
   }
 }
 
@@ -2369,12 +2429,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_item_subm
   $itemId = (int)($_POST['item_id'] ?? 0);
   $loadedLote = $postedLoteId > 0 ? $loteRepo->findById($postedLoteId, 1, true) : null;
   if (!is_array($loadedLote)) {
-    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível localizar o lote para salvar o item.', 'lotOpsAnchor');
+    lot_redirect_with_flash($postedLoteId, 'danger', 'Não foi possível localizar o lote para salvar o item.', '', 'item-manage');
   }
 
   $descricao = trim((string)($_POST['descricao_item'] ?? ''));
   if ($descricao === '') {
-    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe a descrição do item antes de salvar.', 'lotOpsAnchor');
+    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe a descrição do item antes de salvar.', '', 'item-manage');
   }
 
   $tipoControle = trim((string)($_POST['tipo_controle_item'] ?? 'unidade'));
@@ -2385,14 +2445,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && trim((string)($_POST['lot_item_subm
   $itemImageRemovals = array_values(array_unique(array_filter(array_map('intval', (array)($_POST['item_remove_attachment_ids'] ?? [])), static fn (int $value): bool => $value > 0)));
 
   if ($quantidadeTotal <= 0) {
-    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe uma quantidade válida para o item.', 'lotOpsAnchor');
+    lot_redirect_with_flash($postedLoteId, 'warning', 'Informe uma quantidade válida para o item.', '', 'item-manage');
   }
 
   try {
     $arquivoRepo->validateUploads((array)($_FILES['item_image_files'] ?? []));
     lot_validate_image_uploads((array)($_FILES['item_image_files'] ?? []));
   } catch (Throwable $e) {
-    lot_redirect_with_flash($postedLoteId, 'warning', $e->getMessage() !== '' ? $e->getMessage() : 'Não foi possível validar as imagens do produto.', 'lotOpsAnchor');
+    lot_redirect_with_flash($postedLoteId, 'warning', $e->getMessage() !== '' ? $e->getMessage() : 'Não foi possível validar as imagens do produto.', '', 'item-manage');
   }
 
   $items = is_array($loadedLote['itens'] ?? null) ? (array)$loadedLote['itens'] : [];
@@ -3224,8 +3284,21 @@ if ($createMode) {
             </label>
 
             <label class="lot-field lot-item-form__field">
-              <span>Valor pago na compra</span>
+              <span>Valor da compra</span>
               <input type="text" name="valor_pago_compra" data-lot-money inputmode="decimal" placeholder="R$ 0,00">
+            </label>
+
+            <label class="lot-field lot-item-form__field">
+              <span>Pagamento da compra</span>
+              <select name="status_pagamento_compra">
+                <option value="pendente" selected>Pendente</option>
+                <option value="pago">Pago</option>
+              </select>
+            </label>
+
+            <label class="lot-field lot-item-form__field">
+              <span>Data do pagamento</span>
+              <input type="date" name="data_pagamento_compra">
             </label>
 
             <label class="lot-field lot-item-form__field">
@@ -3310,6 +3383,13 @@ if ($viewLoteId > 0) {
   $selectedItens = is_array($selectedLote) ? (array)($selectedLote['itens'] ?? []) : [];
   $selectedTags = is_array($selectedLote) ? (array)($selectedLote['tags'] ?? []) : [];
   $selectedMovimentacoes = is_array($selectedLote) ? (array)($selectedLote['movimentacoes'] ?? []) : [];
+  $selectedPurchasePayment = is_array($selectedLote) ? lot_purchase_payment_fetch_config($viewLoteId, 1) : ['status' => 'pendente', 'paidAt' => '', 'updatedAt' => ''];
+  $selectedPurchasePaymentLabel = lot_purchase_payment_label((string)($selectedPurchasePayment['status'] ?? 'pendente'));
+  $selectedPurchaseOpenAmount = is_array($selectedLote) ? lot_purchase_payment_open_amount($selectedLote, $selectedPurchasePayment) : 0.0;
+  $selectedPublicConfig = is_array($selectedLote) ? lot_public_fetch_config($viewLoteId, 1) : ['published' => false, 'token' => '', 'updatedAt' => ''];
+  $selectedPublicToken = trim((string)($selectedPublicConfig['token'] ?? ''));
+  $selectedPublicUrl = $selectedPublicToken !== '' ? lot_public_url($viewLoteId, $selectedPublicToken) : '';
+  $selectedPublicPrintUrl = $selectedPublicToken !== '' ? lot_public_print_url($viewLoteId, $selectedPublicToken) : '';
   $selectedClientes = $cadastroRepo->list(['tipo' => 'cliente', 'status' => 'ativo', 'limit' => 300], 1);
   $selectedClientesCompatíveis = lot_find_compatible_clients(
     $selectedTags,
@@ -3560,6 +3640,37 @@ if ($viewLoteId > 0) {
     $selectedCustosLocaisTotal = $selectedCustoArmazenagem + $selectedCustoCarregamento + $selectedCustoSos + $selectedOutrosLocais;
   }
   $selectedFreightTotal = (float)($selectedLote['valorFrete'] ?? 0) + (float)($selectedLote['valorDocumentoTransporte'] ?? 0) + $selectedFreightImpostos + $selectedFreightOutros;
+  $selectedHeroLocal = trim(implode(' • ', array_filter([
+    trim((string)($selectedLote['nomeLocal'] ?? '')),
+    trim((string)($selectedLote['cidade'] ?? '')) . (((string)($selectedLote['estado'] ?? '')) !== '' ? ' / ' . (string)($selectedLote['estado'] ?? '') : ''),
+  ])));
+  $selectedHeroLocal = $selectedHeroLocal !== '' ? $selectedHeroLocal : 'Local de coleta / armazenagem ainda não preenchido';
+  $selectedHeroContato = trim(implode(' • ', array_filter([
+    trim((string)($selectedLote['nomeContato'] ?? '')),
+    trim((string)($selectedLote['telefone'] ?? '')),
+  ])));
+  $selectedHeroContato = $selectedHeroContato !== '' ? $selectedHeroContato : 'Contato local ainda não informado';
+  $selectedHeroFreight = $selectedFreightLinkedMeta !== []
+    ? trim(implode(' • ', array_filter([
+      trim((string)($selectedFreightLinkedMeta['nome'] ?? '')),
+      trim((string)($selectedFreightLinkedMeta['cidadeEstado'] ?? '')),
+    ])))
+    : trim(implode(' • ', array_filter([
+      (int)($selectedLote['transportadoraId'] ?? 0) > 0 ? 'Transportadora vinculada' : '',
+      (int)($selectedLote['motoristaId'] ?? 0) > 0 ? 'Motorista vinculado' : '',
+      trim((string)($selectedLote['tipoTransporte'] ?? '')) !== '' ? lot_transport_label((string)($selectedLote['tipoTransporte'] ?? '')) : '',
+    ])));
+  $selectedHeroFreight = $selectedHeroFreight !== '' ? $selectedHeroFreight : 'Frete ainda não vinculado';
+  $selectedHeroFreightMeta = trim(implode(' • ', array_filter([
+    $selectedFreightTags !== [] ? implode(', ', array_values(array_filter(array_map(static function ($tag): string {
+      if (is_array($tag)) {
+        return trim((string)($tag['nome'] ?? $tag['slug'] ?? ''));
+      }
+      return trim((string)$tag);
+    }, $selectedFreightTags)))) : '',
+    $selectedFreightTotal > 0 ? lot_money($selectedFreightTotal) : '',
+  ])));
+  $selectedHeroFreightMeta = $selectedHeroFreightMeta !== '' ? $selectedHeroFreightMeta : 'Custos e perfil do frete ainda não preenchidos';
 
   $lotPrintMetaRows = [
     ['label' => 'Lote', 'value' => $selectedTitulo !== '' ? $selectedTitulo : ($selectedResumo !== '' ? $selectedResumo : 'Processo sem resumo')],
@@ -3697,7 +3808,7 @@ if ($viewLoteId > 0) {
           'rows' => [
             ['Lote', 'Valor original do lote', lot_money((float)($selectedLote['valorOriginalLote'] ?? 0))],
             ['Lote', 'Valor depreciado informado', lot_money((float)($selectedLote['valorDepreciadoInformado'] ?? 0))],
-            ['Lote', 'Valor pago na compra', lot_money((float)($selectedLote['valorPagoCompra'] ?? 0))],
+            ['Lote', 'Valor da compra', lot_money((float)($selectedLote['valorPagoCompra'] ?? 0))],
             ['Armazenagem', 'Custo de armazenagem', lot_money($selectedCustoArmazenagem)],
             ['Armazenagem', 'Carregamento', lot_money($selectedCustoCarregamento)],
             ['Armazenagem', 'SOS', lot_money($selectedCustoSos)],
@@ -3937,19 +4048,65 @@ if ($viewLoteId > 0) {
                 </div>
 
                 <h2><?= h(lot_text_or_default((string)($selectedLote['tituloLote'] ?? ''), 'Lote sem título')) ?></h2>
-                <div class="lot-detail__headline">
-                  <div class="lot-detail__headline-row">
-                    <span class="lot-detail__headline-label">Lote:</span>
-                    <strong><?= h($selectedResumo !== '' ? $selectedResumo : 'Resumo imediato ainda não preenchido para este lote.') ?></strong>
-                  </div>
-                  <div class="lot-detail__headline-row">
-                    <span class="lot-detail__headline-label">Seguradora:</span>
-                    <strong><?= h((string)($selectedFornecedor['nome'] ?? $selectedFornecedor['razaoSocial'] ?? 'Fornecedor não identificado')) ?></strong>
-                  </div>
-                  <div class="lot-detail__headline-row">
-                    <span class="lot-detail__headline-label">N processo / N sinistro:</span>
-                    <strong><?= h(lot_text_or_default((string)($selectedLote['numeroProcesso'] ?? ''), '-')) ?> / <?= h($selectedNumeroSinistro !== '' ? $selectedNumeroSinistro : 'Não informado') ?></strong>
-                  </div>
+                <div class="lot-hero-meta">
+                  <section class="lot-hero-meta__group lot-hero-meta__group--wide">
+                    <div class="lot-hero-meta__head">
+                      <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+                      <span>Processo</span>
+                    </div>
+                    <div class="lot-detail__headline lot-detail__headline--grouped">
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Resumo:</span>
+                        <strong><?= h($selectedResumo !== '' ? $selectedResumo : 'Resumo imediato ainda não preenchido para este lote.') ?></strong>
+                      </div>
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Seguradora:</span>
+                        <strong><?= h((string)($selectedFornecedor['nome'] ?? $selectedFornecedor['razaoSocial'] ?? 'Fornecedor não identificado')) ?></strong>
+                      </div>
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Nº processo / Nº sinistro:</span>
+                        <strong><?= h(lot_text_or_default((string)($selectedLote['numeroProcesso'] ?? ''), '-')) ?> / <?= h($selectedNumeroSinistro !== '' ? $selectedNumeroSinistro : 'Não informado') ?></strong>
+                      </div>
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Pagamento da compra:</span>
+                        <strong><?= h($selectedPurchasePaymentLabel) ?><?php if ($selectedPurchaseOpenAmount > 0): ?> • Em aberto: <?= h(lot_money($selectedPurchaseOpenAmount)) ?><?php elseif ((string)($selectedPurchasePayment['paidAt'] ?? '') !== ''): ?> • Pago em <?= h(lot_date((string)($selectedPurchasePayment['paidAt'] ?? ''))) ?><?php endif; ?></strong>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="lot-hero-meta__group">
+                    <div class="lot-hero-meta__head">
+                      <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                      <span>Local de coleta / armazenagem</span>
+                    </div>
+                    <div class="lot-detail__headline lot-detail__headline--grouped">
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Local:</span>
+                        <strong><?= h($selectedHeroLocal) ?></strong>
+                      </div>
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Contato:</span>
+                        <strong><?= h($selectedHeroContato) ?></strong>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="lot-hero-meta__group">
+                    <div class="lot-hero-meta__head">
+                      <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>
+                      <span>Frete</span>
+                    </div>
+                    <div class="lot-detail__headline lot-detail__headline--grouped">
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Vinculado:</span>
+                        <strong><?= h($selectedHeroFreight) ?></strong>
+                      </div>
+                      <div class="lot-detail__headline-row">
+                        <span class="lot-detail__headline-label">Perfil:</span>
+                        <strong><?= h($selectedHeroFreightMeta) ?></strong>
+                      </div>
+                    </div>
+                  </section>
                 </div>
               </div>
             </div>
@@ -3976,6 +4133,33 @@ if ($viewLoteId > 0) {
                   <strong class="lot-kpi-card__value <?= $selectedResultadoParcial < 0 ? 'is-negative' : 'is-positive' ?>"><?= h(lot_money($selectedResultadoParcial)) ?></strong>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="lot-detail__hero-footer">
+            <div class="lot-detail__hero-footer-group lot-detail__hero-footer-group--reports">
+              <button class="fin-btn fin-btn--ghost" type="button" data-lot-print-main>
+                <i class="fa-solid fa-file-lines" aria-hidden="true"></i><span>Relatório do lote</span>
+              </button>
+              <button class="fin-btn fin-btn--ghost" type="button" data-lot-print-items>
+                <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i><span>Imprimir lista</span>
+              </button>
+              <button class="fin-btn fin-btn--ghost" type="button" data-lot-print-sales>
+                <i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Imprimir vendas</span>
+              </button>
+            </div>
+            <div class="lot-detail__hero-footer-group lot-detail__hero-footer-group--actions">
+              <?php if ((string)($selectedLote['statusMacro'] ?? '') === 'cancelado'): ?>
+                <button class="fin-btn fin-btn--ghost" type="button" disabled>
+                  <i class="fa-solid fa-ban" aria-hidden="true"></i><span>Lote já cancelado</span>
+                </button>
+              <?php else: ?>
+                <button class="fin-btn fin-btn--danger" type="button" data-lot-cancel-open>
+                  <i class="fa-solid fa-ban" aria-hidden="true"></i><span>Cancelar lote</span>
+                </button>
+              <?php endif; ?>
+              <button class="fin-btn" type="button" id="lotDetailEditOpen" data-lot-detail-edit-open>
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Editar lote</span>
+              </button>
             </div>
           </div>
         </div>
@@ -4055,8 +4239,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotTimelineModal" aria-hidden="true">
         <div class="fin-modal__card lot-timeline-modal__card" style="max-width: 640px;">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotTimelineModalTitle">Atualizar etapa</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotTimelineModalTitle">Atualizar etapa</strong>
+                <span class="lot-detail-modal__subhead">Registre a próxima etapa do processo mantendo a timeline do lote sempre atualizada.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotTimelineModalClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -4148,84 +4343,6 @@ if ($viewLoteId > 0) {
         </div>
       </div>
 
-      <section class="admin-block lot-detail__section" id="lotProcessDataAnchor">
-        <div class="admin-block-head">
-          <h2 class="admin-block-title"><i class="fa-solid fa-file-pen" aria-hidden="true"></i><span>Dados do lote</span></h2>
-        </div>
-        <div class="admin-block-body">
-          <form class="lot-detail-editor" method="post" action="<?= h(lot_module_url(['lote' => $viewLoteId]) . '#lotProcessDataAnchor') ?>" id="lotProcessDataForm" data-lot-editor-form>
-            <input type="hidden" name="lot_process_update_submit" value="1">
-            <input type="hidden" name="lote_id" value="<?= h((string)$viewLoteId) ?>">
-
-            <fieldset class="lot-detail-editor__fieldset" data-lot-editor-fields disabled>
-            <section class="lot-create-section">
-              <div class="lot-create-section__head">
-                <h3><i class="fa-solid fa-address-card" aria-hidden="true"></i><span>Identificação do processo</span></h3>
-                <p>Os mesmos dados principais do cadastro inicial agora ficam visíveis dentro da ficha para consulta e edição rápida.</p>
-              </div>
-
-              <div class="lot-item-form__grid lot-detail-editor__process-grid">
-                <label class="lot-field lot-item-form__field lot-item-form__field--wide">
-                  <span>Seguradora</span>
-                  <input type="text" value="<?= h($selectedFornecedorNome) ?>" readonly>
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>N Processo</span>
-                  <input type="text" name="numero_processo" maxlength="60" value="<?= h((string)($selectedLote['numeroProcesso'] ?? '')) ?>" placeholder="Ex.: PROC-2026-0001">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>N Sinistro</span>
-                  <input type="text" name="numero_sinistro" maxlength="60" value="<?= h($selectedNumeroSinistro) ?>" placeholder="Ex.: SIN-2026-1010">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Título</span>
-                  <input type="text" name="titulo_lote" maxlength="120" value="<?= h((string)($selectedLote['tituloLote'] ?? '')) ?>" placeholder="Ex.: Lote de ferragens industriais">
-                </label>
-
-                <label class="lot-field lot-item-form__field lot-item-form__field--wide">
-                  <span>Descrição</span>
-                  <textarea name="descricao_resumida" rows="3" placeholder="Resumo do processo e da composição principal do lote."><?= h((string)($selectedLote['descricaoResumida'] ?? '')) ?></textarea>
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Data</span>
-                  <input type="date" name="data_compra" value="<?= h((string)($selectedLote['dataCompra'] ?? '')) ?>">
-                </label>
-              </div>
-            </section>
-
-            <section class="lot-create-section">
-              <div class="lot-create-section__head">
-                <h3><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i><span>Valores iniciais</span></h3>
-                <p>Base financeira do processo desde o nascimento do lote, já com o mesmo padrão monetário do cadastro inicial.</p>
-              </div>
-
-              <div class="lot-item-form__grid lot-detail-editor__mini-grid">
-                <label class="lot-field lot-item-form__field">
-                  <span>Valor do salvado</span>
-                  <input type="text" name="valor_salvado" data-lot-money inputmode="decimal" value="<?= h(lot_money((float)($selectedLote['valorOriginalLote'] ?? 0))) ?>" placeholder="R$ 0,00">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Valor da compra</span>
-                  <input type="text" name="valor_pago_compra" data-lot-money inputmode="decimal" value="<?= h(lot_money((float)($selectedLote['valorPagoCompra'] ?? 0))) ?>" placeholder="R$ 0,00">
-                </label>
-              </div>
-            </section>
-            </fieldset>
-
-            <div class="lot-detail-editor__actions">
-              <button class="fin-btn fin-btn--ghost lot-detail-editor__btn" type="button" data-lot-editor-toggle>Editar</button>
-              <button class="fin-btn fin-btn--ghost lot-detail-editor__btn" type="button" data-lot-editor-cancel hidden>Cancelar</button>
-              <button class="fin-btn lot-detail-editor__btn" type="submit" data-lot-editor-save hidden>Salvar</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
       <section class="admin-block lot-detail__section" id="lotOpsAnchor">
         <div class="admin-block-head">
           <h2 class="admin-block-title"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i><span>Itens e tags do lote</span></h2>
@@ -4235,88 +4352,8 @@ if ($viewLoteId > 0) {
             <article class="lot-ops-surface lot-ops-surface--items lot-ops-surface--full">
               <div class="lot-detail__section-head">
                 <h3><i class="fa-solid fa-box-open" aria-hidden="true"></i><span>Itens do lote</span></h3>
-                <p>Cadastre os produtos deste processo, ajuste valores sugeridos, edite lançamentos e registre baixas manuais parciais ou totais.</p>
+                <p>Consulte os produtos do processo, edite quando necessário e mantenha a lista operacional sempre limpa.</p>
               </div>
-
-              <form class="lot-item-form" method="post" action="<?= h(lot_module_url(['lote' => $viewLoteId]) . '#lotOpsAnchor') ?>" id="lotItemForm" enctype="multipart/form-data">
-                <input type="hidden" name="lot_item_submit" value="1">
-                <input type="hidden" name="lote_id" value="<?= h((string)$viewLoteId) ?>">
-                <input type="hidden" name="item_id" id="lotItemIdInput" value="">
-
-                <div class="lot-item-form__grid">
-                  <label class="lot-field lot-item-form__field lot-item-form__field--wide">
-                    <span>Descrição do produto</span>
-                    <input type="text" name="descricao_item" id="lotItemDescricaoInput" maxlength="160" placeholder="Ex.: notebooks, ferragens, autopeças..." required>
-                  </label>
-
-                  <label class="lot-field lot-item-form__field">
-                    <span>Tipo</span>
-                    <select name="tipo_controle_item" id="lotItemTipoInput">
-                      <option value="unidade">Unidade</option>
-                      <option value="kg">Kg</option>
-                      <option value="metros">Metros</option>
-                    </select>
-                  </label>
-
-                  <label class="lot-field lot-item-form__field">
-                    <span>Quantidade</span>
-                    <input type="number" name="quantidade_total" id="lotItemQuantidadeInput" min="0.001" step="0.001" inputmode="decimal" required>
-                  </label>
-
-                  <label class="lot-field lot-item-form__field">
-                    <span>Valor do salvado</span>
-                    <input type="text" name="custo_unitario_referencia" id="lotItemBaseInput" data-lot-money inputmode="decimal" placeholder="R$ 0,00">
-                  </label>
-
-                  <label class="lot-field lot-item-form__field">
-                    <span>Valor de venda sugerido</span>
-                    <input type="text" name="valor_venda_unitario_sugerido" id="lotItemVendaInput" data-lot-money inputmode="decimal" placeholder="R$ 0,00">
-                  </label>
-
-                  <label class="lot-field lot-item-form__field">
-                    <span>Valor total</span>
-                    <input type="text" id="lotItemTotalPreview" value="<?= h(lot_money(0)) ?>" readonly>
-                  </label>
-                </div>
-
-                <label class="lot-field">
-                  <span>Observações do item</span>
-                  <textarea name="observacoes_item" id="lotItemObservacoesInput" rows="3" placeholder="Use este campo se precisar registrar detalhes importantes do produto."></textarea>
-                </label>
-
-                <div class="lot-create-section lot-item-media-editor">
-                  <div class="lot-create-section__head">
-                    <h3><i class="fa-solid fa-camera-retro" aria-hidden="true"></i><span>Fotos do produto</span></h3>
-                    <p>Inclua imagens para facilitar a identificação visual do item na operação e na ficha do produto.</p>
-                  </div>
-
-                  <div class="lot-item-media-editor__layout">
-                    <div class="lot-item-media-editor__panel">
-                      <div class="lot-item-media-editor__label">Imagens atuais</div>
-                      <div class="lot-item-media-editor__grid" id="lotItemCurrentImages">
-                        <div class="lot-inline-empty lot-inline-empty--compact">Salve o item para começar a montar a galeria de fotos.</div>
-                      </div>
-                      <div id="lotItemRemoveRelations"></div>
-                    </div>
-
-                    <div class="lot-item-media-editor__panel">
-                      <label class="lot-field">
-                        <span>Adicionar imagens</span>
-                        <input type="file" name="item_image_files[]" id="lotItemImagesInput" accept="image/*" multiple>
-                      </label>
-                      <div class="lot-item-media-editor__label">Novos arquivos</div>
-                      <div class="lot-item-media-editor__selected" id="lotItemSelectedImages">
-                        Nenhuma nova imagem foi selecionada ainda.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="lot-item-form__actions">
-                  <button class="fin-btn fin-btn--ghost" type="button" id="lotItemCancelEdit" hidden>Cancelar edição</button>
-                  <button class="fin-btn" type="submit" id="lotItemSubmitButton">Adicionar item</button>
-                </div>
-              </form>
 
               <div class="lot-item-list">
                 <div class="lot-item-list__scroll">
@@ -4456,6 +4493,9 @@ if ($viewLoteId > 0) {
                   <button class="fin-btn fin-btn--ghost" type="button" id="lotLoteBaixaTotalOpen">
                       <i class="fa-solid fa-arrow-down-short-wide" aria-hidden="true"></i><span>Baixa total do lote</span>
                     </button>
+                    <button class="fin-btn" type="button" id="lotItemManageOpenSection">
+                      <i class="fa-solid fa-plus" aria-hidden="true"></i><span>Adicionar item</span>
+                    </button>
                     <button class="fin-btn lot-item-list__sell-btn" type="button" id="lotItemVendaOpen">
                       <i class="fa-solid fa-cart-plus" aria-hidden="true"></i><span>Venda</span>
                     </button>
@@ -4568,8 +4608,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotItemBaixaModal" aria-hidden="true">
         <div class="fin-modal__card" style="max-width: 560px;">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotItemBaixaTitle">Baixa manual do item</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotItemBaixaTitle">Baixa manual do item</strong>
+                <span class="lot-detail-modal__subhead">Registre uma baixa operacional no produto quando ele sair do lote sem venda vinculada.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotItemBaixaClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -4620,18 +4671,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotItemVendaModal" aria-hidden="true">
         <div class="fin-modal__card lot-sale-modal__card">
-          <div class="fin-modal__head lot-sale-modal__head">
-            <div class="lot-sale-modal__brand">
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
               <img
-                class="lot-sale-modal__brand-logo"
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
                 src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
                 alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
               >
-              <div class="lot-sale-modal__brand-copy">
-                <span class="lot-sale-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline">Venda de Lote</strong>
+                <span class="lot-detail-modal__subhead">Selecione o comprador, escolha o item e registre a venda sem sair do lote.</span>
               </div>
             </div>
-            <div class="lot-sale-modal__headline">Venda de Lote</div>
             <button class="fin-modal__close" id="lotItemVendaClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -4912,8 +4964,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotCadastroInlineModal" aria-hidden="true">
         <div class="fin-modal__card" style="max-width: 1320px; width: min(1320px, calc(100vw - 40px));">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotCadastroInlineTitle">Novo cadastro</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotCadastroInlineTitle">Novo cadastro</strong>
+                <span class="lot-detail-modal__subhead">Cadastre um novo contato sem sair do fluxo do lote para continuar a operação com agilidade.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotCadastroInlineClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -5090,8 +5153,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotSaleReturnModal" aria-hidden="true">
         <div class="fin-modal__card" style="max-width: 580px;">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotSaleReturnTitle">Devolução da venda</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotSaleReturnTitle">Devolução da venda</strong>
+                <span class="lot-detail-modal__subhead">Registre o retorno parcial ou total de uma venda para devolver o saldo ao estoque do lote.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotSaleReturnClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -5148,8 +5222,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotBaixaTotalModal" aria-hidden="true">
         <div class="fin-modal__card" style="max-width: 580px;">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title">Baixa total do lote</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline">Baixa total do lote</strong>
+                <span class="lot-detail-modal__subhead">Finalize de uma vez a disponibilidade dos itens restantes quando o lote precisar ser baixado integralmente.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotBaixaTotalClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -5195,8 +5280,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotItemRevertModal" aria-hidden="true">
         <div class="fin-modal__card" style="max-width: 560px;">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotItemRevertTitle">Reverter baixa do item</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotItemRevertTitle">Reverter baixa do item</strong>
+                <span class="lot-detail-modal__subhead">Devolva o saldo ao item quando uma baixa operacional precisar ser corrigida.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotItemRevertClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -5247,8 +5343,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotItemHistoryModal" aria-hidden="true">
         <div class="fin-modal__card lot-item-ficha-modal__card">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotItemHistoryTitle">Histórico do produto</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotItemHistoryTitle">Ficha do produto</strong>
+                <span class="lot-detail-modal__subhead">Visualize fotos, dados operacionais e movimentações do item em um único painel.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotItemHistoryClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -5350,129 +5457,326 @@ if ($viewLoteId > 0) {
         </div>
       </div>
 
+      <div class="fin-modal" id="lotDetailEditModal" aria-hidden="true">
+        <div class="fin-modal__card lot-detail-modal__card">
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline">Editar lote</strong>
+                <span class="lot-detail-modal__subhead">Atualize dados do processo, local de coleta e custos sem poluir a ficha principal.</span>
+              </div>
+            </div>
+            <button class="fin-modal__close" id="lotDetailEditClose" type="button" aria-label="Fechar">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="fin-modal__body lot-detail-modal__body">
+            <div class="lot-detail-modal__stack">
+              <form class="lot-detail-modal__form" method="post" action="<?= h(lot_module_url(['lote' => $viewLoteId])) ?>" id="lotProcessDataForm">
+                <input type="hidden" name="lot_process_update_submit" value="1">
+                <input type="hidden" name="lote_id" value="<?= h((string)$viewLoteId) ?>">
+
+                <section class="lot-create-section">
+                  <div class="lot-create-section__head">
+                    <h3><i class="fa-solid fa-address-card" aria-hidden="true"></i><span>Identificação do processo</span></h3>
+                    <p>Atualize os dados centrais do lote sem deixar a ficha mais pesada no uso diário.</p>
+                  </div>
+
+                  <div class="lot-item-form__grid lot-detail-editor__process-grid">
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--supplier">
+                      <span>Seguradora</span>
+                      <input type="text" value="<?= h($selectedFornecedorNome) ?>" readonly>
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--process">
+                      <span>N Processo</span>
+                      <input type="text" name="numero_processo" maxlength="60" value="<?= h((string)($selectedLote['numeroProcesso'] ?? '')) ?>" placeholder="Ex.: PROC-2026-0001">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--sinistro">
+                      <span>N Sinistro</span>
+                      <input type="text" name="numero_sinistro" maxlength="60" value="<?= h($selectedNumeroSinistro) ?>" placeholder="Ex.: SIN-2026-1010">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--title">
+                      <span>Título</span>
+                      <input type="text" name="titulo_lote" maxlength="120" value="<?= h((string)($selectedLote['tituloLote'] ?? '')) ?>" placeholder="Ex.: Lote de ferragens industriais">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--summary">
+                      <span>Descrição</span>
+                      <textarea name="descricao_resumida" rows="3" placeholder="Resumo do processo e da composição principal do lote."><?= h((string)($selectedLote['descricaoResumida'] ?? '')) ?></textarea>
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--date">
+                      <span>Data</span>
+                      <input type="date" name="data_compra" value="<?= h((string)($selectedLote['dataCompra'] ?? '')) ?>">
+                    </label>
+                  </div>
+                </section>
+
+                <section class="lot-create-section">
+                  <div class="lot-create-section__head">
+                    <h3><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i><span>Valores iniciais</span></h3>
+                    <p>Base financeira do processo desde o nascimento do lote.</p>
+                  </div>
+
+                  <div class="lot-item-form__grid lot-detail-editor__mini-grid">
+                    <label class="lot-field lot-item-form__field">
+                      <span>Valor do salvado</span>
+                      <input type="text" name="valor_salvado" data-lot-money inputmode="decimal" value="<?= h(lot_money((float)($selectedLote['valorOriginalLote'] ?? 0))) ?>" placeholder="R$ 0,00">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field">
+                      <span>Valor da compra</span>
+                      <input type="text" name="valor_pago_compra" data-lot-money inputmode="decimal" value="<?= h(lot_money((float)($selectedLote['valorPagoCompra'] ?? 0))) ?>" placeholder="R$ 0,00">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field">
+                      <span>Pagamento da compra</span>
+                      <select name="status_pagamento_compra">
+                        <option value="pendente" <?= (string)($selectedPurchasePayment['status'] ?? 'pendente') === 'pendente' ? 'selected' : '' ?>>Pendente</option>
+                        <option value="pago" <?= (string)($selectedPurchasePayment['status'] ?? 'pendente') === 'pago' ? 'selected' : '' ?>>Pago</option>
+                      </select>
+                    </label>
+
+                    <label class="lot-field lot-item-form__field">
+                      <span>Data do pagamento</span>
+                      <input type="date" name="data_pagamento_compra" value="<?= h((string)($selectedPurchasePayment['paidAt'] ?? '')) ?>">
+                    </label>
+                  </div>
+                </section>
+
+                <div class="lot-item-form__actions lot-item-form__actions--inline lot-detail-modal__actions">
+                  <button class="fin-btn" type="submit">Salvar dados do processo</button>
+                </div>
+              </form>
+
+              <form class="lot-detail-modal__form" method="post" action="<?= h(lot_module_url(['lote' => $viewLoteId])) ?>" id="lotStorageDataForm">
+                <input type="hidden" name="lot_storage_update_submit" value="1">
+                <input type="hidden" name="lote_id" value="<?= h((string)$viewLoteId) ?>">
+
+                <section class="lot-create-section">
+                  <div class="lot-create-section__head">
+                    <h3><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span>Local de armazenagem</span></h3>
+                    <p>Atualize o local de coleta / armazenagem e os custos locais no mesmo padrão já existente do módulo.</p>
+                  </div>
+
+                  <div class="lot-item-form__grid lot-detail-editor__storage-grid">
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-name">
+                      <span>Local armazenagem</span>
+                      <input type="text" name="nome_local" maxlength="120" value="<?= h((string)($selectedLote['nomeLocal'] ?? '')) ?>" placeholder="Ex.: Pátio principal da operação">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-address">
+                      <span>End</span>
+                      <input type="text" name="endereco" maxlength="160" value="<?= h((string)($selectedLote['endereco'] ?? '')) ?>" placeholder="Rua, número e complemento">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-city">
+                      <span>Cidade</span>
+                      <input type="text" name="cidade" maxlength="80" value="<?= h((string)($selectedLote['cidade'] ?? '')) ?>" placeholder="Cidade">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-state">
+                      <span>ES</span>
+                      <select name="estado">
+                        <option value="">Selecione</option>
+                        <?php foreach (lot_ufs() as $uf => $ufLabel): ?>
+                          <option value="<?= h($uf) ?>" <?= lot_normalize_state_uf((string)($selectedLote['estado'] ?? '')) === $uf ? 'selected' : '' ?>><?= h($uf) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-contact">
+                      <span>Contato no local</span>
+                      <input type="text" name="nome_contato" maxlength="120" value="<?= h((string)($selectedLote['nomeContato'] ?? '')) ?>" placeholder="Responsável ou ponto focal">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-doc">
+                      <span>CPF/CNPJ</span>
+                      <input type="text" name="cpf_cnpj_local" maxlength="20" data-lot-mask="documento" value="<?= h($selectedCpfCnpjLocal) ?>" placeholder="Documento do local">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-phone">
+                      <span>Telefone 1</span>
+                      <input type="text" name="telefone" maxlength="20" data-lot-mask="telefone" value="<?= h((string)($selectedLote['telefone'] ?? '')) ?>" placeholder="(00) 00000-0000">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-phone-alt">
+                      <span>Telefone 2</span>
+                      <input type="text" name="telefone_2" maxlength="20" data-lot-mask="telefone" value="<?= h($selectedTelefoneDois) ?>" placeholder="Telefone adicional">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-email">
+                      <span>Email</span>
+                      <input type="email" name="email" maxlength="120" value="<?= h((string)($selectedLote['email'] ?? '')) ?>" placeholder="contato@empresa.com">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field lot-detail-editor__field--storage-notes">
+                      <span>Observações do local</span>
+                      <textarea name="observacoes_local_livre" rows="3" placeholder="Detalhes adicionais do local, acesso, restrições ou recados operacionais."><?= h($selectedObservacoesLocalLivres) ?></textarea>
+                    </label>
+                  </div>
+                </section>
+
+                <section class="lot-create-section">
+                  <div class="lot-create-section__head">
+                    <h3><i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i><span>Custos locais</span></h3>
+                    <p>Leitura financeira do armazenamento e das despesas locais do lote, com total consolidado.</p>
+                  </div>
+
+                  <div class="lot-item-form__grid lot-detail-editor__cost-grid">
+                    <label class="lot-field lot-item-form__field">
+                      <span>Custo Armazenagem</span>
+                      <input type="text" name="custo_armazenagem" id="lotStorageCustoArmazenagem" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedCustoArmazenagem)) ?>" placeholder="R$ 0,00">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field">
+                      <span>Custo Carregamento</span>
+                      <input type="text" name="custo_carregamento" id="lotStorageCustoCarregamento" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedCustoCarregamento)) ?>" placeholder="R$ 0,00">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field">
+                      <span>Custo SOS</span>
+                      <input type="text" name="custo_sos" id="lotStorageCustoSos" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedCustoSos)) ?>" placeholder="R$ 0,00">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field">
+                      <span>Outros</span>
+                      <input type="text" name="outros_custos" id="lotStorageOutrosCustos" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedOutrosLocais)) ?>" placeholder="R$ 0,00">
+                    </label>
+
+                    <label class="lot-field lot-item-form__field">
+                      <span>Total dos custos</span>
+                      <input type="text" id="lotStorageCustosTotal" value="<?= h(lot_money($selectedCustosLocaisTotal)) ?>" readonly>
+                    </label>
+                  </div>
+                </section>
+
+                <div class="lot-item-form__actions lot-item-form__actions--inline lot-detail-modal__actions">
+                  <button class="fin-btn" type="submit">Salvar local e custos</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fin-modal" id="lotItemManageModal" aria-hidden="true">
+        <div class="fin-modal__card lot-detail-modal__card lot-detail-modal__card--item">
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotItemManageTitle">Cadastro de item</strong>
+                <span class="lot-detail-modal__subhead">Cadastre ou edite os produtos do lote com fotos, valores e observações operacionais.</span>
+              </div>
+            </div>
+            <button class="fin-modal__close" id="lotItemManageClose" type="button" aria-label="Fechar">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="fin-modal__body lot-detail-modal__body">
+            <form class="lot-item-form" method="post" action="<?= h(lot_module_url(['lote' => $viewLoteId])) ?>" id="lotItemForm" enctype="multipart/form-data">
+              <input type="hidden" name="lot_item_submit" value="1">
+              <input type="hidden" name="lote_id" value="<?= h((string)$viewLoteId) ?>">
+              <input type="hidden" name="item_id" id="lotItemIdInput" value="">
+
+              <div class="lot-item-form__grid">
+                <label class="lot-field lot-item-form__field lot-item-form__field--wide">
+                  <span>Descrição do produto</span>
+                  <input type="text" name="descricao_item" id="lotItemDescricaoInput" maxlength="160" placeholder="Ex.: notebooks, ferragens, autopeças..." required>
+                </label>
+
+                <label class="lot-field lot-item-form__field">
+                  <span>Tipo</span>
+                  <select name="tipo_controle_item" id="lotItemTipoInput">
+                    <option value="unidade">Unidade</option>
+                    <option value="kg">Kg</option>
+                    <option value="metros">Metros</option>
+                  </select>
+                </label>
+
+                <label class="lot-field lot-item-form__field">
+                  <span>Quantidade</span>
+                  <input type="number" name="quantidade_total" id="lotItemQuantidadeInput" min="0.001" step="0.001" inputmode="decimal" required>
+                </label>
+
+                <label class="lot-field lot-item-form__field">
+                  <span>Valor do salvado</span>
+                  <input type="text" name="custo_unitario_referencia" id="lotItemBaseInput" data-lot-money inputmode="decimal" placeholder="R$ 0,00">
+                </label>
+
+                <label class="lot-field lot-item-form__field">
+                  <span>Valor de venda sugerido</span>
+                  <input type="text" name="valor_venda_unitario_sugerido" id="lotItemVendaInput" data-lot-money inputmode="decimal" placeholder="R$ 0,00">
+                </label>
+
+                <label class="lot-field lot-item-form__field">
+                  <span>Valor total</span>
+                  <input type="text" id="lotItemTotalPreview" value="<?= h(lot_money(0)) ?>" readonly>
+                </label>
+              </div>
+
+              <label class="lot-field">
+                <span>Observações do item</span>
+                <textarea name="observacoes_item" id="lotItemObservacoesInput" rows="3" placeholder="Use este campo se precisar registrar detalhes importantes do produto."></textarea>
+              </label>
+
+              <div class="lot-create-section lot-item-media-editor">
+                <div class="lot-create-section__head">
+                  <h3><i class="fa-solid fa-camera-retro" aria-hidden="true"></i><span>Fotos do produto</span></h3>
+                  <p>Inclua imagens para facilitar a identificação visual do item na operação e na ficha do produto.</p>
+                </div>
+
+                <div class="lot-item-media-editor__layout">
+                  <div class="lot-item-media-editor__panel">
+                    <div class="lot-item-media-editor__label">Imagens atuais</div>
+                    <div class="lot-item-media-editor__grid" id="lotItemCurrentImages">
+                      <div class="lot-inline-empty lot-inline-empty--compact">Salve o item para começar a montar a galeria de fotos.</div>
+                    </div>
+                    <div id="lotItemRemoveRelations"></div>
+                  </div>
+
+                  <div class="lot-item-media-editor__panel">
+                    <label class="lot-field">
+                      <span>Adicionar imagens</span>
+                      <input type="file" name="item_image_files[]" id="lotItemImagesInput" accept="image/*" multiple>
+                    </label>
+                    <div class="lot-item-media-editor__label">Novos arquivos</div>
+                    <div class="lot-item-media-editor__selected" id="lotItemSelectedImages">
+                      Nenhuma nova imagem foi selecionada ainda.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lot-item-form__actions">
+                <button class="fin-btn fin-btn--ghost" type="button" id="lotItemCancelEdit">Limpar formulário</button>
+                <button class="fin-btn" type="submit" id="lotItemSubmitButton">Adicionar item</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <script type="application/json" id="lotPrintPayload"><?= json_encode($lotReportPrintPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
       <script type="application/json" id="lotPrintListPayload"><?= json_encode($lotItemsPrintPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
       <script type="application/json" id="lotPrintSalesPayload"><?= json_encode($lotSalesPrintPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
       <script type="application/json" id="lotOccurrenceReportsPayload"><?= json_encode($lotOccurrenceReportsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
       <script type="application/json" id="lotCancelAttachmentsPayload"><?= json_encode($selectedCancelamentoAnexos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
-
-      <section class="admin-block lot-detail__section" id="lotStorageDataAnchor">
-        <div class="admin-block-head">
-          <h2 class="admin-block-title"><i class="fa-solid fa-warehouse" aria-hidden="true"></i><span>Local do lote e custos locais</span></h2>
-        </div>
-        <div class="admin-block-body">
-          <form class="lot-detail-editor lot-detail-editor__storage" method="post" action="<?= h(lot_module_url(['lote' => $viewLoteId]) . '#lotStorageDataAnchor') ?>" id="lotStorageDataForm" data-lot-editor-form>
-            <input type="hidden" name="lot_storage_update_submit" value="1">
-            <input type="hidden" name="lote_id" value="<?= h((string)$viewLoteId) ?>">
-
-            <fieldset class="lot-detail-editor__fieldset" data-lot-editor-fields disabled>
-            <section class="lot-create-section">
-              <div class="lot-create-section__head">
-                <h3><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span>Local de armazenagem</span></h3>
-                <p>Base operacional do lote enquanto ele está armazenado, com os mesmos dados usados no cadastro inicial do processo.</p>
-              </div>
-
-              <div class="lot-item-form__grid lot-detail-editor__storage-grid">
-                <label class="lot-field lot-item-form__field">
-                  <span>Local armazenagem</span>
-                  <input type="text" name="nome_local" maxlength="120" value="<?= h((string)($selectedLote['nomeLocal'] ?? '')) ?>" placeholder="Ex.: Pátio principal da operação">
-                </label>
-
-                <label class="lot-field lot-item-form__field lot-item-form__field--wide">
-                  <span>End</span>
-                  <input type="text" name="endereco" maxlength="160" value="<?= h((string)($selectedLote['endereco'] ?? '')) ?>" placeholder="Rua, número e complemento">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Cidade</span>
-                  <input type="text" name="cidade" maxlength="80" value="<?= h((string)($selectedLote['cidade'] ?? '')) ?>" placeholder="Cidade">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>ES</span>
-                  <select name="estado">
-                    <option value="">Selecione</option>
-                    <?php foreach (lot_ufs() as $uf => $ufLabel): ?>
-                      <option value="<?= h($uf) ?>" <?= lot_normalize_state_uf((string)($selectedLote['estado'] ?? '')) === $uf ? 'selected' : '' ?>><?= h($uf) ?></option>
-                    <?php endforeach; ?>
-                  </select>
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Contato no local</span>
-                  <input type="text" name="nome_contato" maxlength="120" value="<?= h((string)($selectedLote['nomeContato'] ?? '')) ?>" placeholder="Responsável ou ponto focal">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>CPF/CNPJ</span>
-                  <input type="text" name="cpf_cnpj_local" maxlength="20" data-lot-mask="documento" value="<?= h($selectedCpfCnpjLocal) ?>" placeholder="Documento do local">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Telefone 1</span>
-                  <input type="text" name="telefone" maxlength="20" data-lot-mask="telefone" value="<?= h((string)($selectedLote['telefone'] ?? '')) ?>" placeholder="(00) 00000-0000">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Telefone 2</span>
-                  <input type="text" name="telefone_2" maxlength="20" data-lot-mask="telefone" value="<?= h($selectedTelefoneDois) ?>" placeholder="Telefone adicional">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Email</span>
-                  <input type="email" name="email" maxlength="120" value="<?= h((string)($selectedLote['email'] ?? '')) ?>" placeholder="contato@empresa.com">
-                </label>
-
-                <label class="lot-field lot-item-form__field lot-item-form__field--wide">
-                  <span>Observações do local</span>
-                  <textarea name="observacoes_local_livre" rows="3" placeholder="Detalhes adicionais do local, acesso, restrições ou recados operacionais."><?= h($selectedObservacoesLocalLivres) ?></textarea>
-                </label>
-              </div>
-            </section>
-
-            <section class="lot-create-section">
-              <div class="lot-create-section__head">
-                <h3><i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i><span>Custos locais</span></h3>
-                <p>Leitura financeira do armazenamento e das despesas locais do lote, com total consolidado para visualização rápida.</p>
-              </div>
-
-              <div class="lot-item-form__grid lot-detail-editor__cost-grid">
-                <label class="lot-field lot-item-form__field">
-                  <span>Custo Armazenagem</span>
-                  <input type="text" name="custo_armazenagem" id="lotStorageCustoArmazenagem" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedCustoArmazenagem)) ?>" placeholder="R$ 0,00">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Custo Carregamento</span>
-                  <input type="text" name="custo_carregamento" id="lotStorageCustoCarregamento" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedCustoCarregamento)) ?>" placeholder="R$ 0,00">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Custo SOS</span>
-                  <input type="text" name="custo_sos" id="lotStorageCustoSos" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedCustoSos)) ?>" placeholder="R$ 0,00">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Outros</span>
-                  <input type="text" name="outros_custos" id="lotStorageOutrosCustos" data-lot-money inputmode="decimal" value="<?= h(lot_money($selectedOutrosLocais)) ?>" placeholder="R$ 0,00">
-                </label>
-
-                <label class="lot-field lot-item-form__field">
-                  <span>Total dos custos</span>
-                  <input type="text" id="lotStorageCustosTotal" value="<?= h(lot_money($selectedCustosLocaisTotal)) ?>" readonly>
-                </label>
-              </div>
-            </section>
-            </fieldset>
-
-            <div class="lot-detail-editor__actions">
-              <button class="fin-btn fin-btn--ghost lot-detail-editor__btn" type="button" data-lot-editor-toggle>Editar</button>
-              <button class="fin-btn fin-btn--ghost lot-detail-editor__btn" type="button" data-lot-editor-cancel hidden>Cancelar</button>
-              <button class="fin-btn lot-detail-editor__btn" type="submit" data-lot-editor-save hidden>Salvar</button>
-            </div>
-          </form>
-        </div>
-      </section>
 
       <section class="admin-block lot-detail__section" id="lotFreightAnchor">
         <div class="admin-block-head">
@@ -5808,6 +6112,72 @@ if ($viewLoteId > 0) {
                   </div>
                 </div>
 
+                <div class="lot-panel-public lot-panel-payment">
+                  <div class="lot-detail__section-head">
+                    <h3><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i><span>Pagamento da compra</span></h3>
+                    <p>Controle simples para saber se a compra deste lote já foi quitada ou ainda segue em aberto.</p>
+                  </div>
+                  <div class="lot-panel-public__body">
+                    <div class="lot-panel-public__status">
+                      <strong><?= h($selectedPurchasePaymentLabel) ?></strong>
+                      <span>
+                        <?php if ($selectedPurchaseOpenAmount > 0): ?>
+                          Valor em aberto de <?= h(lot_money($selectedPurchaseOpenAmount)) ?> para este lote.
+                        <?php elseif ((string)($selectedPurchasePayment['paidAt'] ?? '') !== ''): ?>
+                          Compra quitada em <?= h(lot_date((string)($selectedPurchasePayment['paidAt'] ?? ''))) ?>.
+                        <?php else: ?>
+                          Nenhum valor em aberto para esta compra no momento.
+                        <?php endif; ?>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lot-panel-public">
+                  <div class="lot-detail__section-head">
+                    <h3><i class="fa-solid fa-globe" aria-hidden="true"></i><span>Ficha pública do lote</span></h3>
+                    <p>Publique este lote para acesso externo sem login, exibindo apenas dados comerciais, itens disponíveis e imagens de venda.</p>
+                  </div>
+                  <div class="lot-panel-public__body">
+                    <div class="lot-panel-public__status">
+                      <strong><?= !empty($selectedPublicConfig['published']) ? 'Ficha pública ativa' : 'Ficha pública desativada' ?></strong>
+                      <span>
+                        <?php if (!empty($selectedPublicConfig['published']) && $selectedPublicUrl !== ''): ?>
+                          Link pronto para uso comercial em tempo real.
+                        <?php else: ?>
+                          Ative a publicação para gerar um link público deste lote.
+                        <?php endif; ?>
+                      </span>
+                    </div>
+                    <?php if (!empty($selectedPublicConfig['published']) && $selectedPublicUrl !== ''): ?>
+                      <div class="lot-panel-public__links">
+                        <a class="fin-btn fin-btn--ghost" href="<?= h($selectedPublicUrl) ?>" target="_blank" rel="noopener noreferrer">
+                          <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i><span>Abrir ficha pública</span>
+                        </a>
+                        <button class="fin-btn fin-btn--ghost" type="button" data-lot-public-share="<?= h($selectedPublicUrl) ?>">
+                          <i class="fa-solid fa-share-nodes" aria-hidden="true"></i><span>Compartilhar ficha</span>
+                        </button>
+                        <a class="fin-btn fin-btn--ghost" href="<?= h($selectedPublicPrintUrl) ?>" target="_blank" rel="noopener noreferrer">
+                          <i class="fa-solid fa-print" aria-hidden="true"></i><span>Imprimir lista pública</span>
+                        </a>
+                      </div>
+                      <div class="lot-panel-public__url">
+                        <span>URL pública</span>
+                        <input type="text" value="<?= h($selectedPublicUrl) ?>" readonly>
+                      </div>
+                    <?php endif; ?>
+                    <form class="lot-panel-public__form" method="post" action="<?= h(lot_module_url(['lote' => $viewLoteId]) . '#lotPanelAnchor') ?>">
+                      <input type="hidden" name="lot_public_submit" value="1">
+                      <input type="hidden" name="lote_id" value="<?= h((string)$viewLoteId) ?>">
+                      <input type="hidden" name="public_action" value="<?= !empty($selectedPublicConfig['published']) ? 'disable' : 'publish' ?>">
+                      <button class="fin-btn <?= !empty($selectedPublicConfig['published']) ? 'fin-btn--ghost' : '' ?>" type="submit">
+                        <i class="fa-solid <?= !empty($selectedPublicConfig['published']) ? 'fa-eye-slash' : 'fa-globe' ?>" aria-hidden="true"></i>
+                        <span><?= !empty($selectedPublicConfig['published']) ? 'Desativar ficha pública' : 'Ativar ficha pública' ?></span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
                 <?php if ($selectedExceptionalEvents !== []): ?>
                   <div class="lot-panel-cancel__record">
                     <div class="lot-detail__section-head">
@@ -5923,8 +6293,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotAttachmentsModal" aria-hidden="true">
         <div class="fin-modal__card lot-attachments-modal__card">
-          <div class="fin-modal__head lot-attachments-modal__head">
-            <div class="fin-modal__title" id="lotAttachmentsModalTitle">Anexos do lote</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head lot-attachments-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotAttachmentsModalTitle">Anexos do lote</strong>
+                <span class="lot-detail-modal__subhead">Organize documentos, fotos e arquivos do processo por grupo para consulta rápida.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotAttachmentsModalClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -5980,8 +6361,19 @@ if ($viewLoteId > 0) {
 
       <div class="fin-modal" id="lotCancelModal" aria-hidden="true">
         <div class="fin-modal__card lot-cancel-modal__card">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotCancelModalTitle">Ocorrência do lote</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotCancelModalTitle">Ocorrência do lote</strong>
+                <span class="lot-detail-modal__subhead">Registre cancelamentos totais ou devoluções parciais com motivo, relato, valor e documentos de apoio.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotCancelModalClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -6019,7 +6411,7 @@ if ($viewLoteId > 0) {
                             <strong><?= h($selectedFornecedorNome) ?></strong>
                           </div>
                           <div class="lot-detail__headline-row">
-                            <span class="lot-detail__headline-label">N processo / N sinistro:</span>
+                            <span class="lot-detail__headline-label">Nº processo / Nº sinistro:</span>
                             <strong><?= h($selectedProcessoNumero) ?> / <?= h($selectedNumeroSinistro !== '' ? $selectedNumeroSinistro : 'Não informado') ?></strong>
                           </div>
                         </div>
@@ -6212,6 +6604,7 @@ if ($viewMode === 'ativos' && ($filters['status'] === 'finalizado' || $filters['
 }
 
 $rawLotes = $loteRepo->list(['limit' => 300], 1, true);
+$purchasePaymentMap = lot_purchase_payment_fetch_map(array_map(static fn(array $lote): int => (int)($lote['id'] ?? 0), array_values(array_filter($rawLotes, 'is_array'))), 1);
 $fornecedorCache = [];
 $states = [];
 $cities = [];
@@ -6266,6 +6659,11 @@ foreach ($rawLotes as $lote) {
   $lote['cancelamentoStatusRank'] = (int)($cancelSummary['rank'] ?? 99);
   $lote['cancelamentoData'] = (string)($cancelSummary['date'] ?? '');
   $lote['cancelamentoEstorno'] = (float)($cancelSummary['estorno'] ?? 0);
+  $paymentConfig = $purchasePaymentMap[(int)($lote['id'] ?? 0)] ?? ['status' => 'pendente', 'paidAt' => '', 'updatedAt' => ''];
+  $lote['purchasePaymentStatus'] = (string)($paymentConfig['status'] ?? 'pendente');
+  $lote['purchasePaymentLabel'] = lot_purchase_payment_label((string)($paymentConfig['status'] ?? 'pendente'));
+  $lote['purchasePaymentPaidAt'] = (string)($paymentConfig['paidAt'] ?? '');
+  $lote['purchasePaymentOpenAmount'] = lot_purchase_payment_open_amount($lote, $paymentConfig);
   $lote['searchIndex'] = lot_normalize_search(implode(' ', [
     (string)($lote['numeroProcesso'] ?? ''),
     (string)($lote['tituloLote'] ?? ''),
@@ -6324,6 +6722,38 @@ $filteredLotes = array_values(array_filter($lotes, static function (array $lote)
     }
   }
 
+  if ($filters['filtro_geral'] === 'pagamento_pendente' && (string)($lote['purchasePaymentStatus'] ?? 'pendente') !== 'pendente') {
+    return false;
+  }
+
+  if ($filters['filtro_geral'] === 'compra_paga' && (string)($lote['purchasePaymentStatus'] ?? 'pendente') !== 'pago') {
+    return false;
+  }
+
+  if ($filters['filtro_geral'] === 'sem_vendas' && (float)($lote['valorVendidoAtual'] ?? 0) > 0) {
+    return false;
+  }
+
+  if ($filters['filtro_geral'] === 'com_vendas' && (float)($lote['valorVendidoAtual'] ?? 0) <= 0) {
+    return false;
+  }
+
+  if ($filters['filtro_geral'] === 'ocorrencia_excepcional') {
+    $hasExceptionalOccurrence = false;
+    foreach ((array)($lote['movimentacoes'] ?? []) as $movimentacaoFiltro) {
+      if (!is_array($movimentacaoFiltro)) {
+        continue;
+      }
+      if (in_array((string)($movimentacaoFiltro['tipoEvento'] ?? ''), ['lote_cancelado', 'lote_devolucao_parcial'], true)) {
+        $hasExceptionalOccurrence = true;
+        break;
+      }
+    }
+    if (!$hasExceptionalOccurrence) {
+      return false;
+    }
+  }
+
   if ($filters['finalizado'] && (string)($lote['statusMacro'] ?? '') !== 'finalizado') {
     return false;
   }
@@ -6341,6 +6771,9 @@ $statusGroups = [
 $stageCounts = [];
 $totalInvestidoAbertos = 0.0;
 $totalVendidoPeriodo = 0.0;
+$pendingPurchaseCount = 0;
+$paidPurchaseCount = 0;
+$pendingPurchaseAmount = 0.0;
 
 foreach ($filteredLotes as $lote) {
   $statusMacro = (string)($lote['statusMacro'] ?? '');
@@ -6352,6 +6785,12 @@ foreach ($filteredLotes as $lote) {
   if (in_array($statusMacro, ['em_transito', 'em_estoque'], true)) {
     $totalVendidoPeriodo += (float)($lote['valorVendidoAtual'] ?? 0);
     $totalInvestidoAbertos += (float)($lote['custoTotal'] ?? 0);
+    if ((string)($lote['purchasePaymentStatus'] ?? 'pendente') === 'pago') {
+      $paidPurchaseCount++;
+    } else {
+      $pendingPurchaseCount++;
+      $pendingPurchaseAmount += (float)($lote['purchasePaymentOpenAmount'] ?? 0);
+    }
   }
 
   $etapa = (string)($lote['etapaTimeline'] ?? '');
@@ -6461,6 +6900,20 @@ $viewScopedLotes = match ($viewMode) {
   'cancelados' => $canceladoItems,
   default => array_values(array_merge($transitoItems, $estoqueItems)),
 };
+$viewScopePendingPurchaseCount = 0;
+$viewScopePaidPurchaseCount = 0;
+$viewScopePendingPurchaseAmount = 0.0;
+foreach ($viewScopedLotes as $viewScopeLote) {
+  if (!is_array($viewScopeLote) || (string)($viewScopeLote['statusMacro'] ?? '') === 'cancelado') {
+    continue;
+  }
+  if ((string)($viewScopeLote['purchasePaymentStatus'] ?? 'pendente') === 'pago') {
+    $viewScopePaidPurchaseCount++;
+    continue;
+  }
+  $viewScopePendingPurchaseCount++;
+  $viewScopePendingPurchaseAmount += (float)($viewScopeLote['purchasePaymentOpenAmount'] ?? 0);
+}
 $viewScopeInvestimento = 0.0;
 $viewScopeVendas = 0.0;
 $viewScopeDevolucoes = 0.0;
@@ -6564,28 +7017,28 @@ $viewKpiOneLabel = match ($viewMode) {
   default => 'Total investido em lotes abertos',
 };
 $viewKpiTwoLabel = match ($viewMode) {
-  'estoque' => 'Lotes em estoque',
-  'finalizados' => 'Lotes finalizados',
+  'estoque' => 'Compras pendentes no estoque',
+  'finalizados' => 'Compras pendentes nos finalizados',
   'cancelados' => 'Aguardando estorno',
-  default => 'Total em trânsito',
+  default => 'Compras pendentes',
 };
 $viewKpiTwoValue = match ($viewMode) {
-  'estoque' => (string)$countEmEstoque,
-  'finalizados' => (string)$countFinalizado,
+  'estoque' => (string)$viewScopePendingPurchaseCount,
+  'finalizados' => (string)$viewScopePendingPurchaseCount,
   'cancelados' => lot_money($viewScopeRefundAwaiting),
-  default => (string)$countEmTransito,
+  default => (string)$pendingPurchaseCount,
 };
 $viewKpiThreeLabel = match ($viewMode) {
-  'estoque' => 'Valor vendido do estoque',
-  'finalizados' => 'Valor vendido dos finalizados',
+  'estoque' => 'Valor em aberto do estoque',
+  'finalizados' => 'Valor em aberto dos finalizados',
   'cancelados' => 'Estorno confirmado',
-  default => 'Total em estoque',
+  default => 'Valor em aberto',
 };
 $viewKpiThreeValue = match ($viewMode) {
+  'estoque' => lot_money($viewScopePendingPurchaseAmount),
+  'finalizados' => lot_money($viewScopePendingPurchaseAmount),
   'cancelados' => lot_money($viewScopeRefundConfirmed),
-  'estoque' => lot_money($viewScopeVendas),
-  'finalizados' => lot_money($viewScopeVendas),
-  default => (string)$countEmEstoque,
+  default => lot_money($pendingPurchaseAmount),
 };
 $viewKpiFourLabel = match ($viewMode) {
   'estoque' => 'Saldo do estoque',
@@ -6600,16 +7053,30 @@ $viewKpiFourValue = match ($viewMode) {
 };
 $viewKpiFiveLabel = match ($viewMode) {
   'cancelados' => 'Estágios de estorno',
-  'finalizados' => 'Estágios no recorte finalizado',
-  'estoque' => 'Estágios no recorte em estoque',
+  'finalizados' => 'Valor vendido no recorte',
+  'estoque' => 'Valor vendido no recorte',
   default => 'Saldo parcial dos lotes em aberto',
 };
 $viewKpiFiveValue = match ($viewMode) {
   'ativos' => lot_money($saldoParcialAbertos),
   'cancelados' => $viewScopeCancelSummary,
-  default => $viewScopeStageSummary,
+  'estoque' => lot_money($viewScopeVendas),
+  'finalizados' => lot_money($viewScopeVendas),
+  default => lot_money($saldoParcialAbertos),
 };
-$viewKpiFiveIsMoney = $viewMode === 'ativos';
+$viewKpiFiveIsMoney = $viewMode !== 'cancelados';
+$viewKpiSixLabel = match ($viewMode) {
+  'cancelados' => 'Resumo do recorte',
+  'finalizados' => 'Compras pagas no recorte',
+  'estoque' => 'Compras pagas no recorte',
+  default => 'Compras pagas',
+};
+$viewKpiSixValue = match ($viewMode) {
+  'cancelados' => $viewScopeStageSummary,
+  'estoque' => (string)$viewScopePaidPurchaseCount,
+  'finalizados' => (string)$viewScopePaidPurchaseCount,
+  default => (string)$paidPurchaseCount,
+};
 $widgetActivities = [];
 foreach ($viewScopedLotes as $lote) {
   $movimentacoes = $loteRepo->getMovimentacoes((int)($lote['id'] ?? 0), 1);
@@ -6846,8 +7313,8 @@ $lotAnalyticsPayload = [
     <article class="lot-kpi-card">
       <div class="lot-kpi-card__icon is-stage"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></div>
       <div class="lot-kpi-card__body">
-        <span class="lot-kpi-card__label"><?= h($viewMode === 'ativos' ? 'Quantidade de lotes por estágio' : 'Resumo do recorte') ?></span>
-        <strong class="lot-kpi-card__value lot-kpi-card__value--small"><?= h($viewMode === 'ativos' ? $stageSummary : $viewScopeStageSummary) ?></strong>
+        <span class="lot-kpi-card__label"><?= h($viewKpiSixLabel) ?></span>
+        <strong class="lot-kpi-card__value lot-kpi-card__value--small"><?= h($viewKpiSixValue) ?></strong>
       </div>
     </article>
   </section>
@@ -6968,8 +7435,19 @@ $lotAnalyticsPayload = [
 
       <div class="fin-modal" id="lotCreateModal" aria-hidden="true">
         <div class="fin-modal__card lot-create-modal__card">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title">Novo lote</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline">Novo lote</strong>
+                <span class="lot-detail-modal__subhead">Abra um novo processo com a leitura inicial do lote e complemente o restante depois na ficha interna.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotCreateModalClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -6985,6 +7463,8 @@ $lotAnalyticsPayload = [
               'data_compra' => date('Y-m-d'),
               'valor_salvado' => '',
               'valor_pago_compra' => '',
+              'status_pagamento_compra' => 'pendente',
+              'data_pagamento_compra' => '',
               'nome_local' => '',
               'endereco' => '',
               'cidade' => '',
@@ -7110,8 +7590,21 @@ $lotAnalyticsPayload = [
                   </label>
 
                   <label class="lot-field lot-item-form__field lot-item-form__field--span-2">
-                    <span>Valor pago na compra</span>
+                    <span>Valor da compra</span>
                     <input type="text" name="valor_pago_compra" data-lot-money inputmode="decimal" placeholder="R$ 0,00" value="<?= h((string)($lotCreateOldInput['valor_pago_compra'] ?? '')) ?>">
+                  </label>
+
+                  <label class="lot-field lot-item-form__field lot-item-form__field--span-2">
+                    <span>Pagamento da compra</span>
+                    <select name="status_pagamento_compra">
+                      <option value="pendente" <?= lot_purchase_payment_normalize_status((string)($lotCreateOldInput['status_pagamento_compra'] ?? 'pendente')) === 'pendente' ? 'selected' : '' ?>>Pendente</option>
+                      <option value="pago" <?= lot_purchase_payment_normalize_status((string)($lotCreateOldInput['status_pagamento_compra'] ?? 'pendente')) === 'pago' ? 'selected' : '' ?>>Pago</option>
+                    </select>
+                  </label>
+
+                  <label class="lot-field lot-item-form__field lot-item-form__field--span-2">
+                    <span>Data do pagamento</span>
+                    <input type="date" name="data_pagamento_compra" value="<?= h((string)($lotCreateOldInput['data_pagamento_compra'] ?? '')) ?>">
                   </label>
                 </div>
               </section>
@@ -7229,8 +7722,19 @@ $lotAnalyticsPayload = [
 
       <div class="fin-modal" id="lotCadastroInlineModal" aria-hidden="true">
         <div class="fin-modal__card" style="max-width: 1320px; width: min(1320px, calc(100vw - 40px));">
-          <div class="fin-modal__head">
-            <div class="fin-modal__title" id="lotCadastroInlineTitle">Novo cadastro</div>
+          <div class="fin-modal__head lot-sale-modal__head lot-detail-modal__head">
+            <div class="lot-sale-modal__brand lot-detail-modal__brand">
+              <img
+                class="lot-sale-modal__brand-logo lot-detail-modal__brand-logo"
+                src="<?= h($corp['report_logo'] ?? $corp['favicon'] ?? app_url('/app/static/img/favicon.png')) ?>"
+                alt="<?= h($corp['company'] ?? 'Visa Remoções') ?>"
+              >
+              <div class="lot-sale-modal__brand-copy lot-detail-modal__brand-copy">
+                <span class="lot-sale-modal__brand-name lot-detail-modal__brand-name"><?= h($corp['company'] ?? 'Visa Remoções') ?></span>
+                <strong class="lot-sale-modal__headline lot-detail-modal__headline" id="lotCadastroInlineTitle">Novo cadastro</strong>
+                <span class="lot-detail-modal__subhead">Cadastre um novo contato sem sair do fluxo do lote para continuar a operação com agilidade.</span>
+              </div>
+            </div>
             <button class="fin-modal__close" id="lotCadastroInlineClose" type="button" aria-label="Fechar">
               <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
@@ -7289,7 +7793,11 @@ $lotAnalyticsPayload = [
                 <select name="filtro_geral">
                   <option value="">Sem filtro adicional</option>
                   <option value="sem_frete" <?= $filters['filtro_geral'] === 'sem_frete' || $filters['sem_frete'] ? 'selected' : '' ?>>Lotes sem frete</option>
-                  <option value="venda_parcial" disabled>Venda parcial (em breve)</option>
+                  <option value="pagamento_pendente" <?= $filters['filtro_geral'] === 'pagamento_pendente' ? 'selected' : '' ?>>Pagamento pendente</option>
+                  <option value="compra_paga" <?= $filters['filtro_geral'] === 'compra_paga' ? 'selected' : '' ?>>Compra paga</option>
+                  <option value="sem_vendas" <?= $filters['filtro_geral'] === 'sem_vendas' ? 'selected' : '' ?>>Sem vendas</option>
+                  <option value="com_vendas" <?= $filters['filtro_geral'] === 'com_vendas' ? 'selected' : '' ?>>Com vendas</option>
+                  <option value="ocorrencia_excepcional" <?= $filters['filtro_geral'] === 'ocorrencia_excepcional' ? 'selected' : '' ?>>Com ocorrência excepcional</option>
                 </select>
               </label>
 

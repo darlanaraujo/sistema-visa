@@ -876,6 +876,10 @@
   function bindLotItemForm() {
     const form = document.getElementById("lotItemForm");
     if (!form) return;
+    const modal = document.getElementById("lotItemManageModal");
+    const modalTitle = document.getElementById("lotItemManageTitle");
+    const openButtons = Array.from(document.querySelectorAll("#lotItemManageOpenSection"));
+    const closeButton = document.getElementById("lotItemManageClose");
 
     const idInput = document.getElementById("lotItemIdInput");
     const descricaoInput = document.getElementById("lotItemDescricaoInput");
@@ -894,6 +898,19 @@
     const editButtons = Array.from(document.querySelectorAll("[data-lot-item-edit]"));
     const printButton = document.getElementById("lotPrintListButton");
     let removedRelations = new Set();
+
+    function closeModal() {
+      if (!modal) return;
+      modal.setAttribute("aria-hidden", "true");
+      modal.classList.remove("is-open");
+    }
+
+    function openModal(titleText = "Cadastro de item") {
+      if (modalTitle) modalTitle.textContent = titleText;
+      if (!modal) return;
+      modal.setAttribute("aria-hidden", "false");
+      modal.classList.add("is-open");
+    }
 
     function parseImages(button) {
       try {
@@ -986,7 +1003,7 @@
       renderCurrentImages([]);
       renderSelectedFiles();
       if (submitButton) submitButton.textContent = "Adicionar item";
-      if (cancelButton) cancelButton.hidden = true;
+      if (modalTitle) modalTitle.textContent = "Cadastro de item";
       syncTotal();
     }
 
@@ -1014,14 +1031,29 @@
         renderCurrentImages(parseImages(button));
         renderSelectedFiles();
         if (submitButton) submitButton.textContent = "Salvar edição";
-        if (cancelButton) cancelButton.hidden = false;
+        if (modalTitle) {
+          modalTitle.textContent = `Editar item • ${button.getAttribute("data-item-descricao") || "Produto"}`;
+        }
         syncTotal();
-        form.scrollIntoView({ behavior: "smooth", block: "start" });
+        openModal(modalTitle?.textContent || "Editar item");
+      });
+    });
+
+    openButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        resetForm();
+        openModal("Cadastro de item");
       });
     });
 
     imagesInput?.addEventListener("change", renderSelectedFiles);
     cancelButton?.addEventListener("click", resetForm);
+    closeButton?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
     printButton?.addEventListener("click", () => {
       const payload = parseJsonScript("lotPrintListPayload");
       postPrintPreview("/app/templates/lotes_print_preview.php", payload);
@@ -1029,13 +1061,48 @@
     renderCurrentImages([]);
     renderSelectedFiles();
     syncTotal();
+
+    return {
+      openModal,
+      closeModal,
+      resetForm,
+    };
+  }
+
+  function bindLotDetailEditModal() {
+    const modal = document.getElementById("lotDetailEditModal");
+    const openButtons = Array.from(document.querySelectorAll("[data-lot-detail-edit-open]"));
+    const closeButton = document.getElementById("lotDetailEditClose");
+    if (!modal || !closeButton || !openButtons.length) return null;
+
+    function openModal() {
+      modal.setAttribute("aria-hidden", "false");
+      modal.classList.add("is-open");
+    }
+
+    function closeModal() {
+      modal.setAttribute("aria-hidden", "true");
+      modal.classList.remove("is-open");
+    }
+
+    openButtons.forEach((button) => {
+      button.addEventListener("click", openModal);
+    });
+    closeButton.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    return { openModal, closeModal };
   }
 
   function bindLotPanel() {
-    const printButton = document.getElementById("lotPrintButton");
-    const printListButton = document.getElementById("lotPrintListButtonPanel");
-    const printSalesButton = document.getElementById("lotPrintSalesButtonPanel");
-    const cancelButton = document.getElementById("lotCancelButton");
+    const printButtons = Array.from(document.querySelectorAll("#lotPrintButton, [data-lot-print-main]"));
+    const printListButtons = Array.from(document.querySelectorAll("#lotPrintListButtonPanel, [data-lot-print-items]"));
+    const printSalesButtons = Array.from(document.querySelectorAll("#lotPrintSalesButtonPanel, [data-lot-print-sales]"));
+    const cancelButtons = Array.from(document.querySelectorAll("#lotCancelButton, [data-lot-cancel-open]"));
     const cancelModal = document.getElementById("lotCancelModal");
     const cancelClose = document.getElementById("lotCancelModalClose");
     const cancelDismiss = document.getElementById("lotCancelModalDismiss");
@@ -1235,21 +1302,29 @@
       });
     }
 
-    bindCardLikeAction(printButton, () => {
-      const payload = parseJsonScript("lotPrintPayload");
-      postPrintPreview("/app/templates/lotes_print_preview.php", payload);
+    printButtons.forEach((button) => {
+      bindCardLikeAction(button, () => {
+        const payload = parseJsonScript("lotPrintPayload");
+        postPrintPreview("/app/templates/lotes_print_preview.php", payload);
+      });
     });
-    bindCardLikeAction(printListButton, () => {
-      const payload = parseJsonScript("lotPrintListPayload");
-      postPrintPreview("/app/templates/lotes_print_preview.php", payload);
+    printListButtons.forEach((button) => {
+      bindCardLikeAction(button, () => {
+        const payload = parseJsonScript("lotPrintListPayload");
+        postPrintPreview("/app/templates/lotes_print_preview.php", payload);
+      });
     });
-    bindCardLikeAction(printSalesButton, () => {
-      const payload = parseJsonScript("lotPrintSalesPayload");
-      postPrintPreview("/app/templates/lotes_print_preview.php", payload);
+    printSalesButtons.forEach((button) => {
+      bindCardLikeAction(button, () => {
+        const payload = parseJsonScript("lotPrintSalesPayload");
+        postPrintPreview("/app/templates/lotes_print_preview.php", payload);
+      });
     });
-    cancelButton?.addEventListener("click", () => {
-      resetCancelForm();
-      openCancelModal();
+    cancelButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        resetCancelForm();
+        openCancelModal();
+      });
     });
     cancelClose?.addEventListener("click", closeCancelModal);
     cancelDismiss?.addEventListener("click", closeCancelModal);
@@ -3921,13 +3996,53 @@
     });
   }
 
+  function bindPublicShareActions() {
+    const triggers = Array.from(document.querySelectorAll("[data-lot-public-share]"));
+    if (!triggers.length) return;
+
+    triggers.forEach((trigger) => {
+      trigger.addEventListener("click", async () => {
+        const url = String(trigger.getAttribute("data-lot-public-share") || "").trim();
+        if (!url) return;
+
+        try {
+          if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            await navigator.clipboard.writeText(url);
+            toast("success", "Link da ficha copiado para compartilhamento.");
+            return;
+          }
+
+          const field = document.createElement("textarea");
+          field.value = url;
+          field.setAttribute("readonly", "readonly");
+          field.style.position = "fixed";
+          field.style.opacity = "0";
+          field.style.pointerEvents = "none";
+          document.body.appendChild(field);
+          field.select();
+          const copied = document.execCommand("copy");
+          document.body.removeChild(field);
+          if (copied) {
+            toast("success", "Link da ficha copiado para compartilhamento.");
+            return;
+          }
+          toast("warning", "Não foi possível copiar o link automaticamente.");
+          return;
+        } catch (_) {
+          toast("danger", "Não foi possível compartilhar a ficha.");
+          return;
+        }
+      });
+    });
+  }
+
     bindToasts();
     bindPrimarySearch();
     bindBoardFilter();
     bindAdvancedFilters();
     bindMobileToggles();
     const timelineApi = bindTimelineModal();
-    bindLotItemForm();
+    const itemManageApi = bindLotItemForm();
     bindLotBaixaModal();
     const vendaApi = bindLotVendaModal();
     bindLotBaixaTotalModal();
@@ -3935,8 +4050,10 @@
     bindLotItemHistoryModal();
     bindLotSaleReturnModal();
     bindLotPanel();
+    bindPublicShareActions();
     bindLotAnalyticsDashboard();
     const attachmentsApi = bindLotAttachmentsModal();
+    const detailEditApi = bindLotDetailEditModal();
     const inlineCadastroApi = bindInlineCadastroModal();
     bindCompatibleClients(inlineCadastroApi);
     bindLotFreightLookup(inlineCadastroApi);
@@ -3981,6 +4098,12 @@
     }
     if (page && page.getAttribute("data-lot-open-modal") === "create" && createApi && typeof createApi.openModal === "function") {
       window.setTimeout(() => createApi.openModal(), 120);
+    }
+    if (page && page.getAttribute("data-lot-open-modal") === "detail-edit" && detailEditApi && typeof detailEditApi.openModal === "function") {
+      window.setTimeout(() => detailEditApi.openModal(), 120);
+    }
+    if (page && page.getAttribute("data-lot-open-modal") === "item-manage" && itemManageApi && typeof itemManageApi.openModal === "function") {
+      window.setTimeout(() => itemManageApi.openModal("Cadastro de item"), 120);
     }
     if (page && String(page.getAttribute("data-lot-open-modal") || "").startsWith("timeline:") && timelineApi && typeof timelineApi.openStage === "function") {
       const parts = String(page.getAttribute("data-lot-open-modal") || "").split(":");

@@ -4,6 +4,7 @@
 require_once __DIR__ . '/../core/url.php';
 
 $title = $title ?? 'Sistema Visa';
+$bodyClass = trim((string)($bodyClass ?? ''));
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -62,7 +63,7 @@ $title = $title ?? 'Sistema Visa';
   <?php endif; ?>
 </head>
 
-<body>
+<body<?= $bodyClass !== '' ? ' class="' . htmlspecialchars($bodyClass) . '"' : '' ?>>
   <?php
     if (!isset($contentFile)) {
       echo '<p style="padding:16px;">Conteúdo não definido.</p>';
